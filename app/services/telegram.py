@@ -64,16 +64,37 @@ def split_telegram_text(text: str) -> list[str]:
     return chunks
 
 
-async def send_message(chat_id: int, text: str) -> None:
-    for chunk in split_telegram_text(text):
-        await telegram_api(
-            "sendMessage",
-            {
-                "chat_id": chat_id,
-                "text": chunk,
-                "disable_web_page_preview": True,
-            },
-        )
+def support_webapp_reply_markup() -> dict[str, Any] | None:
+    webapp_url = settings.support_webapp_url
+    if not webapp_url.startswith("https://"):
+        return None
+    return {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "Открыть карту поддержки",
+                    "web_app": {"url": webapp_url},
+                }
+            ]
+        ]
+    }
+
+
+async def send_message(
+    chat_id: int,
+    text: str,
+    *,
+    reply_markup: dict[str, Any] | None = None,
+) -> None:
+    for index, chunk in enumerate(split_telegram_text(text)):
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "text": chunk,
+            "disable_web_page_preview": True,
+        }
+        if index == 0 and reply_markup:
+            payload["reply_markup"] = reply_markup
+        await telegram_api("sendMessage", payload)
 
 
 async def sync_direct_telegram_webhook() -> str:
@@ -90,5 +111,23 @@ async def sync_direct_telegram_webhook() -> str:
         payload["secret_token"] = settings.telegram_webhook_secret_token.strip()
 
     data = await telegram_api("setWebhook", payload)
-    return str(data.get("description") or "Webhook установлен.")
+    webhook_status = str(data.get("description") or "Webhook установлен.")
 
+    webapp_url = settings.support_webapp_url
+    if not webapp_url.startswith("https://"):
+        return (
+            f"{webhook_status}\n"
+            "Mini-app кнопка не обновлена: PUBLIC_WEBAPP_URL должен быть публичным HTTPS URL."
+        )
+
+    await telegram_api(
+        "setChatMenuButton",
+        {
+            "menu_button": {
+                "type": "web_app",
+                "text": "Карта поддержки",
+                "web_app": {"url": webapp_url},
+            }
+        },
+    )
+    return f"{webhook_status}\nMini-app кнопка «Карта поддержки» обновлена."

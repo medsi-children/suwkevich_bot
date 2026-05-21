@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import Annotated, Any
 
@@ -12,7 +13,13 @@ from app.schemas.message import MessageResponse
 from app.schemas.user import UserCreate
 from app.services.dialogue import add_message, get_active_session, handle_user_text
 from app.services.memory import apply_memory_control, store_memory_updates
-from app.services.telegram import extract_chat_id, extract_message, extract_sender, send_message
+from app.services.telegram import (
+    extract_chat_id,
+    extract_message,
+    extract_sender,
+    send_message,
+    support_webapp_reply_markup,
+)
 from app.services.users import get_or_create_user
 
 router = APIRouter()
@@ -24,6 +31,16 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
     message = extract_message(update)
     sender = extract_sender(update)
     text = message.get("text")
+    web_app_data = message.get("web_app_data") or {}
+    if not text and web_app_data.get("data"):
+        try:
+            payload = json.loads(str(web_app_data["data"]))
+        except json.JSONDecodeError:
+            payload = {}
+        if isinstance(payload, dict):
+            candidate = payload.get("text")
+            if isinstance(candidate, str):
+                text = candidate
     telegram_id = sender.get("id")
     chat_id = extract_chat_id(update)
 
@@ -104,11 +121,19 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
 
 async def process_direct_telegram_update(update: dict[str, Any]) -> None:
     chat_id = extract_chat_id(update)
+    message = extract_message(update)
+    text = str(message.get("text") or "").strip().lower()
+    command = text.split(maxsplit=1)[0] if text else ""
     async with AsyncSessionLocal() as db:
         try:
             response = await build_telegram_response(update, db)
             if chat_id is not None:
-                await send_message(chat_id, response.reply)
+                reply_markup = (
+                    support_webapp_reply_markup()
+                    if command in {"/start", "/help"}
+                    else None
+                )
+                await send_message(chat_id, response.reply, reply_markup=reply_markup)
         except Exception:
             await db.rollback()
             logger.exception("Failed to process Telegram update")

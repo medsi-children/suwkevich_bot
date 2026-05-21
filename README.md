@@ -52,6 +52,12 @@ API будет доступен по адресу:
 http://localhost:8000/docs
 ```
 
+Mini-app карты поддержки будет доступна по адресу:
+
+```text
+http://localhost:8000/app/support
+```
+
 Проверка:
 
 ```bash
@@ -73,6 +79,7 @@ APP_NAME=Сушкевич Бот
 APP_ENV=production
 API_V1_PREFIX=/api/v1
 PUBLIC_BASE_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+PUBLIC_WEBAPP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}/app/support
 
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 
@@ -97,7 +104,9 @@ MEMORY_EXTRACTION_ENABLED=true
 3. В сервис backend добавьте переменные из блока выше.
 4. В `PUBLIC_BASE_URL` укажите `https://${{RAILWAY_PUBLIC_DOMAIN}}` или полный публичный
    домен backend из Railway.
-5. После deploy выполните в Railway shell:
+5. В `PUBLIC_WEBAPP_URL` укажите тот же домен со страницей mini-app:
+   `https://${{RAILWAY_PUBLIC_DOMAIN}}/app/support`.
+6. После deploy выполните в Railway shell:
 
 ```bash
 python scripts/set_telegram_webhook.py
@@ -108,6 +117,9 @@ Webhook будет смотреть на:
 ```text
 https://your-production-domain.up.railway.app/api/v1/telegram/direct-webhook
 ```
+
+Этот же скрипт обновит кнопку меню Telegram mini-app, если `PUBLIC_WEBAPP_URL` указывает
+на публичный HTTPS-адрес страницы `/app/support`.
 
 Полезные официальные страницы Railway:
 

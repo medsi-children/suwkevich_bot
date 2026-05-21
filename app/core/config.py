@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     app_env: str = "local"
     api_v1_prefix: str = "/api/v1"
     public_base_url: str = "http://localhost:8000"
+    public_webapp_url: str = ""
 
     database_url: str = "postgresql+asyncpg://suwkevich:suwkevich@localhost:5432/suwkevich_bot"
     sync_database_url: str = ""
@@ -64,6 +65,14 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
+    def support_webapp_url(self) -> str:
+        if self.public_webapp_url.strip():
+            return self.public_webapp_url.strip()
+        base = self.public_base_url.strip().rstrip("/")
+        return f"{base}/app/support"
+
+    @computed_field
+    @property
     def preferred_authors_list(self) -> list[str]:
         return [item.strip() for item in self.preferred_authors.split(",") if item.strip()]
 
@@ -74,4 +83,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

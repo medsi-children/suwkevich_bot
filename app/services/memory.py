@@ -231,7 +231,11 @@ def format_memory_context(user: User, bundle_or_memories: dict | list[UserMemory
         for person in people:
             role = f" ({person.role})" if person.role else ""
             summary = person.relation_summary or "важный человек в контексте пользователя"
-            emotional = f" Эмоциональный контекст: {person.emotional_context}" if person.emotional_context else ""
+            emotional = (
+                f" Эмоциональный контекст: {person.emotional_context}"
+                if person.emotional_context
+                else ""
+            )
             lines.append(f"- {person.name}{role}: {summary}.{emotional}")
         parts.append("Люди из жизни пользователя:\n" + "\n".join(lines))
 
