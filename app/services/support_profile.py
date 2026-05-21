@@ -99,6 +99,7 @@ AGENCY_WORDS = ("хочу", "могу", "решил", "решила", "выби�
 
 
 def _clip(text: str | None, *, limit: int = 220) -> str:
+    """Trim and clean text to a maximum length, adding an ellipsis if needed."""
     clean = " ".join((text or "").strip().split())
     if len(clean) <= limit:
         return clean
@@ -106,6 +107,7 @@ def _clip(text: str | None, *, limit: int = 220) -> str:
 
 
 def _bounded(value: int) -> int:
+    """Restrict a metric value to the 12–92 range."""
     return max(12, min(92, value))
 
 
@@ -161,6 +163,18 @@ def _build_metrics(
     memories: list[UserMemory],
     messages: list[Message],
 ) -> list[dict[str, Any]]:
+    """
+    Build a list of dimension metrics based on user data.
+
+    Returns an empty list when there is no meaningful context (no facts,
+    people, topics, memories and zero or one message), avoiding random
+    baseline scores. This empty state can be detected by the UI to
+    display a "no data" message.
+    """
+    # Early exit when there is insufficient context for meaningful metrics.
+    if not facts and not people and not topics and not memories and len(messages) <= 1:
+        return []
+
     recent_text = _recent_user_text(messages)
     crisis_like = _contains_any(
         recent_text,
@@ -226,7 +240,7 @@ def _build_metrics(
         ),
     }
 
-    metrics = []
+    metrics: list[dict[str, Any]] = []
     for index, dimension in enumerate(DIMENSIONS):
         key = dimension["key"]
         metrics.append(
@@ -403,7 +417,6 @@ def _lifehack_context(
 def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
     if not isinstance(items, list):
         return []
-
     cards: list[dict[str, str]] = []
     for item in items[:3]:
         if not isinstance(item, dict):
@@ -479,6 +492,22 @@ async def _build_lifehacks(
     memories: list[UserMemory],
     messages: list[Message],
 ) -> list[dict[str, str]]:
+    """
+    Assemble up to three lifehack cards for the mini‑app.
+
+    When there is no context (no facts, topics, memories and not enough
+    messages), an empty list is returned. Otherwise, cached or generated
+    lifehacks are used, falling back to generic suggestions when the
+    generation fails. Generated cards are cached using a signature of the
+    context to avoid unnecessary repeated calls.
+    """
+    # Early exit when user context is essentially empty. We require at least
+    # one meaningful item (fact, topic, memory) or more than one message to
+    # attempt generating lifehacks. Without this, fallback suggestions
+    # would feel generic and unhelpful.
+    if not facts and not topics and not memories and len(messages) <= 1:
+        return []
+
     signature = _context_signature(
         user=user,
         facts=facts,
@@ -552,7 +581,6 @@ def _build_insights(memories: list[UserMemory], facts: list[ImportantFact]) -> l
         )
     if len(insights) >= 6:
         return insights
-
     for fact in _fact_items(facts, "important_event", "user_note")[: 6 - len(insights)]:
         insights.append(
             {
@@ -646,7 +674,6 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
         .order_by(Message.created_at.desc())
         .limit(RECENT_MESSAGE_LIMIT)
     )
-
     facts = list(facts_result.scalars().all())
     people = list(people_result.scalars().all())
     topics = list(topics_result.scalars().all())
