@@ -207,8 +207,13 @@ def format_memory_context(user: User, bundle_or_memories: dict | list[UserMemory
         parts.append(f"Краткий профиль пользователя: {user.profile_summary}")
     if user.risk_notes:
         parts.append(f"Важные риски и осторожность: {user.risk_notes}")
-    if user.support_preferences:
-        parts.append(f"Стиль общения и предпочтения: {user.support_preferences}")
+    style_preferences = {
+        key: value
+        for key, value in (user.support_preferences or {}).items()
+        if key in STYLE_KEYS
+    }
+    if style_preferences:
+        parts.append(f"Стиль общения и предпочтения: {style_preferences}")
 
     if isinstance(bundle_or_memories, dict):
         facts = bundle_or_memories.get("facts") or []

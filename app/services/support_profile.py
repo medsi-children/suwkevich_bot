@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -7,59 +8,63 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.memory import ImportantFact, KnownPerson, OpenTopic, UserMemory
 from app.models.message import Message
 from app.models.user import User
+from app.services.llm import extract_json_object, openrouter_chat
 
 RECENT_MESSAGE_LIMIT = 120
+LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
+logger = logging.getLogger(__name__)
 
 DIMENSIONS = (
     {
         "key": "agency",
         "label": "Субъектность",
-        "hint": "насколько в диалогах видны выбор, границы и следующие шаги",
+        "hint": "Насколько в диалогах видны выбор, границы и следующие шаги",
         "tones": ("#8fd6c8", "#5bb8a9"),
     },
     {
         "key": "clarity",
         "label": "Ясность",
-        "hint": "сколько уже собрано понятных выводов и открытых тем",
+        "hint": "Сколько уже собрано понятных выводов и открытых тем",
         "tones": ("#a9c8ff", "#6f9fed"),
     },
     {
         "key": "support",
         "label": "Опора",
-        "hint": "люди, стратегии и привычки, которые могут поддерживать",
+        "hint": "Люди, стратегии и привычки, которые могут поддерживать",
         "tones": ("#ffd6a6", "#f3ad61"),
     },
     {
         "key": "safety",
         "label": "Безопасность",
-        "hint": "ориентир осторожности по последним сообщениям и заметкам о рисках",
+        "hint": "Ориентир осторожности по последним сообщениям и заметкам о рисках",
         "tones": ("#f5b8c8", "#df7f9a"),
     },
     {
         "key": "boundaries",
         "label": "Границы",
-        "hint": "насколько явно обозначены личные пределы и предпочтения",
+        "hint": "Насколько явно обозначены личные пределы и предпочтения",
         "tones": ("#c9b7ff", "#987de8"),
     },
     {
         "key": "self_compassion",
         "label": "Самосострадание",
-        "hint": "есть ли в карте мягкие способы говорить с собой",
+        "hint": "Есть ли в профиле мягкие способы говорить с собой",
         "tones": ("#b8e9aa", "#79be68"),
     },
     {
         "key": "body_contact",
         "label": "Контакт с собой",
-        "hint": "упоминания чувств, тела, сна, усталости и состояния",
+        "hint": "Упоминания чувств, тела, сна, усталости и состояния",
         "tones": ("#b7e6ff", "#67badc"),
     },
     {
         "key": "resource",
         "label": "Ресурс",
-        "hint": "бережная оценка энергии по последним диалогам",
+        "hint": "Бережная оценка энергии по последним диалогам",
         "tones": ("#ffe69e", "#e7bc45"),
     },
 )
@@ -198,7 +203,9 @@ def _build_metrics(
             44,
             min(20, len(_memory_items(memories, "support_strategy")) * 5),
             min(12, len(_fact_items(facts, "coping")) * 3),
-            5 if user.support_preferences else 0,
+            5
+            if any(not key.startswith("_") for key in (user.support_preferences or {}))
+            else 0,
         ),
         "body_contact": _value_from_counts(
             40,
@@ -289,7 +296,7 @@ def _build_support_cards(
         cards.append(
             {
                 "title": "Люди рядом",
-                "text": f"В карте уже отмечены значимые люди: {names}.",
+                "text": f"В профиле уже отмечены значимые люди: {names}.",
                 "kind": "социальная опора",
             }
         )
@@ -328,6 +335,208 @@ def _build_attention_cards(
                 "kind": "тема для разговора",
             }
         )
+    return cards
+
+
+def _context_signature(
+    *,
+    user: User,
+    facts: list[ImportantFact],
+    topics: list[OpenTopic],
+    memories: list[UserMemory],
+    messages: list[Message],
+) -> str:
+    latest_update = _latest_dt([*facts, *topics, *memories, *messages])
+    return "|".join(
+        [
+            _clip(user.profile_summary, limit=300),
+            _clip(user.risk_notes, limit=160),
+            str(latest_update.isoformat() if latest_update else ""),
+            str(len(facts)),
+            str(len(topics)),
+            str(len(memories)),
+            str(len(messages)),
+        ]
+    )
+
+
+def _lifehack_context(
+    *,
+    user: User,
+    facts: list[ImportantFact],
+    topics: list[OpenTopic],
+    memories: list[UserMemory],
+    messages: list[Message],
+) -> str:
+    fact_lines = [f"- {fact.title}: {fact.value}" for fact in facts[:8]]
+    topic_lines = [
+        f"- {topic.title}: {topic.summary}"
+        + (f" Следующий шаг: {topic.next_step}" if topic.next_step else "")
+        for topic in topics[:6]
+    ]
+    memory_lines = [
+        f"- {memory.memory_type}: {memory.title}. {memory.content}"
+        for memory in memories[:8]
+    ]
+    recent_lines = [
+        f"- {message.content}"
+        for message in messages
+        if message.role == "user"
+    ][-8:]
+
+    parts = [
+        f"Имя: {user.first_name or 'не указано'}",
+        f"Описание профиля: {user.profile_summary or 'пока пусто'}",
+        f"Заметки о рисках: {user.risk_notes or 'нет'}",
+    ]
+    if fact_lines:
+        parts.append("Важные факты:\n" + "\n".join(fact_lines))
+    if topic_lines:
+        parts.append("Открытые темы:\n" + "\n".join(topic_lines))
+    if memory_lines:
+        parts.append("Память:\n" + "\n".join(memory_lines))
+    if recent_lines:
+        parts.append("Последние сообщения пользователя:\n" + "\n".join(recent_lines))
+    return "\n\n".join(parts)
+
+
+def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
+    if not isinstance(items, list):
+        return []
+
+    cards: list[dict[str, str]] = []
+    for item in items[:3]:
+        if not isinstance(item, dict):
+            continue
+        title = _clip(item.get("title"), limit=80)
+        text = _clip(item.get("text") or item.get("description"), limit=260)
+        action = _clip(item.get("action") or item.get("next_step"), limit=220)
+        kind = _clip(item.get("kind"), limit=80) or "персональный лайфхак"
+        if title and text:
+            cards.append(
+                {
+                    "title": title,
+                    "text": text,
+                    "next_step": action,
+                    "kind": kind,
+                }
+            )
+    return cards
+
+
+def _fallback_lifehacks(
+    facts: list[ImportantFact],
+    topics: list[OpenTopic],
+    memories: list[UserMemory],
+) -> list[dict[str, str]]:
+    topic = topics[0] if topics else None
+    coping = _fact_items(facts, "coping", "preference", "boundary")
+    insight = _memory_items(memories, "insight", "support_strategy", "goal")
+    cards = [
+        {
+            "title": topic.title if topic else "Один ближайший шаг",
+            "text": (
+                _clip(topic.summary, limit=240)
+                if topic
+                else "Выберите действие на 5 минут, которое чуть уменьшит напряжение."
+            ),
+            "next_step": (
+                _clip(topic.next_step, limit=200)
+                if topic and topic.next_step
+                else "Сформулируйте: что я могу сделать сегодня, не решая всю жизнь сразу?"
+            ),
+            "kind": "фокус",
+        },
+        {
+            "title": coping[0].title if coping else "Быстрое заземление",
+            "text": (
+                _clip(coping[0].value, limit=240)
+                if coping
+                else "Назовите 5 предметов вокруг, сделайте длинный выдох и почувствуйте опору."
+            ),
+            "next_step": "Повторите это 3 раза и оцените напряжение по шкале от 1 до 10.",
+            "kind": "упражнение",
+        },
+        {
+            "title": insight[0].title if insight else "Мягкая проверка мысли",
+            "text": (
+                _clip(insight[0].content, limit=240)
+                if insight
+                else "Отделите факт от интерпретации: что точно произошло, а что я додумываю?"
+            ),
+            "next_step": "Запишите одну более нейтральную формулировку происходящего.",
+            "kind": "идея",
+        },
+    ]
+    return cards
+
+
+async def _build_lifehacks(
+    *,
+    user: User,
+    facts: list[ImportantFact],
+    topics: list[OpenTopic],
+    memories: list[UserMemory],
+    messages: list[Message],
+) -> list[dict[str, str]]:
+    signature = _context_signature(
+        user=user,
+        facts=facts,
+        topics=topics,
+        memories=memories,
+        messages=messages,
+    )
+    preferences = user.support_preferences or {}
+    cache = preferences.get(LIFEHACK_CACHE_KEY)
+    if isinstance(cache, dict) and cache.get("signature") == signature:
+        cached_cards = _clean_lifehacks(cache.get("items"))
+        if len(cached_cards) == 3:
+            return cached_cards
+
+    cards = _fallback_lifehacks(facts, topics, memories)
+    if settings.openrouter_api_key:
+        prompt = (
+            "Ты создаешь три персональных лайфхака для mini-app психологической поддержки.\n"
+            "Опирайся только на профиль и контекст пользователя. Не ставь диагнозы, не "
+            "назначай лечение, не давай рискованных медицинских инструкций. Каждый лайфхак "
+            "должен быть конкретным, мягким, выполнимым за 2-10 минут и связанным с темами "
+            "пользователя.\n\n"
+            "Верни только JSON без markdown:\n"
+            "{\n"
+            '  "lifehacks": [\n'
+            '    {"title": "коротко", "kind": "идея|упражнение|фокус", '
+            '"text": "смысл лайфхака", "action": "точный первый шаг"}\n'
+            "  ]\n"
+            "}\n\n"
+            "Контекст пользователя:\n"
+            + _lifehack_context(
+                user=user,
+                facts=facts,
+                topics=topics,
+                memories=memories,
+                messages=messages,
+            )
+        )
+        try:
+            raw = await openrouter_chat(
+                [{"role": "user", "content": prompt}],
+                temperature=0.45,
+                max_tokens=900,
+            )
+            generated_cards = _clean_lifehacks(extract_json_object(raw).get("lifehacks"))
+            if len(generated_cards) == 3:
+                cards = generated_cards
+        except Exception:
+            logger.exception("Failed to generate support lifehacks")
+
+    user.support_preferences = {
+        **preferences,
+        LIFEHACK_CACHE_KEY: {
+            "signature": signature,
+            "items": cards,
+            "generated_at": datetime.now(UTC).isoformat(),
+        },
+    }
     return cards
 
 
@@ -446,6 +655,13 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
 
     focus_cards = _build_focus_cards(topics, memories) or _empty_focus_cards()
     support_cards = _build_support_cards(facts, memories, people) or _empty_support_cards()
+    lifehack_cards = await _build_lifehacks(
+        user=user,
+        facts=facts,
+        topics=topics,
+        memories=memories,
+        messages=messages,
+    )
     attention_cards = _build_attention_cards(user=user, facts=facts, topics=topics)
     insights = _build_insights(memories, facts)
     latest_update = _latest_dt([*facts, *people, *topics, *memories, *messages])
@@ -461,10 +677,14 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
                 limit=540,
             )
             or (
-                "Пока карта знает о вас немного. Она будет становиться точнее по мере "
+                "Пока профиль знает о вас немного. Он будет становиться точнее по мере "
                 "диалогов с ботом и сохраненных вами наблюдений."
             ),
-            "support_preferences": user.support_preferences or {},
+            "support_preferences": {
+                key: value
+                for key, value in (user.support_preferences or {}).items()
+                if not key.startswith("_")
+            },
             "last_seen_at": user.last_seen_at.isoformat() if user.last_seen_at else None,
         },
         "metrics": _build_metrics(
@@ -483,12 +703,13 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
             "messages_count": len(messages),
         },
         "activity": _build_activity(messages),
+        "lifehack_cards": lifehack_cards,
         "focus_cards": focus_cards,
         "support_cards": support_cards,
         "attention_cards": attention_cards,
         "insights": insights,
         "disclaimer": (
-            "Это не диагноз и не оценка личности, а ориентировочная карта по сохраненным "
-            "диалогам. Ее стоит использовать как повод для бережного разговора."
+            "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. "
+            "Она будет становится точнее и точнее с каждым разговором с вами."
         ),
     }

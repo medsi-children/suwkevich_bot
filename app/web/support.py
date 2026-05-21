@@ -10,7 +10,7 @@ SUPPORT_APP_HTML = """<!doctype html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f9fbff" />
-  <title>Карта поддержки</title>
+  <title>Профиль поддержки</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -161,7 +161,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       min-height: 324px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
       gap: 28px;
     }
 
@@ -275,7 +275,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       padding: 4px;
       border: 1px solid var(--line);
@@ -555,9 +555,8 @@ SUPPORT_APP_HTML = """<!doctype html>
         min-height: 0;
       }
 
-      .stats,
       .tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .cards,
@@ -586,35 +585,32 @@ SUPPORT_APP_HTML = """<!doctype html>
     <section class="hero">
       <div class="hero-copy">
         <div>
-          <p class="kicker">Личная карта поддержки</p>
-          <h1 id="hello">Собираю вашу карту</h1>
+          <p class="kicker">Личный профиль поддержки</p>
+          <h1 id="hello">Собираю ваш профиль</h1>
           <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
-        </div>
-        <div class="stats">
-          <div class="stat"><strong id="memoryCount">0</strong><span>записей памяти</span></div>
-          <div class="stat"><strong id="topicCount">0</strong><span>открытых фокусов</span></div>
-          <div class="stat"><strong id="supportCount">0</strong><span>опор в плане</span></div>
-          <div class="stat"><strong id="updatedAt">—</strong><span>последнее обновление</span></div>
         </div>
       </div>
 
       <aside class="radar-panel">
-        <h2 class="panel-title">Колесо состояния <span class="badge">не диагноз</span></h2>
+        <h2 class="panel-title">Диаграмма личности</h2>
         <div class="radar-wrap">
           <canvas id="radar" width="620" height="620"></canvas>
         </div>
-        <p class="disclaimer" id="disclaimer">Это мягкий ориентир по диалогам, а не медицинская оценка.</p>
+        <p class="disclaimer" id="disclaimer">Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.</p>
       </aside>
     </section>
 
-    <nav class="tabs" aria-label="Разделы карты">
-      <button class="tab active" type="button" data-tab="map">Карта</button>
-      <button class="tab" type="button" data-tab="focus">Фокусы</button>
-      <button class="tab" type="button" data-tab="support">Опора</button>
-      <button class="tab" type="button" data-tab="memory">Инсайты</button>
+    <nav class="tabs" aria-label="Разделы профиля">
+      <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
+      <button class="tab active" type="button" data-tab="personality">Личность</button>
+      <button class="tab" type="button" data-tab="insights">Инсайты</button>
     </nav>
 
-    <section class="panel active" id="panel-map">
+    <section class="panel" id="panel-lifehacks">
+      <div class="cards" id="lifehackCards"></div>
+    </section>
+
+    <section class="panel active" id="panel-personality">
       <div class="metrics-grid" id="metricsGrid"></div>
       <div class="activity-panel">
         <h2 class="panel-title">Ритм последних дней <span class="badge">7 дней</span></h2>
@@ -622,24 +618,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       </div>
     </section>
 
-    <section class="panel" id="panel-focus">
-      <div class="cards" id="focusCards"></div>
-    </section>
-
-    <section class="panel" id="panel-support">
-      <div class="support-layout">
-        <div>
-          <h2 class="panel-title" style="margin: 0 0 12px;">Что может помочь</h2>
-          <div class="cards" id="supportCards"></div>
-        </div>
-        <div>
-          <h2 class="panel-title" style="margin: 0 0 12px;">На что обратить внимание</h2>
-          <div class="cards" id="attentionCards"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel" id="panel-memory">
+    <section class="panel" id="panel-insights">
       <div class="cards" id="insightCards"></div>
     </section>
 
@@ -844,20 +823,14 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     function renderProfile(data) {
       const firstName = data.user && data.user.first_name ? data.user.first_name : "вы";
-      setText("hello", firstName === "вы" ? "Ваша карта поддержки" : `${firstName}, это ваша карта`);
+      setText("hello", firstName === "вы" ? "Ваш профиль поддержки" : `${firstName}, это ваш профиль`);
       setText("profileSummary", data.user.profile_summary);
-      setText("memoryCount", data.summary.memory_count);
-      setText("topicCount", data.summary.open_topics_count);
-      setText("supportCount", data.summary.support_items_count);
-      setText("updatedAt", data.summary.latest_update);
       setText("disclaimer", data.disclaimer);
       renderMetrics(data.metrics || []);
       renderActivity(data.activity || []);
       drawRadar(data.metrics || []);
-      renderCards("focusCards", data.focus_cards, "Фокусов пока мало", "После пары диалогов здесь появятся повторяющиеся темы и ближайшие шаги.", "Открыть в чате");
-      renderCards("supportCards", data.support_cards, "План еще собирается", "Расскажите боту, что обычно помогает, и это появится здесь.", "Обсудить");
-      renderCards("attentionCards", data.attention_cards, "Осторожных заметок нет", "Если появятся триггеры или риски, карта покажет их отдельно и мягко.", "Разобрать");
-      renderCards("insightCards", data.insights, "Инсайтов пока мало", "Здесь будут сохраняться важные выводы из разговоров.", "Вернуться");
+      renderCards("lifehackCards", data.lifehack_cards, "Лайфхаки скоро появятся", "После анализа профиля здесь будут три персональные идеи или упражнения.", "Открыть в чате");
+      renderCards("insightCards", data.insights, "Наблюдений пока нет", "Здесь будут сохраняться важные выводы из разговоров.", "Вернуться");
       root.classList.remove("loading");
       statusEl.textContent = "";
     }
@@ -874,16 +847,16 @@ SUPPORT_APP_HTML = """<!doctype html>
           support_items_count: 6,
           latest_update: "21.05.2026",
         },
-        disclaimer: "Это demo-режим с примером данных. В Telegram здесь будет личная карта по сохраненным диалогам пользователя.",
+        disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
         metrics: [
-          { label: "Субъектность", value: 68, hint: "видны выбор, границы и следующие шаги", tone: ["#8fd6c8", "#5bb8a9"] },
-          { label: "Ясность", value: 61, hint: "есть несколько сформулированных выводов", tone: ["#a9c8ff", "#6f9fed"] },
-          { label: "Опора", value: 73, hint: "собраны стратегии и люди рядом", tone: ["#ffd6a6", "#f3ad61"] },
-          { label: "Безопасность", value: 57, hint: "нужна бережная осторожность без драматизации", tone: ["#f5b8c8", "#df7f9a"] },
-          { label: "Границы", value: 52, hint: "границы уже появляются, но требуют внимания", tone: ["#c9b7ff", "#987de8"] },
-          { label: "Самосострадание", value: 64, hint: "есть мягкие способы говорить с собой", tone: ["#b8e9aa", "#79be68"] },
-          { label: "Контакт с собой", value: 70, hint: "состояние и тело хорошо замечаются", tone: ["#b7e6ff", "#67badc"] },
-          { label: "Ресурс", value: 49, hint: "энергия просит экономного режима", tone: ["#ffe69e", "#e7bc45"] },
+          { label: "Субъектность", value: 68, hint: "Видны выбор, границы и следующие шаги", tone: ["#8fd6c8", "#5bb8a9"] },
+          { label: "Ясность", value: 61, hint: "Есть несколько сформулированных выводов", tone: ["#a9c8ff", "#6f9fed"] },
+          { label: "Опора", value: 73, hint: "Собраны стратегии и люди рядом", tone: ["#ffd6a6", "#f3ad61"] },
+          { label: "Безопасность", value: 57, hint: "Нужна бережная осторожность без драматизации", tone: ["#f5b8c8", "#df7f9a"] },
+          { label: "Границы", value: 52, hint: "Границы уже появляются, но требуют внимания", tone: ["#c9b7ff", "#987de8"] },
+          { label: "Самосострадание", value: 64, hint: "Есть мягкие способы говорить с собой", tone: ["#b8e9aa", "#79be68"] },
+          { label: "Контакт с собой", value: 70, hint: "Состояние и тело хорошо замечаются", tone: ["#b7e6ff", "#67badc"] },
+          { label: "Ресурс", value: 49, hint: "Энергия просит экономного режима", tone: ["#ffe69e", "#e7bc45"] },
         ],
         activity: [
           { label: "15.05", count: 1, value: 28 },
@@ -894,17 +867,10 @@ SUPPORT_APP_HTML = """<!doctype html>
           { label: "20.05", count: 2, value: 50 },
           { label: "21.05", count: 3, value: 72 },
         ],
-        focus_cards: [
-          { source: "открытая тема", title: "Вернуть чувство управления", text: "Много напряжения появляется там, где все кажется слишком большим и размытым.", next_step: "Разобрать ситуацию на факты, чувства и один следующий шаг." },
-          { source: "открытая тема", title: "Усталость и сон", text: "Ресурс проседает, когда день не заканчивается психологически.", next_step: "Проверить вечерний ритуал и границу между делами и восстановлением." },
-          { source: "память диалогов", title: "Страх быть неудобным", text: "Повторяется тема, где свои потребности становятся менее заметными.", next_step: "Сформулировать одну мягкую, но честную просьбу." },
-          { source: "память диалогов", title: "Самокритика", text: "Внутренний тон иногда становится жестче, чем сама ситуация требует.", next_step: "Отделить ошибку от оценки себя целиком." },
-        ],
-        support_cards: [
-          { kind: "быстрая практика", title: "Длинный выдох", text: "Сделать 4 спокойных выдоха длиннее вдоха и проверить опору стоп." },
-          { kind: "микроплан", title: "Пять минут", text: "Выбрать действие, которое реально сделать за 5 минут, без обещаний на весь день." },
-          { kind: "стратегия", title: "Письменно разложить мысль", text: "Записать: что случилось, что я чувствую, чего боюсь, что могу сделать." },
-          { kind: "социальная опора", title: "Написать живому человеку", text: "Коротко обозначить состояние и попросить быть на связи без подробных объяснений." },
+        lifehack_cards: [
+          { kind: "упражнение", title: "Длинный выдох", text: "Сделать 4 спокойных выдоха длиннее вдоха и проверить опору стоп.", next_step: "Оценить напряжение до и после по шкале от 1 до 10." },
+          { kind: "идея", title: "Пять минут управления", text: "Выбрать действие, которое реально сделать за 5 минут, без обещаний на весь день.", next_step: "Спросить себя: какой шаг даст мне на 1% больше контроля?" },
+          { kind: "фокус", title: "Граница без конфликта", text: "Сформулировать одну мягкую просьбу там, где вы обычно терпите молча.", next_step: "Начать фразой: «Мне сейчас важно...»." },
         ],
         attention_cards: [
           { kind: "на что обратить внимание", title: "Перегруз после общения", text: "После напряженных разговоров стоит заранее закладывать время на восстановление." },
@@ -922,13 +888,13 @@ SUPPORT_APP_HTML = """<!doctype html>
       root.classList.add("loading");
       if (demoMode) {
         renderProfile(demoProfile());
-        statusEl.textContent = "Demo-режим: реальные данные появятся при открытии из Telegram.";
+        statusEl.textContent = "Demo-режим: реальный профиль появится при открытии из Telegram.";
         return;
       }
       if (!telegramId) {
         root.classList.remove("loading");
-        setText("hello", "Откройте карту из Telegram");
-        setText("profileSummary", "Так mini-app сможет безопасно понять, чью карту поддержки показать.");
+        setText("hello", "Откройте профиль из Telegram");
+        setText("profileSummary", "Так mini-app сможет безопасно понять, чей профиль поддержки показать.");
         statusEl.textContent = "Для локальной проверки можно открыть /app/support?telegram_id=123.";
         drawRadar([]);
         return;
@@ -955,7 +921,7 @@ SUPPORT_APP_HTML = """<!doctype html>
         renderProfile(await response.json());
       } catch (error) {
         root.classList.remove("loading");
-        setText("hello", "Не получилось открыть карту");
+        setText("hello", "Не получилось открыть профиль");
         setText("profileSummary", "Проверьте, что mini-app открыта из Telegram и backend доступен.");
         statusEl.textContent = String(error.message || error);
       }

@@ -18,7 +18,6 @@ from app.services.telegram import (
     extract_message,
     extract_sender,
     send_message,
-    support_webapp_reply_markup,
 )
 from app.services.users import get_or_create_user
 
@@ -121,19 +120,11 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
 
 async def process_direct_telegram_update(update: dict[str, Any]) -> None:
     chat_id = extract_chat_id(update)
-    message = extract_message(update)
-    text = str(message.get("text") or "").strip().lower()
-    command = text.split(maxsplit=1)[0] if text else ""
     async with AsyncSessionLocal() as db:
         try:
             response = await build_telegram_response(update, db)
             if chat_id is not None:
-                reply_markup = (
-                    support_webapp_reply_markup()
-                    if command in {"/start", "/help"}
-                    else None
-                )
-                await send_message(chat_id, response.reply, reply_markup=reply_markup)
+                await send_message(chat_id, response.reply)
         except Exception:
             await db.rollback()
             logger.exception("Failed to process Telegram update")

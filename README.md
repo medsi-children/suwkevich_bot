@@ -52,7 +52,7 @@ API будет доступен по адресу:
 http://localhost:8000/docs
 ```
 
-Mini-app карты поддержки будет доступна по адресу:
+Mini-app профиля поддержки будет доступна по адресу:
 
 ```text
 http://localhost:8000/app/support
@@ -118,8 +118,8 @@ Webhook будет смотреть на:
 https://your-production-domain.up.railway.app/api/v1/telegram/direct-webhook
 ```
 
-Этот же скрипт обновит кнопку меню Telegram mini-app, если `PUBLIC_WEBAPP_URL` указывает
-на публичный HTTPS-адрес страницы `/app/support`.
+Кнопку меню Telegram mini-app можно настроить через BotFather. `PUBLIC_WEBAPP_URL` нужен
+самому приложению и должен указывать на публичный HTTPS-адрес страницы `/app/support`.
 
 Полезные официальные страницы Railway:
 
