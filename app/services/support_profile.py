@@ -14,6 +14,7 @@ from app.models.user import User
 RECENT_MESSAGE_LIMIT = 120
 LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
 INSIGHT_CACHE_KEY = "_support_insights_cache"
+SUPPORT_PROFILE_CACHE_VERSION = 2
 LOW_CONTEXT_HINT = "Информации о вас пока мало"
 LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
 
@@ -98,6 +99,22 @@ AGENCY_WORDS = ("хочу", "могу", "решил", "решила", "выби�
 BOUNDARY_WORDS = ("границ", "не хочу", "не готов", "нельзя", "мне важно", "отказ")
 SELF_COMPASSION_WORDS = ("береж", "мягч", "поддерж", "не вин", "не руга", "принять себя")
 RESOURCE_WORDS = ("сил", "энерг", "ресурс", "устал", "выгор", "сон", "отдох", "помог")
+LIFEHACK_FORBIDDEN_WORDS = (
+    "ide",
+    "debug",
+    "javascript",
+    "typescript",
+    "python",
+    "эмодзи",
+    "мем",
+    "комментарий",
+    "код",
+    "массив",
+    "редактор",
+    "репозитор",
+    "проект",
+    "файл",
+)
 
 
 def _clip(text: str | None, *, limit: int = 220) -> str:
@@ -194,6 +211,8 @@ def _parse_cached_datetime(value: Any) -> datetime | None:
 
 def _cache_is_fresh(cache: Any, latest_update: datetime | None) -> bool:
     if not isinstance(cache, dict):
+        return False
+    if cache.get("version") != SUPPORT_PROFILE_CACHE_VERSION:
         return False
     generated_at = _parse_cached_datetime(cache.get("generated_at"))
     if latest_update is None:
@@ -446,6 +465,9 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
         title = _clip(item.get("title"), limit=64)
         text = _clip(item.get("text") or item.get("description"), limit=145)
         action = _clip(item.get("action") or item.get("next_step"), limit=110)
+        combined = f"{title} {text} {action}".lower()
+        if any(word in combined for word in LIFEHACK_FORBIDDEN_WORDS):
+            continue
         if title and text:
             card: dict[str, str] = {
                 "title": title,
@@ -490,11 +512,13 @@ def cache_support_profile_items(
     generated_at = datetime.now(UTC).isoformat()
     if len(cards) == 3:
         updated_preferences[LIFEHACK_CACHE_KEY] = {
+            "version": SUPPORT_PROFILE_CACHE_VERSION,
             "items": cards,
             "generated_at": generated_at,
         }
     if insight_cards:
         updated_preferences[INSIGHT_CACHE_KEY] = {
+            "version": SUPPORT_PROFILE_CACHE_VERSION,
             "items": insight_cards,
             "generated_at": generated_at,
         }

@@ -68,6 +68,21 @@ def test_lifehacks_are_read_from_cache_only() -> None:
     assert cards[0]["title"] == "Пауза"
 
 
+def test_lifehacks_reject_technical_roleplay() -> None:
+    user = _user()
+    support_profile.cache_support_profile_items(
+        user,
+        lifehacks=[
+            {"title": "IDE-пинг", "text": "Открой редактор.", "action": "Создай файл."},
+            {"title": "Debug", "text": "Напиши JS-массив.", "action": "Проверь код."},
+            {"title": "Мем", "text": "Сделай комментарий.", "action": "Вставь в проект."},
+        ],
+        insights=[],
+    )
+
+    assert support_profile._build_lifehacks(user, latest_update=None) == []
+
+
 def test_insights_ignore_event_history_when_no_cache_or_insight_memories() -> None:
     insights = support_profile._build_insights(
         user=_user(),

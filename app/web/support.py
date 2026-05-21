@@ -427,19 +427,54 @@ SUPPORT_APP_HTML = """<!doctype html>
       position: relative;
       overflow: hidden;
       background:
-        linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(238, 247, 244, .86)),
-        linear-gradient(115deg, rgba(143, 214, 200, .22), rgba(169, 200, 255, .16));
+        linear-gradient(135deg, rgba(255, 255, 255, .78), rgba(255, 255, 255, .5)),
+        var(--lifehack-gradient);
+      border-color: rgba(125, 142, 166, .16);
     }
 
     .lifehack-card::before {
       content: "";
       position: absolute;
-      inset: 0 0 auto auto;
-      width: 58%;
-      height: 92px;
-      background: linear-gradient(135deg, rgba(143, 214, 200, .32), rgba(255, 214, 166, .2));
-      clip-path: polygon(18% 0, 100% 0, 100% 74%, 74% 100%, 28% 78%, 0 32%);
+      inset: -34px -56px auto auto;
+      width: 72%;
+      height: 138px;
+      border-radius: 999px;
+      background: var(--lifehack-blob);
+      filter: blur(16px);
+      opacity: .88;
       pointer-events: none;
+    }
+
+    .lifehack-card::after {
+      content: "";
+      position: absolute;
+      inset: auto auto -70px -76px;
+      width: 220px;
+      height: 150px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .34);
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .lifehack-card[data-style="0"] {
+      --lifehack-gradient: linear-gradient(135deg, rgba(255, 126, 149, .26), rgba(255, 197, 111, .2), rgba(255, 255, 255, .62));
+      --lifehack-blob: linear-gradient(90deg, #ff5c8a, #ffb36d, #ffffff);
+    }
+
+    .lifehack-card[data-style="1"] {
+      --lifehack-gradient: linear-gradient(135deg, rgba(112, 154, 255, .26), rgba(157, 112, 255, .2), rgba(255, 255, 255, .64));
+      --lifehack-blob: linear-gradient(90deg, #6b8cff, #8e5cff, #ffffff);
+    }
+
+    .lifehack-card[data-style="2"] {
+      --lifehack-gradient: linear-gradient(135deg, rgba(76, 196, 230, .24), rgba(79, 232, 179, .2), rgba(255, 255, 255, .64));
+      --lifehack-blob: linear-gradient(90deg, #37c7e6, #3eeab5, #ffffff);
+    }
+
+    .lifehack-card[data-style="3"] {
+      --lifehack-gradient: linear-gradient(135deg, rgba(255, 220, 124, .28), rgba(255, 146, 126, .18), rgba(255, 255, 255, .64));
+      --lifehack-blob: linear-gradient(90deg, #ffe06f, #ff876f, #ffffff);
     }
 
     .lifehack-card > * {
@@ -472,33 +507,39 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-self: start;
       min-height: 36px;
       padding: 8px 12px;
-      border: 1px solid rgba(91, 184, 169, .28);
+      border: 1px solid rgba(87, 112, 136, .18);
       border-radius: 8px;
-      background: rgba(255, 255, 255, .72);
-      color: #316f66;
+      background: rgba(255, 255, 255, .76);
+      color: #2d3440;
       font-weight: 800;
       cursor: pointer;
     }
 
     .insight-card {
       min-height: 154px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, .9), var(--insight-soft));
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .9), var(--insight-soft)),
+        radial-gradient(circle at 92% 12%, var(--insight-dot), transparent 42%);
     }
 
     .insight-card[data-tone="growth"] {
-      --insight-soft: rgba(143, 214, 200, .28);
+      --insight-soft: rgba(202, 215, 255, .34);
+      --insight-dot: rgba(122, 147, 255, .28);
     }
 
     .insight-card[data-tone="attention"] {
-      --insight-soft: rgba(245, 184, 200, .28);
+      --insight-soft: rgba(220, 208, 255, .35);
+      --insight-dot: rgba(142, 119, 232, .24);
     }
 
     .insight-card[data-tone="resource"] {
-      --insight-soft: rgba(255, 214, 166, .3);
+      --insight-soft: rgba(214, 224, 255, .34);
+      --insight-dot: rgba(96, 139, 229, .22);
     }
 
     .insight-card[data-tone="calm"] {
-      --insight-soft: rgba(169, 200, 255, .26);
+      --insight-soft: rgba(229, 224, 255, .34);
+      --insight-dot: rgba(171, 151, 235, .2);
     }
 
     .data-card small {
@@ -837,8 +878,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       const title = escapeHtml(card.title || "Лайфхак");
       const text = escapeHtml(card.text || "");
       const nextStep = escapeHtml(card.next_step || "");
+      const styleIndex = index % 4;
       return `
-        <article class="data-card lifehack-card">
+        <article class="data-card lifehack-card" data-style="${styleIndex}">
           <div class="lifehack-head">
             <h3>${title}</h3>
             <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false">Посмотреть</button>
