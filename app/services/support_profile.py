@@ -1,29 +1,5 @@
 from __future__ import annotations
 
-"""
-This module contains an improved version of the original
-``app/services/support_profile.py`` from the ``suwkevich_bot`` repository.
-
-The key changes are:
-
-1. **Empty state handling**: When the user has no meaningful context (no facts,
-   topics, memories and only a single or zero messages), the functions
-   `_build_metrics` and `_build_lifehacks` now return empty lists. This
-   prevents the UI from showing random scores or generic lifehack
-   suggestions when there is nothing to base them on. The front‑end can use
-   these empty states to display messages like "Лайфхаки для вас ещё не
-   готовы" or "Метрики пока недоступны".
-
-2. **Preservation of existing logic**: Apart from the early returns in
-   `_build_metrics` and `_build_lifehacks`, the rest of the original
-   functionality is unchanged. Existing fallback lifehacks and score
-   calculations continue to work when there is sufficient context.
-
-This file can be dropped into the project to replace the original
-``support_profile.py``. It is a standalone copy and does not modify any
-imports or downstream behaviour.
-"""
-
 import logging
 from collections import Counter
 from datetime import UTC, datetime, timedelta
