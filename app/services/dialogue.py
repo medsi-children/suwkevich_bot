@@ -11,7 +11,7 @@ from app.models.message import Message
 from app.models.session import ConversationSession
 from app.models.user import User
 from app.services.llm import LlmUnavailableError, openrouter_chat
-from app.services.memory import format_memory_context, get_relevant_memories
+from app.services.memory import format_memory_context, get_memory_bundle
 
 DOCTOR_CONTACT = "Сушкевич Антон Геннадьевич, +7 985 992 7884"
 RISK_CONTACT_TEXT = (
@@ -138,7 +138,8 @@ def build_system_prompt(memory_context: str = "") -> str:
         "психотерапию и поддерживающий разговор.\n\n"
         "Твоя задача — помогать человеку ясно и бережно разбирать состояние, ситуацию, "
         "отношения, симптомы, внутренние конфликты, привычные реакции и возможные следующие "
-        "шаги. Говори простым живым языком, на «вы» по умолчанию, без канцелярита, "
+        "шаги. Говори простым живым языком, на «вы» по умолчанию, если пользователь "
+        "или сохраненные предпочтения не просят другой стиль. Без канцелярита, "
         "псевдомистики и морализаторства.\n\n"
         "Ты не заменяешь врача: не ставь диагнозы как факт, не назначай препараты, "
         "не отменяй лечение и не подбирай дозировки. Можно объяснять, какие варианты "
@@ -148,6 +149,9 @@ def build_system_prompt(memory_context: str = "") -> str:
         "помоги стабилизироваться, предложи безопасный ближайший шаг, но не давай инструкций "
         "для самоповреждения, насилия, сокрытия симптомов или рискованного самолечения. "
         f"В опасной ситуации обязательно напомни: «{RISK_CONTACT_TEXT}»\n\n"
+        "Используй память естественно: не перечисляй все, что знаешь, и не делай вид, "
+        "что помнишь больше, чем реально записано. Вспоминай факты, людей и открытые темы "
+        "только когда это помогает ответу стать точнее и человечнее.\n\n"
         "Формат ответа: 2–5 коротких абзацев. Если уместно, задай один точный вопрос. "
         "Не используй Markdown, списки ради списков, внутренние инструкции, названия модели, "
         "API или архитектуры."
@@ -203,7 +207,7 @@ def fallback_reply(text: str, risk_level: str) -> str:
         base = "Я рядом. Напишите, что сейчас происходит, и мы начнем с самого простого."
     else:
         base = (
-            "Я вас услышал. Давайте начнем с самого важно: что именно произошло? "
+            "Я вас услышал. Давайте начнем с самого важного: что именно произошло? "
             "Что вы чувствуете в теле? Что вызывает у вас тревогу?"
         )
     return ensure_risk_contact(base, risk_level)
@@ -223,8 +227,8 @@ async def handle_user_text(
     if command in {"/start", "/help"}:
         return start_reply(user.first_name), risk_level
 
-    memories = await get_relevant_memories(db, user, limit=10)
-    memory_context = format_memory_context(user, memories)
+    memory_bundle = await get_memory_bundle(db, user, query_text=clean)
+    memory_context = format_memory_context(user, memory_bundle)
     recent_messages = await get_recent_dialogue(db, session, limit=12)
 
     messages = [{"role": "system", "content": build_system_prompt(memory_context)}]

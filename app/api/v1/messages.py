@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.schemas.message import MessageCreate, MessageResponse
 from app.schemas.user import UserCreate
 from app.services.dialogue import add_message, get_active_session, handle_user_text
-from app.services.memory import store_memory_updates
+from app.services.memory import apply_memory_control, store_memory_updates
 from app.services.users import get_or_create_user
 
 router = APIRouter()
@@ -36,6 +36,22 @@ async def create_message(
         role="user",
         content=payload.text,
     )
+    control_reply = await apply_memory_control(
+        db,
+        user=user,
+        session=session,
+        source_message=user_message,
+        text=payload.text,
+    )
+    if control_reply:
+        await add_message(db, user=user, session=session, role="assistant", content=control_reply)
+        await db.commit()
+        return MessageResponse(
+            user_id=user.id,
+            session_id=session.id,
+            reply=control_reply,
+            mode="memory_control",
+        )
 
     reply, risk_level = await handle_user_text(db, user=user, session=session, text=payload.text)
     await add_message(db, user=user, session=session, role="assistant", content=reply)

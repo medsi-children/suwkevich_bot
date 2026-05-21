@@ -11,7 +11,7 @@ from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.message import MessageResponse
 from app.schemas.user import UserCreate
 from app.services.dialogue import add_message, get_active_session, handle_user_text
-from app.services.memory import store_memory_updates
+from app.services.memory import apply_memory_control, store_memory_updates
 from app.services.telegram import extract_chat_id, extract_message, extract_sender, send_message
 from app.services.users import get_or_create_user
 
@@ -66,6 +66,23 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
             "chat_type": (message.get("chat") or {}).get("type"),
         },
     )
+    control_reply = await apply_memory_control(
+        db,
+        user=user,
+        session=session,
+        source_message=user_message,
+        text=text,
+    )
+    if control_reply:
+        await add_message(db, user=user, session=session, role="assistant", content=control_reply)
+        await db.commit()
+        return MessageResponse(
+            user_id=user.id,
+            session_id=session.id,
+            reply=control_reply,
+            mode="memory_control",
+        )
+
     reply, risk_level = await handle_user_text(db, user=user, session=session, text=text)
     await add_message(db, user=user, session=session, role="assistant", content=reply)
     await store_memory_updates(

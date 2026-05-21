@@ -31,4 +31,6 @@ class User(UuidPrimaryKeyMixin, CreatedAtMixin, Base):
     sessions = relationship("ConversationSession", back_populates="user")
     messages = relationship("Message", back_populates="user")
     memories = relationship("UserMemory", back_populates="user")
-
+    important_facts = relationship("ImportantFact")
+    known_people = relationship("KnownPerson")
+    open_topics = relationship("OpenTopic")
