@@ -23,6 +23,12 @@ def _normalize_openrouter_api_key(value: str) -> str:
     return clean
 
 
+def _ascii_header_value(value: str, *, fallback: str = "") -> str:
+    clean = " ".join((value or "").strip().split())
+    encoded = clean.encode("ascii", "ignore").decode("ascii").strip()
+    return encoded or fallback
+
+
 def clean_generated_text(text: str) -> str:
     cleaned = str(text or "").replace("\r\n", "\n").replace("\r", "\n")
     cleaned = re.sub(r"[ \t]+", " ", cleaned)
@@ -43,9 +49,12 @@ async def openrouter_chat(
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": settings.public_base_url,
-        "X-Title": settings.app_name,
+        "X-Title": _ascii_header_value(settings.app_name, fallback="Sushkevich Bot"),
     }
+    referer = _ascii_header_value(settings.public_base_url)
+    if referer:
+        headers["HTTP-Referer"] = referer
+
     payload = {
         "model": settings.openrouter_model,
         "messages": messages,
@@ -61,7 +70,6 @@ async def openrouter_chat(
                 json=payload,
             )
             response.raise_for_status()
-            data = response.json()
     except httpx.HTTPStatusError as exc:
         body = exc.response.text[:1200]
         logger.warning(
@@ -76,6 +84,16 @@ async def openrouter_chat(
     except httpx.RequestError as exc:
         logger.warning("OpenRouter request failed for model %s: %s", settings.openrouter_model, exc)
         raise LlmUnavailableError(f"OpenRouter request failed: {exc}") from exc
+    except UnicodeError as exc:
+        logger.warning(
+            "OpenRouter header encoding failed for model %s: %s",
+            settings.openrouter_model,
+            exc,
+        )
+        raise LlmUnavailableError(f"OpenRouter header encoding failed: {exc}") from exc
+
+    try:
+        data = response.json()
     except ValueError as exc:
         logger.warning("OpenRouter returned invalid JSON for model %s", settings.openrouter_model)
         raise LlmUnavailableError("OpenRouter returned invalid JSON") from exc

@@ -9,6 +9,10 @@ def test_normalizes_openrouter_key_with_bearer_prefix() -> None:
     assert llm._normalize_openrouter_api_key('"sk-test"') == "sk-test"
 
 
+def test_header_title_is_ascii_safe() -> None:
+    assert llm._ascii_header_value("Сушкевич Бот", fallback="Sushkevich Bot") == "Sushkevich Bot"
+
+
 @pytest.mark.asyncio
 async def test_openrouter_chat_uses_normalized_key_and_reports_http_error(monkeypatch) -> None:
     captured_headers: dict[str, str] = {}
@@ -41,3 +45,4 @@ async def test_openrouter_chat_uses_normalized_key_and_reports_http_error(monkey
         await llm.openrouter_chat([{"role": "user", "content": "Привет"}])
 
     assert captured_headers["Authorization"] == "Bearer sk-test"
+    assert captured_headers["X-Title"] == "Sushkevich Bot"
