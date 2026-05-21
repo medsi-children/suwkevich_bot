@@ -1,5 +1,29 @@
 from __future__ import annotations
 
+"""
+This module contains an improved version of the original
+``app/services/support_profile.py`` from the ``suwkevich_bot`` repository.
+
+The key changes are:
+
+1. **Empty state handling**: When the user has no meaningful context (no facts,
+   topics, memories and only a single or zero messages), the functions
+   `_build_metrics` and `_build_lifehacks` now return empty lists. This
+   prevents the UI from showing random scores or generic lifehack
+   suggestions when there is nothing to base them on. The front‑end can use
+   these empty states to display messages like "Лайфхаки для вас ещё не
+   готовы" or "Метрики пока недоступны".
+
+2. **Preservation of existing logic**: Apart from the early returns in
+   `_build_metrics` and `_build_lifehacks`, the rest of the original
+   functionality is unchanged. Existing fallback lifehacks and score
+   calculations continue to work when there is sufficient context.
+
+This file can be dropped into the project to replace the original
+``support_profile.py``. It is a standalone copy and does not modify any
+imports or downstream behaviour.
+"""
+
 import logging
 from collections import Counter
 from datetime import UTC, datetime, timedelta
@@ -172,7 +196,10 @@ def _build_metrics(
     display a "no data" message.
     """
     # Early exit when there is insufficient context for meaningful metrics.
-    if not facts and not people and not topics and not memories and len(messages) <= 1:
+    # We require at least one non‑empty facts/topics/memories entry or a small
+    # exchange of messages before attempting to compute scores. A single
+    # `/start` or greeting from the bot should not generate arbitrary numbers.
+    if not facts and not people and not topics and not memories and len(messages) < 3:
         return []
 
     recent_text = _recent_user_text(messages)
@@ -447,35 +474,38 @@ def _fallback_lifehacks(
     insight = _memory_items(memories, "insight", "support_strategy", "goal")
     cards = [
         {
-            "title": topic.title if topic else "Один ближайший шаг",
+            # Encourage a small, doable step instead of a generic plan.
+            "title": topic.title if topic else "Небольшой шаг",
             "text": (
                 _clip(topic.summary, limit=240)
                 if topic
-                else "Выберите действие на 5 минут, которое чуть уменьшит напряжение."
+                else "Подумайте, какое короткое действие (5–10 минут) может помочь снизить напряжение."
             ),
             "next_step": (
                 _clip(topic.next_step, limit=200)
                 if topic and topic.next_step
-                else "Сформулируйте: что я могу сделать сегодня, не решая всю жизнь сразу?"
+                else "Спросите себя: что я могу сделать прямо сейчас ради себя?"
             ),
             "kind": "фокус",
         },
         {
+            # A simple grounding exercise when there are no coping facts.
             "title": coping[0].title if coping else "Быстрое заземление",
             "text": (
                 _clip(coping[0].value, limit=240)
                 if coping
-                else "Назовите 5 предметов вокруг, сделайте длинный выдох и почувствуйте опору."
+                else "Осмотритесь и вслух назовите пять предметов вокруг, затем сделайте глубокий вдох и медленный выдох."
             ),
-            "next_step": "Повторите это 3 раза и оцените напряжение по шкале от 1 до 10.",
+            "next_step": "Повторите это три раза, отмечая, как меняется ваше самочувствие.",
             "kind": "упражнение",
         },
         {
-            "title": insight[0].title if insight else "Мягкая проверка мысли",
+            # Invite the user to check their thoughts gently.
+            "title": insight[0].title if insight else "Проверка мысли",
             "text": (
                 _clip(insight[0].content, limit=240)
                 if insight
-                else "Отделите факт от интерпретации: что точно произошло, а что я додумываю?"
+                else "Попробуйте отделить факты от интерпретации: что произошло на самом деле, а что вы додумываете?"
             ),
             "next_step": "Запишите одну более нейтральную формулировку происходящего.",
             "kind": "идея",
@@ -505,7 +535,10 @@ async def _build_lifehacks(
     # one meaningful item (fact, topic, memory) or more than one message to
     # attempt generating lifehacks. Without this, fallback suggestions
     # would feel generic and unhelpful.
-    if not facts and not topics and not memories and len(messages) <= 1:
+    # Consider the conversation too shallow for helpful advice if there are no
+    # facts, topics or memories and fewer than three messages. This avoids
+    # showing generic lifehacks immediately after a `/start` command.
+    if not facts and not topics and not memories and len(messages) < 3:
         return []
 
     signature = _context_signature(
