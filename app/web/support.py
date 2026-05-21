@@ -1,3 +1,5 @@
+# ruff: noqa: E501
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
@@ -324,6 +326,13 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-content: space-between;
     }
 
+    .metric-card.empty {
+      color: #818d9a;
+      background: rgba(255, 255, 255, .68);
+      border-color: rgba(128, 143, 158, .2);
+      box-shadow: 0 14px 34px rgba(96, 120, 146, .08);
+    }
+
     .metric-top {
       display: flex;
       align-items: flex-start;
@@ -352,6 +361,13 @@ SUPPORT_APP_HTML = """<!doctype html>
         conic-gradient(var(--metric-tone) calc(var(--value) * 1%), rgba(87, 112, 136, .12) 0);
     }
 
+    .metric-card.empty .metric-value {
+      color: #8b96a3;
+      background:
+        radial-gradient(circle at center, #fff 0 58%, transparent 59%),
+        conic-gradient(#b5bfca 0%, rgba(128, 143, 158, .16) 0);
+    }
+
     .metric-card p {
       margin: 0;
       color: var(--muted);
@@ -372,6 +388,10 @@ SUPPORT_APP_HTML = """<!doctype html>
       height: 100%;
       border-radius: inherit;
       background: linear-gradient(90deg, var(--metric-soft), var(--metric-tone));
+    }
+
+    .metric-card.empty .bar span {
+      width: 0;
     }
 
     .two-column {
@@ -697,19 +717,22 @@ SUPPORT_APP_HTML = """<!doctype html>
     function renderMetrics(metrics) {
       const grid = document.getElementById("metricsGrid");
       if (!metrics || !metrics.length) {
-        grid.innerHTML = `<div class="empty-state"><strong>Метрики пока недоступны</strong><span>Чтобы сформировать карту личности, нужно немного пообщаться с ботом.</span></div>`;
+        grid.innerHTML = `<div class="empty-state"><strong>Информации о вас пока мало</strong><span>Профиль станет точнее после нескольких сообщений в боте.</span></div>`;
         return;
       }
       grid.innerHTML = metrics.map((metric) => {
-        const soft = metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff";
-        const tone = metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed";
+        const isEmpty = metric.empty || metric.value === null || metric.value === undefined;
+        const value = isEmpty ? 0 : Math.max(0, Math.min(100, Number(metric.value || 0)));
+        const soft = isEmpty ? "#eef2f6" : (metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff");
+        const tone = isEmpty ? "#aeb8c4" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed");
+        const hint = isEmpty ? (metric.hint || "Информации о вас пока мало") : metric.hint;
         return `
-          <article class="metric-card" style="--value: ${Number(metric.value || 0)}; --metric-soft: ${soft}; --metric-tone: ${tone};">
+          <article class="metric-card${isEmpty ? " empty" : ""}" style="--value: ${value}; --metric-soft: ${soft}; --metric-tone: ${tone};">
             <div class="metric-top">
               <h3 class="metric-label">${escapeHtml(metric.label)}</h3>
-              <div class="metric-value">${Number(metric.value || 0)}</div>
+              <div class="metric-value">${isEmpty ? "--" : Math.round(value)}</div>
             </div>
-            <p>${escapeHtml(metric.hint)}</p>
+            <p>${escapeHtml(hint)}</p>
             <div class="bar" aria-hidden="true"><span></span></div>
           </article>
         `;
@@ -730,13 +753,13 @@ SUPPORT_APP_HTML = """<!doctype html>
       const size = canvas.width;
       const center = size / 2;
       const radius = size * .34;
-      // If there are no metrics, clear the radar and exit early. This prevents
-      // drawing axes or shapes when there is no data.
       if (!metrics || !metrics.length) {
         ctx.clearRect(0, 0, size, size);
         return;
       }
       ctx.clearRect(0, 0, size, size);
+      const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
+      const metricValue = (metric) => Math.max(0, Math.min(100, Number(metric.value || 0)));
       ctx.lineWidth = 2;
       ctx.font = "24px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
@@ -767,15 +790,16 @@ SUPPORT_APP_HTML = """<!doctype html>
         const labelRadius = radius + 46;
         const lx = Math.max(74, Math.min(size - 74, center + Math.cos(angle) * labelRadius));
         const ly = Math.max(42, Math.min(size - 42, center + Math.sin(angle) * labelRadius));
-        ctx.fillStyle = "#5f6d7a";
+        ctx.fillStyle = hasRealMetrics ? "#5f6d7a" : "#8b96a3";
         const words = String(metric.label || "").split(" ");
         const lines = words.length > 2 ? [words.slice(0, -1).join(" "), words.at(-1)] : words;
         const startY = ly - (lines.length - 1) * 12;
         lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
       });
+      if (!hasRealMetrics) return;
       ctx.beginPath();
       metrics.forEach((metric, index) => {
-        const valueRadius = radius * Number(metric.value || 0) / 100;
+        const valueRadius = radius * metricValue(metric) / 100;
         const angle = angleFor(index);
         const x = center + Math.cos(angle) * valueRadius;
         const y = center + Math.sin(angle) * valueRadius;
@@ -793,7 +817,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       ctx.lineWidth = 4;
       ctx.stroke();
       metrics.forEach((metric, index) => {
-        const valueRadius = radius * Number(metric.value || 0) / 100;
+        const valueRadius = radius * metricValue(metric) / 100;
         const angle = angleFor(index);
         const x = center + Math.cos(angle) * valueRadius;
         const y = center + Math.sin(angle) * valueRadius;
@@ -835,7 +859,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       return {
         user: {
           first_name: params.get("first_name") || "Антон",
-          profile_summary: "В последних диалогах заметны усталость, желание ясности и осторожная попытка вернуть себе управление. Важный фокус сейчас — не давить на себя, а собрать понятный ближайший шаг и несколько опор, которые уже работают.",
+          profile_summary: "В последних диалогах заметны усталость, желание ясности и попытка вернуть себе управление. Сейчас важнее не давить на себя, а выбрать один понятный шаг и заметить опоры, которые уже работают.",
         },
         summary: {
           memory_count: 18,
@@ -864,18 +888,18 @@ SUPPORT_APP_HTML = """<!doctype html>
           { label: "21.05", count: 3, value: 72 },
         ],
         lifehack_cards: [
-          { kind: "упражнение", title: "Длинный выдох", text: "Сделать 4 спокойных выдоха длиннее вдоха и проверить опору стоп.", next_step: "Оценить напряжение до и после по шкале от 1 до 10." },
-          { kind: "идея", title: "Пять минут управления", text: "Выбрать действие, которое реально сделать за 5 минут, без обещаний на весь день.", next_step: "Спросить себя: какой шаг даст мне на 1% больше контроля?" },
-          { kind: "фокус", title: "Граница без конфликта", text: "Сформулировать одну мягкую просьбу там, где вы обычно терпите молча.", next_step: "Начать фразой: «Мне сейчас важно…»." },
+          { title: "Пауза перед ответом", text: "Если разговор задевает, не отвечать сразу. Открыть заметку и набросать фразу, которую хочется сказать без оправданий.", next_step: "Вернуться к сообщению через 10 минут." },
+          { title: "Разобрать вечер", text: "Перед сном отметить, что сегодня забрало силы и что немного помогло.", next_step: "Оставить только один пункт, к которому стоит вернуться завтра." },
+          { title: "Подготовить разговор", text: "Перед сложной темой записать цель разговора и одну границу, которую не хочется отдавать.", next_step: "Начать с конкретного факта, без длинного вступления." },
         ],
         attention_cards: [
           { kind: "на что обратить внимание", title: "Перегруз после общения", text: "После напряженных разговоров стоит заранее закладывать время на восстановление." },
           { kind: "бережная заметка", title: "Сон как маркер", text: "Если несколько ночей подряд сон резко ухудшается, это важно обсудить со специалистом." },
         ],
         insights: [
-          { date: "21.05.2026", title: "Не все нужно решать сразу", text: "Когда задача становится меньше, тревога часто перестает диктовать темп." },
-          { date: "20.05.2026", title: "Границы не равны конфликту", text: "Иногда честная просьба снижает напряжение быстрее, чем попытка выдержать молча." },
-          { date: "19.05.2026", title: "Состояние можно измерять мягко", text: "Не оценивать себя, а замечать: сон, тело, напряжение, чувство опоры." },
+          { date: "21.05.2026", title: "После паузы легче говорить точнее", text: "Когда появляется несколько минут между эмоцией и ответом, разговор меньше уходит в защиту." },
+          { date: "20.05.2026", title: "Границы не равны конфликту", text: "Честная просьба иногда снижает напряжение быстрее, чем попытка выдержать молча." },
+          { date: "19.05.2026", title: "Сон быстро показывает перегруз", text: "Если сон ломается несколько ночей подряд, это стоит вынести в отдельную тему разговора." },
         ],
       };
     }

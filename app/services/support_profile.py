@@ -16,6 +16,8 @@ from app.services.llm import extract_json_object, openrouter_chat
 
 RECENT_MESSAGE_LIMIT = 120
 LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
+LOW_CONTEXT_HINT = "Информации о вас пока мало"
+LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
 logger = logging.getLogger(__name__)
 
 DIMENSIONS = (
@@ -120,6 +122,32 @@ def _value_from_counts(base: int, *parts: int) -> int:
     return _bounded(base + sum(parts))
 
 
+def _has_enough_context(
+    *,
+    facts: list[ImportantFact],
+    topics: list[OpenTopic],
+    memories: list[UserMemory],
+    messages: list[Message],
+    people: list[KnownPerson] | None = None,
+) -> bool:
+    return bool(facts or people or topics or memories) or len(messages) >= 5
+
+
+def _placeholder_metrics() -> list[dict[str, Any]]:
+    return [
+        {
+            "key": dimension["key"],
+            "label": dimension["label"],
+            "value": None,
+            "hint": LOW_CONTEXT_HINT,
+            "tone": LOW_CONTEXT_TONE,
+            "order": index,
+            "empty": True,
+        }
+        for index, dimension in enumerate(DIMENSIONS)
+    ]
+
+
 def _latest_dt(items: list[Any]) -> datetime | None:
     moments = [
         value
@@ -163,24 +191,14 @@ def _build_metrics(
     memories: list[UserMemory],
     messages: list[Message],
 ) -> list[dict[str, Any]]:
-    """
-    Build a list of dimension metrics based on user data.
-
-    Returns an empty list when there is no meaningful context (no facts,
-    people, topics, memories and zero or one message), avoiding random
-    baseline scores. This empty state can be detected by the UI to
-    display a "no data" message.
-    """
-    # Early exit when there is insufficient context for meaningful metrics.
-    # We require at least one non‑empty facts/topics/memories entry or a small
-    # exchange of messages before attempting to compute scores. A single
-    # `/start` or greeting from the bot should not generate arbitrary numbers.
-    if not facts and not people and not topics and not memories and len(messages) < 5:
-        # With only a handful of interactions (e.g. several /start commands) and no structured
-        # information like facts, topics or memories, there is no basis for calculating
-        # personality metrics. Returning an empty list signals the UI to show a grey
-        # placeholder instead of arbitrary numbers.
-        return []
+    if not _has_enough_context(
+        facts=facts,
+        people=people,
+        topics=topics,
+        memories=memories,
+        messages=messages,
+    ):
+        return _placeholder_metrics()
 
     recent_text = _recent_user_text(messages)
     crisis_like = _contains_any(
@@ -431,12 +449,6 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
         title = _clip(item.get("title"), limit=80)
         text = _clip(item.get("text") or item.get("description"), limit=260)
         action = _clip(item.get("action") or item.get("next_step"), limit=220)
-        # Preserve the original "kind" only if it is provided. If missing,
-        # omit the "kind" field entirely so that the UI does not display a
-        # default category like "персональный лайфхак".
-        # We intentionally ignore the "kind" field from the source to avoid displaying
-        # category tags like "фокус" or "идея" in the lifehack cards. This keeps
-        # the cards simple coloured panels with only the title, text and next_step.
         if title and text:
             card: dict[str, str] = {
                 "title": title,
@@ -444,58 +456,6 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
                 "next_step": action,
             }
             cards.append(card)
-    return cards
-
-
-def _fallback_lifehacks(
-    facts: list[ImportantFact],
-    topics: list[OpenTopic],
-    memories: list[UserMemory],
-) -> list[dict[str, str]]:
-    topic = topics[0] if topics else None
-    coping = _fact_items(facts, "coping", "preference", "boundary")
-    insight = _memory_items(memories, "insight", "support_strategy", "goal")
-    cards = [
-        {
-            # Encourage a small, doable step instead of a generic plan.
-            "title": topic.title if topic else "Небольшой шаг",
-            "text": (
-                _clip(topic.summary, limit=240)
-                if topic
-                else "Подумайте, какое короткое действие (5–10 минут) может помочь снизить напряжение."
-            ),
-            "next_step": (
-                _clip(topic.next_step, limit=200)
-                if topic and topic.next_step
-                else "Спросите себя: что я могу сделать прямо сейчас ради себя?"
-            ),
-            # Do not include a category in the frontend; leaving off 'kind' hides the
-            # label. Front‑end uses card.source || card.kind || card.date; with no
-            # 'kind', the meta line will be blank.
-        },
-        {
-            # A simple grounding exercise when there are no coping facts.
-            "title": coping[0].title if coping else "Быстрое заземление",
-            "text": (
-                _clip(coping[0].value, limit=240)
-                if coping
-                else "Осмотритесь и вслух назовите пять предметов вокруг, затем сделайте глубокий вдох и медленный выдох."
-            ),
-            "next_step": "Повторите это три раза, отмечая, как меняется ваше самочувствие.",
-            # Without 'kind', the card appears as a plain coloured panel.
-        },
-        {
-            # Invite the user to check their thoughts gently.
-            "title": insight[0].title if insight else "Проверка мысли",
-            "text": (
-                _clip(insight[0].content, limit=240)
-                if insight
-                else "Попробуйте отделить факты от интерпретации: что произошло на самом деле, а что вы додумываете?"
-            ),
-            "next_step": "Запишите одну более нейтральную формулировку происходящего.",
-            # Leaving off 'kind' prevents the UI from displaying a category.
-        },
-    ]
     return cards
 
 
@@ -507,26 +467,12 @@ async def _build_lifehacks(
     memories: list[UserMemory],
     messages: list[Message],
 ) -> list[dict[str, str]]:
-    """
-    Assemble up to three lifehack cards for the mini‑app.
-
-    When there is no context (no facts, topics, memories and not enough
-    messages), an empty list is returned. Otherwise, cached or generated
-    lifehacks are used, falling back to generic suggestions when the
-    generation fails. Generated cards are cached using a signature of the
-    context to avoid unnecessary repeated calls.
-    """
-    # Early exit when user context is essentially empty. We require at least
-    # one meaningful item (fact, topic, memory) or more than one message to
-    # attempt generating lifehacks. Without this, fallback suggestions
-    # would feel generic and unhelpful.
-    # Consider the conversation too shallow for helpful advice if there are no
-    # facts, topics or memories and fewer than three messages. This avoids
-    # showing generic lifehacks immediately after a `/start` command.
-    if not facts and not topics and not memories and len(messages) < 5:
-        # Until there is some context (e.g. at least one fact/topic/memory or a longer
-        # exchange of messages), do not show lifehack suggestions. The UI will display
-        # a friendly empty state instead.
+    if not _has_enough_context(
+        facts=facts,
+        topics=topics,
+        memories=memories,
+        messages=messages,
+    ):
         return []
 
     signature = _context_signature(
@@ -543,55 +489,44 @@ async def _build_lifehacks(
         if len(cached_cards) == 3:
             return cached_cards
 
-    # Generate fallback suggestions. The number of cards is based on the amount of
-    # available context: with minimal context we show a single gentle tip, then grow
-    # to two and three suggestions as more information accrues.
-    cards = _fallback_lifehacks(facts, topics, memories)
-    # Determine how many cards to return. We measure context size by summing
-    # the numbers of facts, topics, memories and messages. Messages contribute
-    # less weight because they may include repeated '/start' commands; this
-    # heuristic is simple but effective.
-    context_size = len(facts) + len(topics) + len(memories) + len(messages) // 2
-    if context_size <= 5:
-        cards = cards[:1]
-    elif context_size <= 10:
-        cards = cards[:2]
-    else:
-        cards = cards[:3]
-    if settings.openrouter_api_key:
-        prompt = (
-            "Ты создаешь три персональных лайфхака для mini-app психологической поддержки.\n"
-            "Опирайся только на профиль и контекст пользователя. Не ставь диагнозы, не "
-            "назначай лечение, не давай рискованных медицинских инструкций. Каждый лайфхак "
-            "должен быть конкретным, мягким, выполнимым за 2-10 минут и связанным с темами "
-            "пользователя.\n\n"
-            "Верни только JSON без markdown:\n"
-            "{\n"
-            '  "lifehacks": [\n'
-            '    {"title": "коротко", "kind": "идея|упражнение|фокус", '
-            '"text": "смысл лайфхака", "action": "точный первый шаг"}\n'
-            "  ]\n"
-            "}\n\n"
-            "Контекст пользователя:\n"
-            + _lifehack_context(
-                user=user,
-                facts=facts,
-                topics=topics,
-                memories=memories,
-                messages=messages,
-            )
+    if not settings.openrouter_api_key:
+        return []
+
+    prompt = (
+        "Ты создаешь три персональных лайфхака для mini-app психологической поддержки.\n"
+        "Опирайся только на профиль и контекст пользователя. Не ставь диагнозы, не "
+        "назначай лечение, не давай рискованных медицинских инструкций. Каждый лайфхак "
+        "должен быть конкретным, живым, выполнимым за 2-10 минут и связанным с темами "
+        "пользователя. Не используй универсальные советы и шаблонные фразы.\n\n"
+        "Верни только JSON без markdown:\n"
+        "{\n"
+        '  "lifehacks": [\n'
+        '    {"title": "коротко", "text": "смысл лайфхака", "action": "точный первый шаг"}\n'
+        "  ]\n"
+        "}\n\n"
+        "Контекст пользователя:\n"
+        + _lifehack_context(
+            user=user,
+            facts=facts,
+            topics=topics,
+            memories=memories,
+            messages=messages,
         )
-        try:
-            raw = await openrouter_chat(
-                [{"role": "user", "content": prompt}],
-                temperature=0.45,
-                max_tokens=900,
-            )
-            generated_cards = _clean_lifehacks(extract_json_object(raw).get("lifehacks"))
-            if len(generated_cards) == 3:
-                cards = generated_cards
-        except Exception:
-            logger.exception("Failed to generate support lifehacks")
+    )
+    try:
+        raw = await openrouter_chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.45,
+            max_tokens=900,
+        )
+        cards = _clean_lifehacks(extract_json_object(raw).get("lifehacks"))
+    except Exception:
+        logger.exception("Failed to generate support lifehacks")
+        return []
+
+    if len(cards) != 3:
+        logger.warning("OpenRouter returned %s support lifehacks instead of 3", len(cards))
+        return []
 
     user.support_preferences = {
         **preferences,
@@ -650,15 +585,21 @@ def _empty_focus_cards() -> list[dict[str, str]]:
     return [
         {
             "title": "Начать с текущего состояния",
-            "text": "Пока данных немного. Можно написать в чат, что сейчас тяжелее всего.",
-            "next_step": "Описать состояние одной фразой: тревожно, пусто, злюсь, устал.",
+            "text": (
+                "Пока данных немного. Можно написать в чат, что сейчас происходит "
+                "и где тяжелее всего."
+            ),
+            "next_step": "Начните с одной честной фразы без подбора правильных слов.",
             "source": "стартовая подсказка",
         },
         {
-            "title": "Отделить факты от чувств",
-            "text": "Когда внутри шумно, полезно сначала назвать событие и эмоцию отдельно.",
-            "next_step": "Попробовать формулу: произошло X, я чувствую Y, мне нужно Z.",
-            "source": "бережная практика",
+            "title": "Сузить тему",
+            "text": (
+                "Если всего слишком много, выберите один эпизод, к которому хочется "
+                "вернуться первым."
+            ),
+            "next_step": "Напишите, что случилось, кто был рядом и что задело сильнее всего.",
+            "source": "стартовая подсказка",
         },
     ]
 
@@ -666,14 +607,20 @@ def _empty_focus_cards() -> list[dict[str, str]]:
 def _empty_support_cards() -> list[dict[str, str]]:
     return [
         {
-            "title": "Короткое заземление",
-            "text": "Назовите 5 предметов вокруг, сделайте длинный выдох и проверьте опору стоп.",
-            "kind": "быстрая практика",
+            "title": "Пауза перед ответом",
+            "text": (
+                "Если разговор задевает, отложите ответ на несколько минут "
+                "и вернитесь к нему спокойнее."
+            ),
+            "kind": "опора",
         },
         {
-            "title": "Один ближайший шаг",
-            "text": "Выберите действие на 5 минут, которое чуть уменьшит напряжение прямо сейчас.",
-            "kind": "микроплан",
+            "title": "Место для восстановления",
+            "text": (
+                "Отметьте, после чего сегодня стало хоть немного легче, "
+                "и сохраните это как рабочую опору."
+            ),
+            "kind": "опора",
         },
     ]
 

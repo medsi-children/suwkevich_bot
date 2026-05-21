@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import UTC, datetime
 
@@ -14,6 +15,7 @@ from app.services.llm import LlmUnavailableError, openrouter_chat
 from app.services.memory import format_memory_context, get_memory_bundle
 
 DOCTOR_CONTACT = "Сушкевич Антон Геннадьевич, +7 985 992 7884"
+logger = logging.getLogger(__name__)
 RISK_CONTACT_TEXT = (
     "Пожалуйста, свяжитесь с врачом: Сушкевич Антон Геннадьевич, +7 985 992 7884. "
     "Если есть немедленная опасность для жизни, звоните 112 или 103 прямо сейчас."
@@ -237,9 +239,16 @@ async def handle_user_text(
 
     try:
         reply = await openrouter_chat(messages, temperature=0.55, max_tokens=900)
-    except LlmUnavailableError:
+    except LlmUnavailableError as exc:
+        logger.warning(
+            "LLM unavailable for user %s, session %s: %s",
+            user.id,
+            session.id,
+            exc,
+        )
         reply = fallback_reply(clean, risk_level)
     except Exception:
+        logger.exception("Unexpected dialogue generation error for user %s", user.id)
         reply = fallback_reply(clean, risk_level)
 
     return ensure_risk_contact(reply, risk_level), risk_level

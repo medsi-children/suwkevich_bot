@@ -8,10 +8,9 @@ def test_detects_crisis_language() -> None:
 def test_adds_doctor_contact_for_crisis() -> None:
     reply = ensure_risk_contact("Я рядом. Давайте сначала снизим риск.", "crisis")
     assert DOCTOR_CONTACT in reply
-    assert "Свяжитесь с врачом" in reply
+    assert "свяжитесь с врачом" in reply.lower()
 
 
 def test_does_not_add_contact_for_regular_dialogue() -> None:
     reply = ensure_risk_contact("Похоже, вы устали.", "none")
     assert DOCTOR_CONTACT not in reply
-
