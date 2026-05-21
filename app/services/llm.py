@@ -33,7 +33,6 @@ async def openrouter_chat(
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": settings.public_base_url,
-        "X-Title": settings.app_name,
     }
     payload = {
         "model": settings.openrouter_model,
