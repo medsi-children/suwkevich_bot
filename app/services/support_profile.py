@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -8,17 +7,15 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.models.memory import ImportantFact, KnownPerson, OpenTopic, UserMemory
 from app.models.message import Message
 from app.models.user import User
-from app.services.llm import extract_json_object, openrouter_chat
 
 RECENT_MESSAGE_LIMIT = 120
 LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
+INSIGHT_CACHE_KEY = "_support_insights_cache"
 LOW_CONTEXT_HINT = "Информации о вас пока мало"
 LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
-logger = logging.getLogger(__name__)
 
 DIMENSIONS = (
     {
@@ -98,6 +95,9 @@ BODY_STATE_WORDS = (
 )
 
 AGENCY_WORDS = ("хочу", "могу", "решил", "решила", "выбира", "границ", "план", "шаг")
+BOUNDARY_WORDS = ("границ", "не хочу", "не готов", "нельзя", "мне важно", "отказ")
+SELF_COMPASSION_WORDS = ("береж", "мягч", "поддерж", "не вин", "не руга", "принять себя")
+RESOURCE_WORDS = ("сил", "энерг", "ресурс", "устал", "выгор", "сон", "отдох", "помог")
 
 
 def _clip(text: str | None, *, limit: int = 220) -> str:
@@ -148,6 +148,18 @@ def _placeholder_metrics() -> list[dict[str, Any]]:
     ]
 
 
+def _placeholder_metric(dimension: dict[str, Any], index: int) -> dict[str, Any]:
+    return {
+        "key": dimension["key"],
+        "label": dimension["label"],
+        "value": None,
+        "hint": LOW_CONTEXT_HINT,
+        "tone": LOW_CONTEXT_TONE,
+        "order": index,
+        "empty": True,
+    }
+
+
 def _latest_dt(items: list[Any]) -> datetime | None:
     moments = [
         value
@@ -166,6 +178,29 @@ def _date_label(value: datetime | None) -> str:
     if value is None:
         return "данных пока мало"
     return value.astimezone(UTC).strftime("%d.%m.%Y")
+
+
+def _parse_cached_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _cache_is_fresh(cache: Any, latest_update: datetime | None) -> bool:
+    if not isinstance(cache, dict):
+        return False
+    generated_at = _parse_cached_datetime(cache.get("generated_at"))
+    if latest_update is None:
+        return generated_at is not None
+    if generated_at is None:
+        return False
+    return generated_at >= latest_update.astimezone(UTC) - timedelta(seconds=10)
 
 
 def _fact_items(facts: list[ImportantFact], *fact_types: str) -> list[ImportantFact]:
@@ -201,73 +236,97 @@ def _build_metrics(
         return _placeholder_metrics()
 
     recent_text = _recent_user_text(messages)
+    lower_text = recent_text.lower()
     crisis_like = _contains_any(
         recent_text,
         ("суицид", "самоуб", "не хочу жить", "навредить себе", "психоз", "112", "103"),
     )
-    negative_hits = sum(1 for word in NEGATIVE_RESOURCE_WORDS if word in recent_text.lower())
+    negative_hits = sum(1 for word in NEGATIVE_RESOURCE_WORDS if word in lower_text)
+    body_mentions = sum(
+        1 for message in messages if _contains_any(message.content, BODY_STATE_WORDS)
+    )
+
+    boundary_facts = _fact_items(facts, "boundary")
+    preference_facts = _fact_items(facts, "preference")
+    coping_facts = _fact_items(facts, "coping")
+    insight_memories = _memory_items(memories, "insight")
+    goal_memories = _memory_items(memories, "goal")
+    preference_memories = _memory_items(memories, "preference")
+    support_memories = _memory_items(memories, "support_strategy")
+
+    evidence = {
+        "agency": bool(boundary_facts or preference_facts or goal_memories)
+        or _contains_any(recent_text, AGENCY_WORDS),
+        "clarity": bool(user.profile_summary or topics or insight_memories),
+        "support": bool(people or coping_facts or preference_facts or support_memories),
+        "safety": bool(user.risk_notes or crisis_like or negative_hits or coping_facts),
+        "boundaries": bool(boundary_facts or preference_memories)
+        or _contains_any(recent_text, BOUNDARY_WORDS),
+        "self_compassion": bool(support_memories or coping_facts)
+        or _contains_any(recent_text, SELF_COMPASSION_WORDS),
+        "body_contact": bool(body_mentions),
+        "resource": bool(negative_hits or coping_facts)
+        or _contains_any(recent_text, RESOURCE_WORDS),
+    }
 
     scores = {
         "agency": _value_from_counts(
             46,
-            min(18, len(_fact_items(facts, "boundary", "preference")) * 4),
-            min(14, len(_memory_items(memories, "goal", "insight")) * 3),
+            min(18, len([*boundary_facts, *preference_facts]) * 4),
+            min(14, len([*goal_memories, *insight_memories]) * 3),
             8 if _contains_any(recent_text, AGENCY_WORDS) else 0,
         ),
         "clarity": _value_from_counts(
             42,
             10 if user.profile_summary else 0,
             min(20, len(topics) * 4),
-            min(16, len(_memory_items(memories, "insight")) * 4),
+            min(16, len(insight_memories) * 4),
         ),
         "support": _value_from_counts(
             40,
             min(16, len(people) * 4),
-            min(18, len(_fact_items(facts, "coping", "preference")) * 4),
-            min(16, len(_memory_items(memories, "support_strategy")) * 5),
+            min(18, len([*coping_facts, *preference_facts]) * 4),
+            min(16, len(support_memories) * 5),
         ),
         "safety": _value_from_counts(
             66,
             -24 if user.risk_notes else 0,
             -28 if crisis_like else 0,
             -min(18, negative_hits * 3),
-            min(10, len(_fact_items(facts, "coping")) * 2),
+            min(10, len(coping_facts) * 2),
         ),
         "boundaries": _value_from_counts(
             38,
-            min(26, len(_fact_items(facts, "boundary")) * 7),
-            min(12, len(_memory_items(memories, "preference")) * 3),
+            min(26, len(boundary_facts) * 7),
+            min(12, len(preference_memories) * 3),
+            6 if _contains_any(recent_text, BOUNDARY_WORDS) else 0,
         ),
         "self_compassion": _value_from_counts(
             44,
-            min(20, len(_memory_items(memories, "support_strategy")) * 5),
-            min(12, len(_fact_items(facts, "coping")) * 3),
+            min(20, len(support_memories) * 5),
+            min(12, len(coping_facts) * 3),
+            6 if _contains_any(recent_text, SELF_COMPASSION_WORDS) else 0,
             5
             if any(not key.startswith("_") for key in (user.support_preferences or {}))
             else 0,
         ),
         "body_contact": _value_from_counts(
             40,
-            min(
-                30,
-                sum(
-                    1
-                    for message in messages
-                    if _contains_any(message.content, BODY_STATE_WORDS)
-                )
-                * 3,
-            ),
+            min(30, body_mentions * 3),
         ),
         "resource": _value_from_counts(
             60,
             -min(30, negative_hits * 4),
-            8 if _fact_items(facts, "coping") else 0,
+            8 if coping_facts else 0,
         ),
     }
 
     metrics: list[dict[str, Any]] = []
     for index, dimension in enumerate(DIMENSIONS):
         key = dimension["key"]
+        if not evidence[key]:
+            metrics.append(_placeholder_metric(dimension, index))
+            continue
         metrics.append(
             {
                 "key": key,
@@ -377,68 +436,6 @@ def _build_attention_cards(
     return cards
 
 
-def _context_signature(
-    *,
-    user: User,
-    facts: list[ImportantFact],
-    topics: list[OpenTopic],
-    memories: list[UserMemory],
-    messages: list[Message],
-) -> str:
-    latest_update = _latest_dt([*facts, *topics, *memories, *messages])
-    return "|".join(
-        [
-            _clip(user.profile_summary, limit=300),
-            _clip(user.risk_notes, limit=160),
-            str(latest_update.isoformat() if latest_update else ""),
-            str(len(facts)),
-            str(len(topics)),
-            str(len(memories)),
-            str(len(messages)),
-        ]
-    )
-
-
-def _lifehack_context(
-    *,
-    user: User,
-    facts: list[ImportantFact],
-    topics: list[OpenTopic],
-    memories: list[UserMemory],
-    messages: list[Message],
-) -> str:
-    fact_lines = [f"- {fact.title}: {fact.value}" for fact in facts[:8]]
-    topic_lines = [
-        f"- {topic.title}: {topic.summary}"
-        + (f" Следующий шаг: {topic.next_step}" if topic.next_step else "")
-        for topic in topics[:6]
-    ]
-    memory_lines = [
-        f"- {memory.memory_type}: {memory.title}. {memory.content}"
-        for memory in memories[:8]
-    ]
-    recent_lines = [
-        f"- {message.content}"
-        for message in messages
-        if message.role == "user"
-    ][-8:]
-
-    parts = [
-        f"Имя: {user.first_name or 'не указано'}",
-        f"Описание профиля: {user.profile_summary or 'пока пусто'}",
-        f"Заметки о рисках: {user.risk_notes or 'нет'}",
-    ]
-    if fact_lines:
-        parts.append("Важные факты:\n" + "\n".join(fact_lines))
-    if topic_lines:
-        parts.append("Открытые темы:\n" + "\n".join(topic_lines))
-    if memory_lines:
-        parts.append("Память:\n" + "\n".join(memory_lines))
-    if recent_lines:
-        parts.append("Последние сообщения пользователя:\n" + "\n".join(recent_lines))
-    return "\n\n".join(parts)
-
-
 def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
     if not isinstance(items, list):
         return []
@@ -446,9 +443,9 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
     for item in items[:3]:
         if not isinstance(item, dict):
             continue
-        title = _clip(item.get("title"), limit=80)
-        text = _clip(item.get("text") or item.get("description"), limit=260)
-        action = _clip(item.get("action") or item.get("next_step"), limit=220)
+        title = _clip(item.get("title"), limit=64)
+        text = _clip(item.get("text") or item.get("description"), limit=145)
+        action = _clip(item.get("action") or item.get("next_step"), limit=110)
         if title and text:
             card: dict[str, str] = {
                 "title": title,
@@ -459,104 +456,90 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
     return cards
 
 
-async def _build_lifehacks(
+def _clean_insights(items: Any) -> list[dict[str, str]]:
+    if not isinstance(items, list):
+        return []
+    allowed_tones = {"growth", "attention", "resource", "calm"}
+    insights: list[dict[str, str]] = []
+    for item in items[:5]:
+        if not isinstance(item, dict):
+            continue
+        title = _clip(item.get("title"), limit=78)
+        text = _clip(item.get("text") or item.get("description"), limit=210)
+        tone = str(item.get("tone") or "calm").strip().lower()
+        if tone not in allowed_tones:
+            tone = "calm"
+        if title and text:
+            insights.append({"title": title, "text": text, "tone": tone})
+    return insights
+
+
+def cache_support_profile_items(
+    user: User,
+    *,
+    lifehacks: Any,
+    insights: Any,
+) -> None:
+    cards = _clean_lifehacks(lifehacks)
+    insight_cards = _clean_insights(insights)
+    if not cards and not insight_cards:
+        return
+
+    preferences = user.support_preferences or {}
+    updated_preferences = {**preferences}
+    generated_at = datetime.now(UTC).isoformat()
+    if len(cards) == 3:
+        updated_preferences[LIFEHACK_CACHE_KEY] = {
+            "items": cards,
+            "generated_at": generated_at,
+        }
+    if insight_cards:
+        updated_preferences[INSIGHT_CACHE_KEY] = {
+            "items": insight_cards,
+            "generated_at": generated_at,
+        }
+    user.support_preferences = updated_preferences
+
+
+def _build_lifehacks(user: User, latest_update: datetime | None) -> list[dict[str, str]]:
+    cache = (user.support_preferences or {}).get(LIFEHACK_CACHE_KEY)
+    if not _cache_is_fresh(cache, latest_update):
+        return []
+    cached_cards = _clean_lifehacks(cache.get("items") if isinstance(cache, dict) else None)
+    return cached_cards if len(cached_cards) == 3 else []
+
+
+def _insight_tone(text: str) -> str:
+    lower = text.lower()
+    if any(word in lower for word in ("риск", "сон", "тревог", "устал", "напряж", "опас")):
+        return "attention"
+    if any(word in lower for word in ("опор", "сил", "ресурс", "помог", "легче")):
+        return "resource"
+    if any(word in lower for word in ("границ", "шаг", "выбор", "понял", "получ")):
+        return "growth"
+    return "calm"
+
+
+def _build_insights(
     *,
     user: User,
-    facts: list[ImportantFact],
-    topics: list[OpenTopic],
     memories: list[UserMemory],
-    messages: list[Message],
+    latest_update: datetime | None,
 ) -> list[dict[str, str]]:
-    if not _has_enough_context(
-        facts=facts,
-        topics=topics,
-        memories=memories,
-        messages=messages,
-    ):
-        return []
+    cache = (user.support_preferences or {}).get(INSIGHT_CACHE_KEY)
+    if _cache_is_fresh(cache, latest_update):
+        cached_insights = _clean_insights(cache.get("items") if isinstance(cache, dict) else None)
+        if cached_insights:
+            return cached_insights
 
-    signature = _context_signature(
-        user=user,
-        facts=facts,
-        topics=topics,
-        memories=memories,
-        messages=messages,
-    )
-    preferences = user.support_preferences or {}
-    cache = preferences.get(LIFEHACK_CACHE_KEY)
-    if isinstance(cache, dict) and cache.get("signature") == signature:
-        cached_cards = _clean_lifehacks(cache.get("items"))
-        if len(cached_cards) == 3:
-            return cached_cards
-
-    if not settings.openrouter_api_key:
-        return []
-
-    prompt = (
-        "Ты создаешь три персональных лайфхака для mini-app психологической поддержки.\n"
-        "Опирайся только на профиль и контекст пользователя. Не ставь диагнозы, не "
-        "назначай лечение, не давай рискованных медицинских инструкций. Каждый лайфхак "
-        "должен быть конкретным, живым, выполнимым за 2-10 минут и связанным с темами "
-        "пользователя. Не используй универсальные советы и шаблонные фразы.\n\n"
-        "Верни только JSON без markdown:\n"
-        "{\n"
-        '  "lifehacks": [\n'
-        '    {"title": "коротко", "text": "смысл лайфхака", "action": "точный первый шаг"}\n'
-        "  ]\n"
-        "}\n\n"
-        "Контекст пользователя:\n"
-        + _lifehack_context(
-            user=user,
-            facts=facts,
-            topics=topics,
-            memories=memories,
-            messages=messages,
-        )
-    )
-    try:
-        raw = await openrouter_chat(
-            [{"role": "user", "content": prompt}],
-            temperature=0.45,
-            max_tokens=900,
-        )
-        cards = _clean_lifehacks(extract_json_object(raw).get("lifehacks"))
-    except Exception:
-        logger.exception("Failed to generate support lifehacks")
-        return []
-
-    if len(cards) != 3:
-        logger.warning("OpenRouter returned %s support lifehacks instead of 3", len(cards))
-        return []
-
-    user.support_preferences = {
-        **preferences,
-        LIFEHACK_CACHE_KEY: {
-            "signature": signature,
-            "items": cards,
-            "generated_at": datetime.now(UTC).isoformat(),
-        },
-    }
-    return cards
-
-
-def _build_insights(memories: list[UserMemory], facts: list[ImportantFact]) -> list[dict[str, str]]:
     insights: list[dict[str, str]] = []
-    for memory in _memory_items(memories, "insight", "goal", "profile")[:6]:
+    for memory in _memory_items(memories, "insight")[:5]:
+        text = _clip(memory.content, limit=210)
         insights.append(
             {
-                "title": memory.title,
-                "text": _clip(memory.content, limit=260),
-                "date": _date_label(memory.updated_at or memory.created_at),
-            }
-        )
-    if len(insights) >= 6:
-        return insights
-    for fact in _fact_items(facts, "important_event", "user_note")[: 6 - len(insights)]:
-        insights.append(
-            {
-                "title": fact.title,
-                "text": _clip(fact.value, limit=260),
-                "date": _date_label(fact.updated_at or fact.created_at),
+                "title": _clip(memory.title, limit=78),
+                "text": text,
+                "tone": _insight_tone(f"{memory.title} {text}"),
             }
         )
     return insights
@@ -661,19 +644,13 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
     topics = list(topics_result.scalars().all())
     memories = list(memories_result.scalars().all())
     messages = list(reversed(messages_result.scalars().all()))
+    latest_update = _latest_dt([*facts, *people, *topics, *memories, *messages])
 
     focus_cards = _build_focus_cards(topics, memories) or _empty_focus_cards()
     support_cards = _build_support_cards(facts, memories, people) or _empty_support_cards()
-    lifehack_cards = await _build_lifehacks(
-        user=user,
-        facts=facts,
-        topics=topics,
-        memories=memories,
-        messages=messages,
-    )
+    lifehack_cards = _build_lifehacks(user, latest_update)
     attention_cards = _build_attention_cards(user=user, facts=facts, topics=topics)
-    insights = _build_insights(memories, facts)
-    latest_update = _latest_dt([*facts, *people, *topics, *memories, *messages])
+    insights = _build_insights(user=user, memories=memories, latest_update=latest_update)
 
     return {
         "user": {

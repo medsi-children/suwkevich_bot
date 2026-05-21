@@ -14,6 +14,7 @@ from app.models.message import Message
 from app.models.session import ConversationSession
 from app.models.user import User
 from app.services.llm import extract_json_object, openrouter_chat
+from app.services.support_profile import cache_support_profile_items
 
 logger = logging.getLogger(__name__)
 
@@ -666,8 +667,20 @@ async def store_memory_updates(
         '      "content": "что важно вспомнить позже",\n'
         '      "importance": 1\n'
         "    }\n"
+        "  ],\n"
+        '  "miniapp_lifehacks": [\n'
+        '    {"title": "до 5 слов", "text": "коротко, без общих советов", '
+        '"action": "один конкретный шаг"}\n'
+        "  ],\n"
+        '  "miniapp_insights": [\n'
+        '    {"title": "важное осознание", "text": "динамика пользователя, а не история", '
+        '"tone": "growth|attention|resource|calm"}\n'
         "  ]\n"
         "}\n\n"
+        "Для miniapp_lifehacks верни ровно 3 коротких персональных пункта только если "
+        "контекста достаточно; иначе пустой массив. Для miniapp_insights верни только "
+        "важные осознания, изменения паттернов или динамику состояния пользователя. "
+        "Не превращай инсайты в историю сообщений, даты, заметки о фактах или список событий.\n\n"
         f"Текущее описание пользователя: {user.profile_summary or 'пока пусто'}\n"
         f"Текущий стиль общения: {user.support_preferences or {}}\n"
         f"Текущий вывод по сессии: {session.summary or 'пока пусто'}\n\n"
@@ -701,6 +714,12 @@ async def store_memory_updates(
     support_preferences = data.get("support_preferences")
     if isinstance(support_preferences, dict):
         _merge_support_preferences(user, support_preferences)
+
+    cache_support_profile_items(
+        user,
+        lifehacks=data.get("miniapp_lifehacks"),
+        insights=data.get("miniapp_insights"),
+    )
 
     for item in (data.get("important_facts") or [])[:8]:
         if isinstance(item, dict):

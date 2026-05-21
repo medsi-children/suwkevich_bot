@@ -144,6 +144,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       margin-bottom: 14px;
     }
 
+    .hero.no-radar {
+      grid-template-columns: 1fr;
+    }
+
+    .hero.no-radar .radar-panel {
+      display: none;
+    }
+
     .hero-copy,
     .radar-panel,
     .metric-card,
@@ -415,6 +423,84 @@ SUPPORT_APP_HTML = """<!doctype html>
       justify-content: space-between;
     }
 
+    .lifehack-card {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(238, 247, 244, .86)),
+        linear-gradient(115deg, rgba(143, 214, 200, .22), rgba(169, 200, 255, .16));
+    }
+
+    .lifehack-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto auto;
+      width: 58%;
+      height: 92px;
+      background: linear-gradient(135deg, rgba(143, 214, 200, .32), rgba(255, 214, 166, .2));
+      clip-path: polygon(18% 0, 100% 0, 100% 74%, 74% 100%, 28% 78%, 0 32%);
+      pointer-events: none;
+    }
+
+    .lifehack-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .lifehack-head {
+      display: grid;
+      gap: 16px;
+    }
+
+    .lifehack-detail {
+      display: grid;
+      gap: 12px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-4px);
+      transition: max-height .28s ease, opacity .24s ease, transform .24s ease;
+    }
+
+    .lifehack-card.open .lifehack-detail {
+      max-height: 260px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-button {
+      align-self: start;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid rgba(91, 184, 169, .28);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      color: #316f66;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .insight-card {
+      min-height: 154px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, .9), var(--insight-soft));
+    }
+
+    .insight-card[data-tone="growth"] {
+      --insight-soft: rgba(143, 214, 200, .28);
+    }
+
+    .insight-card[data-tone="attention"] {
+      --insight-soft: rgba(245, 184, 200, .28);
+    }
+
+    .insight-card[data-tone="resource"] {
+      --insight-soft: rgba(255, 214, 166, .3);
+    }
+
+    .insight-card[data-tone="calm"] {
+      --insight-soft: rgba(169, 200, 255, .26);
+    }
+
     .data-card small {
       color: #4f9f91;
       font-weight: 800;
@@ -591,7 +677,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       <!-- refresh button removed -->
     </div>
 
-    <section class="hero">
+    <section class="hero" id="hero">
       <div class="hero-copy">
         <div>
           <p class="kicker">Личный профиль поддержки</p>
@@ -654,6 +740,39 @@ SUPPORT_APP_HTML = """<!doctype html>
     const demoMode = params.get("demo") === "1";
     const localTelegramId = Number(params.get("telegram_id") || 0);
     const telegramId = Number(tgUser.id || localTelegramId || 0);
+    const metricLabels = [
+      "Субъектность",
+      "Ясность",
+      "Опора",
+      "Безопасность",
+      "Границы",
+      "Самосострадание",
+      "Контакт с собой",
+      "Ресурс",
+    ];
+    function emptyMetrics() {
+      return metricLabels.map((label, order) => ({
+        label,
+        order,
+        value: null,
+        empty: true,
+        hint: "Информации о вас пока мало",
+        tone: ["#eef2f6", "#aeb8c4"],
+      }));
+    }
+    function placeholderProfile(firstName) {
+      return {
+        user: {
+          first_name: firstName || null,
+          profile_summary: "Информации о вас пока мало. Профиль станет точнее после нескольких разговоров.",
+        },
+        metrics: emptyMetrics(),
+        activity: [],
+        lifehack_cards: [],
+        insights: [],
+        disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
+      };
+    }
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value;
@@ -713,6 +832,56 @@ SUPPORT_APP_HTML = """<!doctype html>
       el.querySelectorAll("[data-prompt]").forEach((button) => {
         button.addEventListener("click", () => sendPrompt(button.dataset.prompt));
       });
+    }
+    function lifehackTemplate(card, index) {
+      const title = escapeHtml(card.title || "Лайфхак");
+      const text = escapeHtml(card.text || "");
+      const nextStep = escapeHtml(card.next_step || "");
+      return `
+        <article class="data-card lifehack-card">
+          <div class="lifehack-head">
+            <h3>${title}</h3>
+            <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false">Посмотреть</button>
+            <div class="lifehack-detail">
+              ${text ? `<p>${text}</p>` : ""}
+              ${nextStep ? `<p>${nextStep}</p>` : ""}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+    function renderLifehacks(cards) {
+      const el = document.getElementById("lifehackCards");
+      if (!el) return;
+      if (!cards || !cards.length) {
+        el.innerHTML = `<div class="empty-state"><strong>Лайфхаки для вас ещё не готовы</strong><span>Они появятся после того, как вы немного пообщаетесь с ботом.</span></div>`;
+        return;
+      }
+      el.innerHTML = cards.map((card, index) => lifehackTemplate(card, index)).join("");
+      el.querySelectorAll("[data-lifehack]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const card = button.closest(".lifehack-card");
+          const isOpen = card.classList.toggle("open");
+          button.setAttribute("aria-expanded", String(isOpen));
+          button.textContent = isOpen ? "Скрыть" : "Посмотреть";
+        });
+      });
+    }
+    function renderInsights(cards) {
+      const el = document.getElementById("insightCards");
+      if (!el) return;
+      if (!cards || !cards.length) {
+        el.innerHTML = `<div class="empty-state"><strong>Наблюдений пока нет</strong><span>Здесь появятся важные осознания и динамика из разговоров.</span></div>`;
+        return;
+      }
+      el.innerHTML = cards.map((card) => `
+        <article class="data-card insight-card" data-tone="${escapeHtml(card.tone || "calm")}">
+          <div>
+            <h3>${escapeHtml(card.title || "Наблюдение")}</h3>
+            <p>${escapeHtml(card.text || "")}</p>
+          </div>
+        </article>
+      `).join("");
     }
     function renderMetrics(metrics) {
       const grid = document.getElementById("metricsGrid");
@@ -797,30 +966,43 @@ SUPPORT_APP_HTML = """<!doctype html>
         lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
       });
       if (!hasRealMetrics) return;
-      ctx.beginPath();
-      metrics.forEach((metric, index) => {
+      const realMetrics = metrics
+        .map((metric, index) => ({ metric, index }))
+        .filter(({ metric }) => !(metric.empty || metric.value === null || metric.value === undefined));
+      if (realMetrics.length === metrics.length) {
+        ctx.beginPath();
+        realMetrics.forEach(({ metric, index }, itemIndex) => {
+          const valueRadius = radius * metricValue(metric) / 100;
+          const angle = angleFor(index);
+          const x = center + Math.cos(angle) * valueRadius;
+          const y = center + Math.sin(angle) * valueRadius;
+          if (itemIndex === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
+        fill.addColorStop(0, "rgba(143, 214, 200, .5)");
+        fill.addColorStop(.5, "rgba(169, 200, 255, .42)");
+        fill.addColorStop(1, "rgba(255, 214, 166, .42)");
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(91, 184, 169, .85)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+      realMetrics.forEach(({ metric, index }) => {
         const valueRadius = radius * metricValue(metric) / 100;
         const angle = angleFor(index);
         const x = center + Math.cos(angle) * valueRadius;
         const y = center + Math.sin(angle) * valueRadius;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.closePath();
-      const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
-      fill.addColorStop(0, "rgba(143, 214, 200, .5)");
-      fill.addColorStop(.5, "rgba(169, 200, 255, .42)");
-      fill.addColorStop(1, "rgba(255, 214, 166, .42)");
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(91, 184, 169, .85)";
-      ctx.lineWidth = 4;
-      ctx.stroke();
-      metrics.forEach((metric, index) => {
-        const valueRadius = radius * metricValue(metric) / 100;
-        const angle = angleFor(index);
-        const x = center + Math.cos(angle) * valueRadius;
-        const y = center + Math.sin(angle) * valueRadius;
+        if (realMetrics.length < metrics.length) {
+          ctx.beginPath();
+          ctx.moveTo(center, center);
+          ctx.lineTo(x, y);
+          ctx.strokeStyle = metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
+          ctx.lineWidth = 5;
+          ctx.stroke();
+        }
         ctx.beginPath();
         ctx.arc(x, y, 8, 0, Math.PI * 2);
         ctx.fillStyle = metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
@@ -832,26 +1014,17 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
     function renderProfile(data) {
       const firstName = data.user && data.user.first_name ? data.user.first_name : "вы";
+      const metrics = data.metrics || [];
+      const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
+      document.getElementById("hero").classList.toggle("no-radar", !hasRealMetrics);
       setText("hello", firstName === "вы" ? "Ваш профиль поддержки" : `${firstName}, это ваш профиль`);
       setText("profileSummary", data.user.profile_summary);
       setText("disclaimer", data.disclaimer);
-      renderMetrics(data.metrics || []);
+      renderMetrics(metrics);
       renderActivity(data.activity || []);
-      drawRadar(data.metrics || []);
-      renderCards(
-        "lifehackCards",
-        data.lifehack_cards,
-        "Лайфхаки для вас ещё не готовы",
-        "Они появятся после того, как вы немного пообщаетесь с ботом.",
-        ""
-      );
-      renderCards(
-        "insightCards",
-        data.insights,
-        "Наблюдений пока нет",
-        "Здесь будут сохраняться важные выводы из разговоров.",
-        "Вернуться"
-      );
+      drawRadar(hasRealMetrics ? metrics : []);
+      renderLifehacks(data.lifehack_cards);
+      renderInsights(data.insights);
       root.classList.remove("loading");
       statusEl.textContent = "";
     }
@@ -897,9 +1070,9 @@ SUPPORT_APP_HTML = """<!doctype html>
           { kind: "бережная заметка", title: "Сон как маркер", text: "Если несколько ночей подряд сон резко ухудшается, это важно обсудить со специалистом." },
         ],
         insights: [
-          { date: "21.05.2026", title: "После паузы легче говорить точнее", text: "Когда появляется несколько минут между эмоцией и ответом, разговор меньше уходит в защиту." },
-          { date: "20.05.2026", title: "Границы не равны конфликту", text: "Честная просьба иногда снижает напряжение быстрее, чем попытка выдержать молча." },
-          { date: "19.05.2026", title: "Сон быстро показывает перегруз", text: "Если сон ломается несколько ночей подряд, это стоит вынести в отдельную тему разговора." },
+          { tone: "growth", title: "После паузы легче говорить точнее", text: "Когда появляется несколько минут между эмоцией и ответом, разговор меньше уходит в защиту." },
+          { tone: "resource", title: "Границы не равны конфликту", text: "Честная просьба иногда снижает напряжение быстрее, чем попытка выдержать молча." },
+          { tone: "attention", title: "Сон быстро показывает перегруз", text: "Если сон ломается несколько ночей подряд, это стоит вынести в отдельную тему разговора." },
         ],
       };
     }
@@ -911,11 +1084,10 @@ SUPPORT_APP_HTML = """<!doctype html>
         return;
       }
       if (!telegramId) {
-        root.classList.remove("loading");
+        renderProfile(placeholderProfile(null));
         setText("hello", "Откройте профиль из Telegram");
         setText("profileSummary", "Так mini-app сможет безопасно понять, чей профиль поддержки показать.");
         statusEl.textContent = "Для локальной проверки можно открыть /app/support?telegram_id=123.";
-        drawRadar([]);
         return;
       }
       const payload = {
@@ -925,6 +1097,8 @@ SUPPORT_APP_HTML = """<!doctype html>
         first_name: tgUser.first_name || params.get("first_name") || null,
         language_code: tgUser.language_code || params.get("language_code") || null,
       };
+      renderProfile(placeholderProfile(payload.first_name));
+      statusEl.textContent = "Обновляю профиль…";
       try {
         const response = await fetch("/api/v1/support/me", {
           method: "POST",

@@ -29,8 +29,16 @@ def _ascii_header_value(value: str, *, fallback: str = "") -> str:
     return encoded or fallback
 
 
+def strip_markdown_artifacts(text: str) -> str:
+    cleaned = text.replace("**", "").replace("__", "").replace("`", "")
+    cleaned = re.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", cleaned)
+    cleaned = re.sub(r"(?m)^\s*[-*]\s+(?=\S)", "", cleaned)
+    return cleaned
+
+
 def clean_generated_text(text: str) -> str:
     cleaned = str(text or "").replace("\r\n", "\n").replace("\r", "\n")
+    cleaned = strip_markdown_artifacts(cleaned)
     cleaned = re.sub(r"[ \t]+", " ", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()

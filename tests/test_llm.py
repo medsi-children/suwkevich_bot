@@ -13,6 +13,13 @@ def test_header_title_is_ascii_safe() -> None:
     assert llm._ascii_header_value("Сушкевич Бот", fallback="Sushkevich Bot") == "Sushkevich Bot"
 
 
+def test_clean_generated_text_removes_markdown_artifacts() -> None:
+    text = llm.clean_generated_text("**Как использовать**\n- **Важно:** ответ без звездочек")
+
+    assert "**" not in text
+    assert text == "Как использовать\nВажно: ответ без звездочек"
+
+
 @pytest.mark.asyncio
 async def test_openrouter_chat_uses_normalized_key_and_reports_http_error(monkeypatch) -> None:
     captured_headers: dict[str, str] = {}

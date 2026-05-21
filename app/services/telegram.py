@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.services.llm import clean_generated_text
 
 logger = logging.getLogger(__name__)
 MAX_TELEGRAM_TEXT = 3900
@@ -65,7 +66,8 @@ def split_telegram_text(text: str) -> list[str]:
 
 
 async def send_message(chat_id: int, text: str) -> None:
-    for chunk in split_telegram_text(text):
+    clean_text = clean_generated_text(text)
+    for chunk in split_telegram_text(clean_text):
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "text": chunk,
