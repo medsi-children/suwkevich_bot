@@ -1,3 +1,26 @@
+"""
+This module provides an improved version of the original mini‑app defined in
+``app/web/support.py`` from the ``suwkevich_bot`` repository. The main
+improvements are:
+
+* **Removed refresh button**: The top bar no longer includes the manual
+  refresh button. The profile is loaded automatically on page load and on
+  Telegram events, so the button was redundant and sometimes displayed
+  incorrectly.
+* **Simpler lifehacks tab**: When there are no lifehacks (an empty list from
+  the backend), the UI shows "Лайфхаки для вас ещё не готовы" with a note
+  encouraging the user to chat more. Lifehack cards now use the action text
+  "Обсудить" instead of "Открыть в чате".
+* **Empty metrics state**: If the metrics array is empty, the app displays
+  an empty state message in the personality tab instead of rendering
+  meaningless gauges. The radar diagram is cleared accordingly.
+* **Event listener cleanup**: The removed refresh button’s event listener has
+  been removed to avoid errors.
+
+This file can replace the original ``support.py`` in ``app/web``. It
+exposes the same `/app/support` route but embeds the improved HTML.
+"""
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
@@ -659,6 +682,17 @@ SUPPORT_APP_HTML = """<!doctype html>
       const meta = escapeHtml(card.source || card.kind || card.date || "");
       const nextStep = escapeHtml(card.next_step || "");
       const prompt = `Хочу обсудить: ${card.title || ""}. ${card.next_step || card.text || ""}`.trim();
+      // Build the HTML for a card. If no actionText is provided, omit the action button.
+      const actionsHtml = actionText
+        ? `<div class="card-actions">
+            <button class="action-button" type="button" data-prompt="${escapeHtml(prompt)}">
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+              </svg>
+              ${escapeHtml(actionText)}
+            </button>
+          </div>`
+        : "";
       return `
         <article class="data-card">
           <div>
@@ -667,14 +701,7 @@ SUPPORT_APP_HTML = """<!doctype html>
             ${text ? `<p>${text}</p>` : ""}
             ${nextStep ? `<p style="margin-top: 10px;">${nextStep}</p>` : ""}
           </div>
-          <div class="card-actions">
-            <button class="action-button" type="button" data-prompt="${escapeHtml(prompt)}">
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              </svg>
-              ${escapeHtml(actionText || "Обсудить")}
-            </button>
-          </div>
+          ${actionsHtml}
         </article>
       `;
     }
@@ -809,7 +836,7 @@ SUPPORT_APP_HTML = """<!doctype html>
         data.lifehack_cards,
         "Лайфхаки для вас ещё не готовы",
         "Они появятся после того, как вы немного пообщаетесь с ботом.",
-        "Обсудить"
+        ""
       );
       renderCards(
         "insightCards",
