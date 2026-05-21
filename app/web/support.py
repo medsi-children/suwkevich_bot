@@ -1008,49 +1008,43 @@ SUPPORT_APP_HTML = """<!doctype html>
         lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
       });
       if (!hasRealMetrics) return;
-      const realMetrics = metrics
-        .map((metric, index) => ({ metric, index }))
-        .filter(({ metric }) => !(metric.empty || metric.value === null || metric.value === undefined));
-      if (realMetrics.length === metrics.length) {
-        ctx.beginPath();
-        realMetrics.forEach(({ metric, index }, itemIndex) => {
-          const valueRadius = radius * metricValue(metric) / 100;
-          const angle = angleFor(index);
-          const x = center + Math.cos(angle) * valueRadius;
-          const y = center + Math.sin(angle) * valueRadius;
-          if (itemIndex === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
-        fill.addColorStop(0, "rgba(143, 214, 200, .5)");
-        fill.addColorStop(.5, "rgba(169, 200, 255, .42)");
-        fill.addColorStop(1, "rgba(255, 214, 166, .42)");
-        ctx.fillStyle = fill;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(91, 184, 169, .85)";
-        ctx.lineWidth = 4;
-        ctx.stroke();
-      }
-      realMetrics.forEach(({ metric, index }) => {
-        const valueRadius = radius * metricValue(metric) / 100;
+      const neutralValue = 36;
+      const displayValue = (metric) => (
+        metric.empty || metric.value === null || metric.value === undefined
+          ? neutralValue
+          : metricValue(metric)
+      );
+      ctx.beginPath();
+      metrics.forEach((metric, index) => {
+        const valueRadius = radius * displayValue(metric) / 100;
         const angle = angleFor(index);
         const x = center + Math.cos(angle) * valueRadius;
         const y = center + Math.sin(angle) * valueRadius;
-        if (realMetrics.length < metrics.length) {
-          ctx.beginPath();
-          ctx.moveTo(center, center);
-          ctx.lineTo(x, y);
-          ctx.strokeStyle = metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
-          ctx.lineWidth = 5;
-          ctx.stroke();
-        }
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
+      fill.addColorStop(0, "rgba(143, 214, 200, .44)");
+      fill.addColorStop(.5, "rgba(169, 200, 255, .36)");
+      fill.addColorStop(1, "rgba(255, 214, 166, .34)");
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(91, 184, 169, .8)";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      metrics.forEach((metric, index) => {
+        const isEmpty = metric.empty || metric.value === null || metric.value === undefined;
+        const valueRadius = radius * displayValue(metric) / 100;
+        const angle = angleFor(index);
+        const x = center + Math.cos(angle) * valueRadius;
+        const y = center + Math.sin(angle) * valueRadius;
         ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
+        ctx.arc(x, y, isEmpty ? 6 : 8, 0, Math.PI * 2);
+        ctx.fillStyle = isEmpty ? "rgba(174, 184, 196, .72)" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9");
         ctx.fill();
         ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 3;
+        ctx.lineWidth = isEmpty ? 2 : 3;
         ctx.stroke();
       });
     }
