@@ -1,26 +1,3 @@
-"""
-This module provides an improved version of the original mini‑app defined in
-``app/web/support.py`` from the ``suwkevich_bot`` repository. The main
-improvements are:
-
-* **Removed refresh button**: The top bar no longer includes the manual
-  refresh button. The profile is loaded automatically on page load and on
-  Telegram events, so the button was redundant and sometimes displayed
-  incorrectly.
-* **Simpler lifehacks tab**: When there are no lifehacks (an empty list from
-  the backend), the UI shows "Лайфхаки для вас ещё не готовы" with a note
-  encouraging the user to chat more. Lifehack cards now use the action text
-  "Обсудить" instead of "Открыть в чате".
-* **Empty metrics state**: If the metrics array is empty, the app displays
-  an empty state message in the personality tab instead of rendering
-  meaningless gauges. The radar diagram is cleared accordingly.
-* **Event listener cleanup**: The removed refresh button’s event listener has
-  been removed to avoid errors.
-
-This file can replace the original ``support.py`` in ``app/web``. It
-exposes the same `/app/support` route but embeds the improved HTML.
-"""
-
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
