@@ -175,7 +175,11 @@ def _build_metrics(
     # We require at least one non‑empty facts/topics/memories entry or a small
     # exchange of messages before attempting to compute scores. A single
     # `/start` or greeting from the bot should not generate arbitrary numbers.
-    if not facts and not people and not topics and not memories and len(messages) < 3:
+    if not facts and not people and not topics and not memories and len(messages) < 5:
+        # With only a handful of interactions (e.g. several /start commands) and no structured
+        # information like facts, topics or memories, there is no basis for calculating
+        # personality metrics. Returning an empty list signals the UI to show a grey
+        # placeholder instead of arbitrary numbers.
         return []
 
     recent_text = _recent_user_text(messages)
@@ -427,16 +431,19 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
         title = _clip(item.get("title"), limit=80)
         text = _clip(item.get("text") or item.get("description"), limit=260)
         action = _clip(item.get("action") or item.get("next_step"), limit=220)
-        kind = _clip(item.get("kind"), limit=80) or "персональный лайфхак"
+        # Preserve the original "kind" only if it is provided. If missing,
+        # omit the "kind" field entirely so that the UI does not display a
+        # default category like "персональный лайфхак".
+        # We intentionally ignore the "kind" field from the source to avoid displaying
+        # category tags like "фокус" or "идея" in the lifehack cards. This keeps
+        # the cards simple coloured panels with only the title, text and next_step.
         if title and text:
-            cards.append(
-                {
-                    "title": title,
-                    "text": text,
-                    "next_step": action,
-                    "kind": kind,
-                }
-            )
+            card: dict[str, str] = {
+                "title": title,
+                "text": text,
+                "next_step": action,
+            }
+            cards.append(card)
     return cards
 
 
@@ -462,7 +469,9 @@ def _fallback_lifehacks(
                 if topic and topic.next_step
                 else "Спросите себя: что я могу сделать прямо сейчас ради себя?"
             ),
-            "kind": "фокус",
+            # Do not include a category in the frontend; leaving off 'kind' hides the
+            # label. Front‑end uses card.source || card.kind || card.date; with no
+            # 'kind', the meta line will be blank.
         },
         {
             # A simple grounding exercise when there are no coping facts.
@@ -473,7 +482,7 @@ def _fallback_lifehacks(
                 else "Осмотритесь и вслух назовите пять предметов вокруг, затем сделайте глубокий вдох и медленный выдох."
             ),
             "next_step": "Повторите это три раза, отмечая, как меняется ваше самочувствие.",
-            "kind": "упражнение",
+            # Without 'kind', the card appears as a plain coloured panel.
         },
         {
             # Invite the user to check their thoughts gently.
@@ -484,7 +493,7 @@ def _fallback_lifehacks(
                 else "Попробуйте отделить факты от интерпретации: что произошло на самом деле, а что вы додумываете?"
             ),
             "next_step": "Запишите одну более нейтральную формулировку происходящего.",
-            "kind": "идея",
+            # Leaving off 'kind' prevents the UI from displaying a category.
         },
     ]
     return cards
@@ -514,7 +523,10 @@ async def _build_lifehacks(
     # Consider the conversation too shallow for helpful advice if there are no
     # facts, topics or memories and fewer than three messages. This avoids
     # showing generic lifehacks immediately after a `/start` command.
-    if not facts and not topics and not memories and len(messages) < 3:
+    if not facts and not topics and not memories and len(messages) < 5:
+        # Until there is some context (e.g. at least one fact/topic/memory or a longer
+        # exchange of messages), do not show lifehack suggestions. The UI will display
+        # a friendly empty state instead.
         return []
 
     signature = _context_signature(
@@ -531,7 +543,21 @@ async def _build_lifehacks(
         if len(cached_cards) == 3:
             return cached_cards
 
+    # Generate fallback suggestions. The number of cards is based on the amount of
+    # available context: with minimal context we show a single gentle tip, then grow
+    # to two and three suggestions as more information accrues.
     cards = _fallback_lifehacks(facts, topics, memories)
+    # Determine how many cards to return. We measure context size by summing
+    # the numbers of facts, topics, memories and messages. Messages contribute
+    # less weight because they may include repeated '/start' commands; this
+    # heuristic is simple but effective.
+    context_size = len(facts) + len(topics) + len(memories) + len(messages) // 2
+    if context_size <= 5:
+        cards = cards[:1]
+    elif context_size <= 10:
+        cards = cards[:2]
+    else:
+        cards = cards[:3]
     if settings.openrouter_api_key:
         prompt = (
             "Ты создаешь три персональных лайфхака для mini-app психологической поддержки.\n"
