@@ -730,6 +730,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       const size = canvas.width;
       const center = size / 2;
       const radius = size * .34;
+      // If there are no metrics, clear the radar and exit early. This prevents
+      // drawing axes or shapes when there is no data.
+      if (!metrics || !metrics.length) {
+        ctx.clearRect(0, 0, size, size);
+        return;
+      }
       ctx.clearRect(0, 0, size, size);
       ctx.lineWidth = 2;
       ctx.font = "24px Inter, system-ui, sans-serif";
