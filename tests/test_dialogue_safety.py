@@ -3,6 +3,7 @@ from app.services.dialogue import (
     build_system_prompt,
     detect_risk_level,
     ensure_risk_contact,
+    should_use_detailed_reply,
 )
 
 
@@ -25,3 +26,8 @@ def test_system_prompt_keeps_regular_replies_short() -> None:
     prompt = build_system_prompt()
     assert "2–3 коротких абзаца" in prompt
     assert "до 120 слов" in prompt
+
+
+def test_detailed_reply_detection_for_tests_and_symptoms() -> None:
+    assert should_use_detailed_reply("Помоги разобрать результаты теста на тревогу") is True
+    assert should_use_detailed_reply("Мне тревожно и одиноко") is False

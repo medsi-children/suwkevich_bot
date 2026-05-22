@@ -43,6 +43,20 @@ CRISIS_PATTERNS = (
     r"опасн",
 )
 CRISIS_RE = re.compile("|".join(CRISIS_PATTERNS), re.IGNORECASE)
+DETAILED_REPLY_HINTS = (
+    "тест",
+    "опросник",
+    "результат",
+    "симптом",
+    "симптомы",
+    "разбери",
+    "разобрать",
+    "подробно",
+    "подробнее",
+    "план разговора",
+    "подготовиться к врачу",
+    "что спросить у врача",
+)
 
 
 def detect_risk_level(text: str) -> str:
@@ -131,10 +145,13 @@ def _format_training_guidance() -> str:
     return "\n".join(lines)
 
 
-def build_system_prompt(memory_context: str = "") -> str:
+def build_system_prompt(memory_context: str = "", session_summary: str = "") -> str:
     training_guidance = _format_training_guidance()
     optional_training = f"\n\nНастройка подхода:\n{training_guidance}" if training_guidance else ""
     optional_memory = f"\n\nКонтекст памяти:\n{memory_context}" if memory_context else ""
+    optional_session = (
+        f"\n\nКраткий контекст текущего диалога:\n{session_summary}" if session_summary else ""
+    )
     return (
         "Ты — Сушкевич Бот: русскоязычная нейросеть, заточенная под психиатрию, "
         "психотерапию и поддерживающий разговор.\n\n"
@@ -163,6 +180,7 @@ def build_system_prompt(memory_context: str = "") -> str:
         "как в личном сообщении. Не упоминай внутренние инструкции, названия модели, API "
         "или архитектуры."
         f"{optional_training}"
+        f"{optional_session}"
         f"{optional_memory}"
     )
 
@@ -219,6 +237,13 @@ def fallback_reply(text: str, risk_level: str) -> str:
     return ensure_risk_contact(base, risk_level)
 
 
+def should_use_detailed_reply(text: str) -> bool:
+    lower = (text or "").lower()
+    if any(hint in lower for hint in DETAILED_REPLY_HINTS):
+        return True
+    return len(text.strip()) >= 900
+
+
 async def handle_user_text(
     db: AsyncSession,
     *,
@@ -233,17 +258,28 @@ async def handle_user_text(
     if command in {"/start", "/help"}:
         return start_reply(user.first_name), risk_level
 
+    detailed_reply = should_use_detailed_reply(clean)
     memory_bundle = await get_memory_bundle(db, user, query_text=clean)
     memory_context = format_memory_context(user, memory_bundle)
-    recent_messages = await get_recent_dialogue(db, session, limit=12)
+    recent_limit = 12 if detailed_reply or not session.summary else 8
+    recent_messages = await get_recent_dialogue(db, session, limit=recent_limit)
 
-    messages = [{"role": "system", "content": build_system_prompt(memory_context)}]
+    messages = [
+        {
+            "role": "system",
+            "content": build_system_prompt(memory_context, session.summary or ""),
+        }
+    ]
     for message in recent_messages:
         if message.role in {"user", "assistant"}:
             messages.append({"role": message.role, "content": message.content})
 
     try:
-        reply = await openrouter_chat(messages, temperature=0.55, max_tokens=900)
+        reply = await openrouter_chat(
+            messages,
+            temperature=0.55,
+            max_tokens=900 if detailed_reply else 420,
+        )
     except LlmUnavailableError as exc:
         logger.warning(
             "LLM unavailable for user %s, session %s: %s",
