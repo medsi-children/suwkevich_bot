@@ -1610,15 +1610,6 @@ SUPPORT_APP_HTML = """<!doctype html>
         `;
     }).join("");
   }
-  function renderActivity(activity) {
-    const el = document.getElementById("activityBars");
-    el.innerHTML = (activity || []).map((day) => `
-        <div class="day" style="--height: ${Number(day.value || 0)};">
-          <i title="${Number(day.count || 0)} \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439"></i>
-          <span>${escapeHtml(day.label)}</span>
-        </div>
-      `).join("");
-  }
   function drawRadar(metrics) {
     const canvas = document.getElementById("radar");
     const ctx = canvas.getContext("2d");
@@ -1715,7 +1706,6 @@ SUPPORT_APP_HTML = """<!doctype html>
     setText("profileSummary", shortProfileDescription(data.user.profile_summary));
     setText("disclaimer", data.disclaimer);
     renderMetrics(metrics);
-    renderActivity(data.activity || []);
     drawRadar(hasRealMetrics ? metrics : []);
     renderLifehacks(data.lifehack_cards);
     renderInsights(data.insights);
