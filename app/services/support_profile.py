@@ -22,50 +22,57 @@ DIMENSIONS = (
     {
         "key": "agency",
         "label": "Субъектность",
-        "hint": "Насколько в диалогах видны выбор, границы и следующие шаги",
+        "hint": (
+            "Насколько вы защищаете свои границы и отстаиваете себя. "
+            "Низкое значение часто означает привычку уступать "
+            "и жить по чужим решениям."
+        ),
         "tones": ("#8fd6c8", "#5bb8a9"),
     },
     {
-        "key": "clarity",
-        "label": "Ясность",
-        "hint": "Сколько уже собрано понятных выводов и открытых тем",
-        "tones": ("#a9c8ff", "#6f9fed"),
-    },
-    {
-        "key": "support",
-        "label": "Опора",
-        "hint": "Люди, стратегии и привычки, которые могут поддерживать",
+        "key": "empathy",
+        "label": "Эмпатия",
+        "hint": (
+            "Насколько вы замечаете чувства других людей "
+            "и понимаете, как ваши слова и поступки на них влияют."
+        ),
         "tones": ("#ffd6a6", "#f3ad61"),
-    },
-    {
-        "key": "safety",
-        "label": "Безопасность",
-        "hint": "Ориентир осторожности по последним сообщениям и заметкам о рисках",
-        "tones": ("#f5b8c8", "#df7f9a"),
     },
     {
         "key": "boundaries",
         "label": "Границы",
-        "hint": "Насколько явно обозначены личные пределы и предпочтения",
+        "hint": (
+            "Насколько вы умеете говорить «нет», обозначать свои пределы "
+            "и не брать на себя лишнее."
+        ),
         "tones": ("#c9b7ff", "#987de8"),
     },
     {
-        "key": "self_compassion",
-        "label": "Самосострадание",
-        "hint": "Есть ли в профиле мягкие способы говорить с собой",
-        "tones": ("#b8e9aa", "#79be68"),
-    },
-    {
-        "key": "body_contact",
-        "label": "Контакт с собой",
-        "hint": "Упоминания чувств, тела, сна, усталости и состояния",
+        "key": "sensitivity",
+        "label": "Чувствительность",
+        "hint": (
+            "Насколько вы замечаете сигналы своего тела и эмоций: "
+            "усталость, напряжение, тревогу, перегруз, спокойствие."
+        ),
         "tones": ("#b7e6ff", "#67badc"),
     },
     {
-        "key": "resource",
-        "label": "Ресурс",
-        "hint": "Бережная оценка энергии по последним диалогам",
-        "tones": ("#ffe69e", "#e7bc45"),
+        "key": "clarity",
+        "label": "Ясность",
+        "hint": (
+            "Насколько вы способны честно видеть свою роль в ситуации, "
+            "признавать ошибки и отделять факты от обиды или фантазий."
+        ),
+        "tones": ("#a9c8ff", "#6f9fed"),
+    },
+    {
+        "key": "rationality",
+        "label": "Рациональность",
+        "hint": (
+            "Насколько для вас важны проверка, доказательства и факты, "
+            "а не вера на слово, магическое объяснение или чужая уверенность."
+        ),
+        "tones": ("#f5b8c8", "#df7f9a"),
     },
 )
 
@@ -97,8 +104,21 @@ BODY_STATE_WORDS = (
 
 AGENCY_WORDS = ("хочу", "могу", "решил", "решила", "выбира", "границ", "план", "шаг")
 BOUNDARY_WORDS = ("границ", "не хочу", "не готов", "нельзя", "мне важно", "отказ")
-SELF_COMPASSION_WORDS = ("береж", "мягч", "поддерж", "не вин", "не руга", "принять себя")
-RESOURCE_WORDS = ("сил", "энерг", "ресурс", "устал", "выгор", "сон", "отдох", "помог")
+EMPATHY_WORDS = ("чувств", "пережива", "обид", "поддерж", "другому", "ему", "ей", "людям")
+CLARITY_WORDS = ("ошиб", "призн", "объектив", "по факту", "ясно", "понима", "моя роль")
+RATIONALITY_WORDS = ("доказ", "факт", "провер", "реальн", "логич", "правда", "аргумент")
+MAGICAL_THINKING_WORDS = (
+    "эзотер",
+    "астрол",
+    "таро",
+    "энергии",
+    "знаки вселенной",
+    "сглаз",
+    "порча",
+    "ретроград",
+    "чакр",
+    "магич",
+)
 LIFEHACK_FORBIDDEN_WORDS = (
     "ide",
     "debug",
@@ -306,36 +326,30 @@ def _build_metrics(
 
     recent_text = _recent_user_text(messages)
     lower_text = recent_text.lower()
-    crisis_like = _contains_any(
-        recent_text,
-        ("суицид", "самоуб", "не хочу жить", "навредить себе", "психоз", "112", "103"),
-    )
     negative_hits = sum(1 for word in NEGATIVE_RESOURCE_WORDS if word in lower_text)
     body_mentions = sum(
         1 for message in messages if _contains_any(message.content, BODY_STATE_WORDS)
     )
+    empathy_hits = sum(1 for word in EMPATHY_WORDS if word in lower_text)
+    clarity_hits = sum(1 for word in CLARITY_WORDS if word in lower_text)
+    rationality_hits = sum(1 for word in RATIONALITY_WORDS if word in lower_text)
+    magical_hits = sum(1 for word in MAGICAL_THINKING_WORDS if word in lower_text)
 
     boundary_facts = _fact_items(facts, "boundary")
     preference_facts = _fact_items(facts, "preference")
-    coping_facts = _fact_items(facts, "coping")
     insight_memories = _memory_items(memories, "insight")
     goal_memories = _memory_items(memories, "goal")
     preference_memories = _memory_items(memories, "preference")
-    support_memories = _memory_items(memories, "support_strategy")
 
     evidence = {
         "agency": bool(boundary_facts or preference_facts or goal_memories)
         or _contains_any(recent_text, AGENCY_WORDS),
-        "clarity": bool(user.profile_summary or topics or insight_memories),
-        "support": bool(people or coping_facts or preference_facts or support_memories),
-        "safety": bool(user.risk_notes or crisis_like or negative_hits or coping_facts),
+        "empathy": bool(people or insight_memories or empathy_hits),
         "boundaries": bool(boundary_facts or preference_memories)
         or _contains_any(recent_text, BOUNDARY_WORDS),
-        "self_compassion": bool(support_memories or coping_facts)
-        or _contains_any(recent_text, SELF_COMPASSION_WORDS),
-        "body_contact": bool(body_mentions),
-        "resource": bool(negative_hits or coping_facts)
-        or _contains_any(recent_text, RESOURCE_WORDS),
+        "sensitivity": bool(body_mentions),
+        "clarity": bool(user.profile_summary or topics or insight_memories or clarity_hits),
+        "rationality": bool(rationality_hits or magical_hits),
     }
 
     scores = {
@@ -345,24 +359,11 @@ def _build_metrics(
             min(14, len([*goal_memories, *insight_memories]) * 3),
             8 if _contains_any(recent_text, AGENCY_WORDS) else 0,
         ),
-        "clarity": _value_from_counts(
+        "empathy": _value_from_counts(
             42,
-            10 if user.profile_summary else 0,
-            min(20, len(topics) * 4),
+            min(18, len(people) * 4),
             min(16, len(insight_memories) * 4),
-        ),
-        "support": _value_from_counts(
-            40,
-            min(16, len(people) * 4),
-            min(18, len([*coping_facts, *preference_facts]) * 4),
-            min(16, len(support_memories) * 5),
-        ),
-        "safety": _value_from_counts(
-            66,
-            -24 if user.risk_notes else 0,
-            -28 if crisis_like else 0,
-            -min(18, negative_hits * 3),
-            min(10, len(coping_facts) * 2),
+            min(12, empathy_hits * 3),
         ),
         "boundaries": _value_from_counts(
             38,
@@ -370,23 +371,22 @@ def _build_metrics(
             min(12, len(preference_memories) * 3),
             6 if _contains_any(recent_text, BOUNDARY_WORDS) else 0,
         ),
-        "self_compassion": _value_from_counts(
-            44,
-            min(20, len(support_memories) * 5),
-            min(12, len(coping_facts) * 3),
-            6 if _contains_any(recent_text, SELF_COMPASSION_WORDS) else 0,
-            5
-            if any(not key.startswith("_") for key in (user.support_preferences or {}))
-            else 0,
-        ),
-        "body_contact": _value_from_counts(
+        "sensitivity": _value_from_counts(
             40,
             min(30, body_mentions * 3),
+            -min(10, negative_hits * 2),
         ),
-        "resource": _value_from_counts(
-            60,
-            -min(30, negative_hits * 4),
-            8 if coping_facts else 0,
+        "clarity": _value_from_counts(
+            42,
+            10 if user.profile_summary else 0,
+            min(20, len(topics) * 4),
+            min(16, len(insight_memories) * 4),
+            min(10, clarity_hits * 2),
+        ),
+        "rationality": _value_from_counts(
+            54,
+            min(18, rationality_hits * 4),
+            -min(24, magical_hits * 6),
         ),
     }
 

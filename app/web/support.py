@@ -928,13 +928,11 @@ SUPPORT_APP_HTML = """<!doctype html>
     const telegramId = Number(tgUser.id || localTelegramId || 0);
     const metricLabels = [
       "Субъектность",
-      "Ясность",
-      "Опора",
-      "Безопасность",
+      "Эмпатия",
       "Границы",
-      "Самосострадание",
-      "Контакт с собой",
-      "Ресурс",
+      "Чувствительность",
+      "Ясность",
+      "Рациональность",
     ];
     function emptyMetrics() {
       return metricLabels.map((label, order) => ({
@@ -962,6 +960,13 @@ SUPPORT_APP_HTML = """<!doctype html>
     function setText(id, value) {
       const el = document.getElementById(id);
       if (el) el.textContent = value;
+    }
+    function shortProfileDescription(text) {
+      const clean = String(text || "").replace(/\s+/g, " ").trim();
+      if (!clean) return "Здесь появится короткое описание вас на основе ваших разговоров с ботом.";
+      const firstSentence = clean.match(/.+?[.!?](\s|$)/);
+      const short = firstSentence ? firstSentence[0].trim() : clean;
+      return short.length > 170 ? `${short.slice(0, 167).trimEnd()}...` : short;
     }
     function sendPrompt(text) {
       const payload = JSON.stringify({ type: "support_prompt", text });
@@ -1079,33 +1084,29 @@ SUPPORT_APP_HTML = """<!doctype html>
       }
       const insightThemes = {
         agency: { label: "Субъектность", soft: "#8fd6c8", tone: "#5bb8a9" },
-        clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
-        support: { label: "Опора", soft: "#ffd6a6", tone: "#f3ad61" },
-        safety: { label: "Безопасность", soft: "#f5b8c8", tone: "#df7f9a" },
+        empathy: { label: "Эмпатия", soft: "#ffd6a6", tone: "#f3ad61" },
         boundaries: { label: "Границы", soft: "#c9b7ff", tone: "#987de8" },
-        self_compassion: { label: "Самосострадание", soft: "#b8e9aa", tone: "#79be68" },
-        body_contact: { label: "Контакт с собой", soft: "#b7e6ff", tone: "#67badc" },
-        resource: { label: "Ресурс", soft: "#ffe69e", tone: "#e7bc45" },
+        sensitivity: { label: "Чувствительность", soft: "#b7e6ff", tone: "#67badc" },
+        clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
+        rationality: { label: "Рациональность", soft: "#f5b8c8", tone: "#df7f9a" },
       };
       const inferInsightTheme = (card) => {
         const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
         const checks = [
-          ["body_contact", ["сон", "тело", "дых", "напряж", "состояни", "чувств"]],
-          ["resource", ["сил", "энерг", "ресурс", "отдых", "перегруз", "устал"]],
+          ["sensitivity", ["сон", "тело", "дых", "напряж", "состояни", "тревог", "устал", "чувств"]],
+          ["empathy", ["других", "другому", "ему", "ей", "людям", "обид", "поддерж", "чувства других"]],
           ["boundaries", ["границ", "просьб", "отказ", "не обяз", "сказать нет"]],
-          ["self_compassion", ["береж", "мягч", "не руга", "к себе", "самосост"]],
-          ["support", ["опор", "поддерж", "рядом", "человек", "разговор"]],
-          ["safety", ["риск", "опас", "осторож", "криз", "ломается"]],
           ["agency", ["шаг", "выбор", "решил", "действ", "ответ", "сказать"]],
-          ["clarity", ["ясн", "понят", "видно", "заметили", "осозн", "сформулир"]],
+          ["clarity", ["ясн", "понят", "видно", "заметили", "осозн", "сформулир", "ошиб", "моя роль"]],
+          ["rationality", ["факт", "доказ", "реальн", "провер", "логич", "правда", "без доказ"]],
         ];
         for (const [key, words] of checks) {
           if (words.some((word) => text.includes(word))) return key;
         }
         const fallback = {
           growth: "agency",
-          attention: "safety",
-          resource: "resource",
+          attention: "sensitivity",
+          resource: "empathy",
           calm: "clarity",
         };
         return fallback[card.tone || "calm"] || "clarity";
@@ -1252,8 +1253,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       const metrics = data.metrics || [];
       const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
       document.getElementById("hero").classList.toggle("no-radar", !hasRealMetrics);
-      setText("hello", firstName === "вы" ? "Ваш профиль поддержки" : `${firstName}, это ваш профиль`);
-      setText("profileSummary", data.user.profile_summary);
+      setText("hello", firstName === "вы" ? "Профиль" : firstName);
+      setText("profileSummary", shortProfileDescription(data.user.profile_summary));
       setText("disclaimer", data.disclaimer);
       renderMetrics(metrics);
       renderActivity(data.activity || []);
@@ -1277,14 +1278,12 @@ SUPPORT_APP_HTML = """<!doctype html>
         },
         disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
         metrics: [
-          { label: "Субъектность", value: 68, hint: "Видны выбор, границы и следующие шаги", tone: ["#8fd6c8", "#5bb8a9"] },
-          { label: "Ясность", value: 61, hint: "Есть несколько сформулированных выводов", tone: ["#a9c8ff", "#6f9fed"] },
-          { label: "Опора", value: 73, hint: "Собраны стратегии и люди рядом", tone: ["#ffd6a6", "#f3ad61"] },
-          { label: "Безопасность", value: 57, hint: "Нужна бережная осторожность без драматизации", tone: ["#f5b8c8", "#df7f9a"] },
-          { label: "Границы", value: 52, hint: "Границы уже появляются, но требуют внимания", tone: ["#c9b7ff", "#987de8"] },
-          { label: "Самосострадание", value: 64, hint: "Есть мягкие способы говорить с собой", tone: ["#b8e9aa", "#79be68"] },
-          { label: "Контакт с собой", value: 70, hint: "Состояние и тело хорошо замечаются", tone: ["#b7e6ff", "#67badc"] },
-          { label: "Ресурс", value: 49, hint: "Энергия просит экономного режима", tone: ["#ffe69e", "#e7bc45"] },
+          { label: "Субъектность", value: 68, hint: "Насколько вы защищаете свои границы и отстаиваете себя. Низкое значение часто означает привычку уступать и жить по чужим решениям.", tone: ["#8fd6c8", "#5bb8a9"] },
+          { label: "Эмпатия", value: 63, hint: "Насколько вы замечаете чувства других людей и понимаете, как ваши слова и поступки на них влияют.", tone: ["#ffd6a6", "#f3ad61"] },
+          { label: "Границы", value: 52, hint: "Насколько вы умеете говорить «нет», обозначать свои пределы и не брать на себя лишнее.", tone: ["#c9b7ff", "#987de8"] },
+          { label: "Чувствительность", value: 70, hint: "Насколько вы замечаете сигналы своего тела и эмоций: усталость, напряжение, тревогу, перегруз, спокойствие.", tone: ["#b7e6ff", "#67badc"] },
+          { label: "Ясность", value: 61, hint: "Насколько вы способны честно видеть свою роль в ситуации, признавать ошибки и отделять факты от обиды или фантазий.", tone: ["#a9c8ff", "#6f9fed"] },
+          { label: "Рациональность", value: 56, hint: "Насколько для вас важны проверка, доказательства и факты, а не вера на слово, магическое объяснение или чужая уверенность.", tone: ["#f5b8c8", "#df7f9a"] },
         ],
         activity: [
           { label: "15.05", count: 1, value: 28 },

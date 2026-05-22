@@ -40,8 +40,8 @@ def test_metrics_fill_only_dimensions_with_evidence() -> None:
     by_key = {metric["key"]: metric for metric in metrics}
 
     assert isinstance(by_key["agency"]["value"], int)
-    assert by_key["body_contact"]["value"] is None
-    assert by_key["body_contact"]["empty"] is True
+    assert by_key["sensitivity"]["value"] is None
+    assert by_key["sensitivity"]["empty"] is True
 
 
 def test_lifehacks_are_empty_when_context_is_too_small() -> None:
