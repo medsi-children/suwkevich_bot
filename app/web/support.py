@@ -93,6 +93,16 @@ SUPPORT_APP_HTML = """<!doctype html>
       letter-spacing: .08em;
       text-transform: uppercase;
       font-weight: 750;
+      flex-wrap: wrap;
+    }
+
+    .brand-name {
+      color: #687586;
+    }
+
+    .brand-note {
+      color: #4f9f91;
+      font-weight: 780;
     }
 
     .brand-mark {
@@ -178,15 +188,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       flex-direction: column;
       justify-content: flex-start;
       gap: 18px;
-    }
-
-    .kicker {
-      margin: 0 0 10px;
-      color: #4f9f91;
-      font-size: 13px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      font-weight: 800;
     }
 
     h1 {
@@ -346,16 +347,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 16px;
     }
 
-    .section-kicker {
-      margin: 0 0 8px;
-      color: #6a95c6;
-      font-size: 11px;
-      line-height: 1.2;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      font-weight: 800;
-    }
-
     .section-title {
       margin: 0;
       font-size: clamp(20px, 2vw, 24px);
@@ -433,21 +424,15 @@ SUPPORT_APP_HTML = """<!doctype html>
     .metric-card p {
       margin: 0;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .metric-hint {
       font-size: 12px;
       line-height: 1.42;
-      color: #6c7a88;
     }
 
     .metric-detail {
-      color: #435263;
+      color: #566577;
       font-size: 14px;
-      line-height: 1.48;
-      font-weight: 650;
+      line-height: 1.56;
+      font-weight: 430;
     }
 
     .bar {
@@ -545,12 +530,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       padding: 0 16px;
       border-radius: 999px;
       border: 1px solid rgba(111, 159, 237, .26);
-      background: linear-gradient(135deg, rgba(143, 214, 200, .94), rgba(169, 200, 255, .94));
-      color: var(--text);
+      background: linear-gradient(135deg, #78d6c9 0%, #7abff5 36%, #9e90f1 68%, #78d6c9 100%);
+      background-size: 220% 220%;
+      color: #fff;
       font: inherit;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 10px 28px rgba(111, 159, 237, .18);
+      animation: composerGlow 7.5s ease-in-out infinite;
     }
 
     .composer-status {
@@ -702,15 +689,22 @@ SUPPORT_APP_HTML = """<!doctype html>
       width: 26px;
       height: 26px;
       border-radius: 999px;
-      border: 2px solid transparent;
+      border: 0;
+      padding: 0;
+      appearance: none;
+      overflow: hidden;
       cursor: pointer;
       box-shadow: 0 8px 22px rgba(96, 120, 146, .16);
-      transition: transform .18s ease, border-color .18s ease;
+      transition: transform .18s ease, box-shadow .18s ease;
+      background-clip: padding-box;
     }
 
     .swatch.active {
-      border-color: rgba(32, 40, 51, .36);
       transform: scale(1.06);
+      box-shadow:
+        0 0 0 2px rgba(255, 255, 255, .92),
+        0 0 0 4px rgba(32, 40, 51, .22),
+        0 8px 22px rgba(96, 120, 146, .16);
     }
 
     .dialog-actions {
@@ -1160,6 +1154,17 @@ SUPPORT_APP_HTML = """<!doctype html>
       border-radius: var(--surface-radius);
     }
 
+    .inline-empty {
+      padding: 2px 2px 0;
+      color: #738092;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .inline-empty strong {
+      font-weight: 500;
+    }
+
     .empty-state strong {
       color: var(--text);
       font-size: 18px;
@@ -1197,6 +1202,18 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     @keyframes shimmer {
       to { transform: translateX(100%); }
+    }
+
+    @keyframes composerGlow {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     @media (max-width: 900px) {
@@ -1240,14 +1257,13 @@ SUPPORT_APP_HTML = """<!doctype html>
 <body>
   <main class="app loading">
     <div class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Сушкевич Бот</span></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">Сушкевич Бот</span><span class="brand-note">Личный профиль поддержки</span></div>
       <!-- refresh button removed -->
     </div>
 
     <section class="hero" id="hero">
       <div class="hero-copy">
         <div>
-          <p class="kicker">Личный профиль поддержки</p>
           <h1 id="hello">Собираю ваш профиль</h1>
           <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
         </div>
@@ -1271,14 +1287,13 @@ SUPPORT_APP_HTML = """<!doctype html>
       <div class="section-shell">
         <div class="section-head">
           <div>
-            <p class="section-kicker">Поддержка по запросу</p>
             <h2 class="section-title">Лайфхаки</h2>
             <p class="section-copy">Попросите короткий лайфхак под конкретную ситуацию или сохраните то, что пригодится позже.</p>
           </div>
         </div>
         <div class="composer">
           <input class="composer-input" id="lifehackPrompt" placeholder="Что вам сейчас пригодилось бы?" />
-          <button class="composer-button" id="generateLifehackButton" type="button">Создать</button>
+          <button class="composer-button" id="generateLifehackButton" type="button">Спросить</button>
         </div>
       </div>
       <div class="composer-status" id="lifehackStatus"></div>
@@ -1298,7 +1313,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       <div class="section-shell">
         <div class="section-head">
           <div>
-            <p class="section-kicker">Личное пространство</p>
             <h2 class="section-title">Дневник</h2>
             <p class="section-copy">Здесь собираются важные осознания: те, что заметил бот, и те, которые вы хотите зафиксировать сами.</p>
           </div>
@@ -1515,7 +1529,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       const el = document.getElementById("lifehackCards");
       if (!el) return;
       if (!cards || !cards.length) {
-        el.innerHTML = `<div class="empty-state"><strong>Лайфхаки для вас ещё не готовы</strong><span>Они появятся после того, как вы немного пообщаетесь с ботом.</span></div>`;
+        el.innerHTML = `<div class="inline-empty">Лайфхаки появятся после того, как вы немного пообщаетесь с ботом.</div>`;
         return;
       }
       el.innerHTML = cards.map((card, index) => lifehackTemplate(card, index)).join("");
@@ -1595,7 +1609,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       const el = document.getElementById("insightCards");
       if (!el) return;
       if (!cards || !cards.length) {
-        el.innerHTML = `<div class="empty-state"><strong>Осознаний пока нет</strong><span>Здесь будут появляться ваши важные наблюдения о себе — и автоматические, и добавленные вручную.</span></div>`;
+        el.innerHTML = `<div class="inline-empty">Осознания появятся здесь, когда вы захотите что-то зафиксировать сами или бот заметит важную мысль в диалоге.</div>`;
         return;
       }
       const inferInsightTheme = (card) => {
@@ -1673,8 +1687,7 @@ SUPPORT_APP_HTML = """<!doctype html>
         const value = isEmpty ? 0 : Math.max(0, Math.min(100, Number(metric.value || 0)));
         const soft = isEmpty ? "#eef2f6" : (metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff");
         const tone = isEmpty ? "#aeb8c4" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed");
-        const hint = isEmpty ? (metric.hint || "Информации о вас пока мало") : metric.hint;
-        const detail = isEmpty ? "" : String(metric.detail || "");
+        const detail = isEmpty ? String(metric.hint || "Информации о вас пока мало") : String(metric.detail || "");
         return `
           <article class="metric-card${isEmpty ? " empty" : ""}" style="--value: ${value}; --metric-soft: ${soft}; --metric-tone: ${tone};">
             <div class="metric-top">
@@ -1682,7 +1695,6 @@ SUPPORT_APP_HTML = """<!doctype html>
               <div class="metric-value">${isEmpty ? "--" : Math.round(value)}</div>
             </div>
             ${detail ? `<p class="metric-detail">${escapeHtml(detail)}</p>` : ""}
-            <p class="metric-hint">${escapeHtml(hint)}</p>
             <div class="bar" aria-hidden="true"><span></span></div>
           </article>
         `;
@@ -1899,12 +1911,12 @@ SUPPORT_APP_HTML = """<!doctype html>
         },
         disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
         metrics: [
-          { label: "Субъектность", value: 68, hint: "Насколько вы чувствуете, что влияете на свою жизнь, принимаете решения сами и не живете в позиции вечной уступки или подчинения чужой воле.", detail: "Сейчас вы чаще сами задаете курс: решения, выбор и чувство личного авторства в жизни у вас уже заметно выражены.", tone: ["#8fd6c8", "#5bb8a9"] },
-          { label: "Эмпатия", value: 63, hint: "Насколько вы замечаете чувства других людей и понимаете, как ваши слова и поступки на них влияют.", detail: "Эмпатия у вас рабочая: вы обычно замечаете состояние других людей, хотя в перегрузе можете упрощать их переживания.", tone: ["#ffd6a6", "#f3ad61"] },
-          { label: "Границы", value: 52, hint: "Насколько вы чувствуете свои пределы, умеете обозначать их другим, говорить «нет» и замечать момент, когда на вас начинают заходить слишком далеко.", detail: "Границы у вас в рабочем состоянии: в понятных ситуациях вы умеете говорить «нет», но в чувствительных темах это может шататься.", tone: ["#c9b7ff", "#987de8"] },
-          { label: "Чувствительность", value: 70, hint: "Насколько вы замечаете сигналы своего тела и эмоций: усталость, напряжение, тревогу, перегруз, спокойствие.", detail: "Вы хорошо чувствуете свое тело и эмоции, поэтому раньше замечаете перегруз, напряжение и смену состояния.", tone: ["#b7e6ff", "#67badc"] },
-          { label: "Ясность", value: 61, hint: "Насколько вы способны честно видеть свою роль в ситуации, признавать ошибки и отделять факты от обиды или фантазий.", detail: "Способность разбираться в происходящем уже есть, хотя в эмоционально заряженных темах вас еще может уносить в субъективность.", tone: ["#a9c8ff", "#6f9fed"] },
-          { label: "Рациональность", value: 56, hint: "Насколько для вас важны проверка, доказательства и факты, а не вера на слово, магическое объяснение или чужая уверенность.", detail: "Рациональная опора у вас в целом есть: вы обычно смотрите на факты, хотя в эмоциональных темах логика не всегда удерживает позицию.", tone: ["#f5b8c8", "#df7f9a"] },
+          { label: "Субъектность", value: 68, hint: "Информации о вас пока мало", detail: "Сейчас вы чаще сами задаете курс своей жизни и принимаете решения сами, не живете в позиции вечной уступки или подчинения чужой воле.", tone: ["#8fd6c8", "#5bb8a9"] },
+          { label: "Эмпатия", value: 63, hint: "Информации о вас пока мало", detail: "Вы обычно замечаете состояние других людей и в целом понимаете, что они чувствуют, хотя в перегрузе можете упрощать их переживания.", tone: ["#ffd6a6", "#f3ad61"] },
+          { label: "Границы", value: 52, hint: "Информации о вас пока мало", detail: "В понятных ситуациях вы умеете говорить \"нет\" и обозначать свои пределы, но в чувствительных темах границы еще могут шататься.", tone: ["#c9b7ff", "#987de8"] },
+          { label: "Чувствительность", value: 70, hint: "Информации о вас пока мало", detail: "Вы хорошо чувствуете свое тело и эмоции, поэтому обычно раньше замечаете перегруз, напряжение и смену состояния.", tone: ["#b7e6ff", "#67badc"] },
+          { label: "Ясность", value: 61, hint: "Информации о вас пока мало", detail: "Вы уже умеете разбираться в происходящем и отделять факты от эмоций, хотя в заряженных темах вас еще может уносить в субъективность.", tone: ["#a9c8ff", "#6f9fed"] },
+          { label: "Рациональность", value: 56, hint: "Информации о вас пока мало", detail: "Вы в целом опираетесь на факты, проверку и здравый смысл, хотя в эмоциональных темах логика не всегда удерживает позицию.", tone: ["#f5b8c8", "#df7f9a"] },
         ],
         activity: [
           { label: "15.05", count: 1, value: 28 },
