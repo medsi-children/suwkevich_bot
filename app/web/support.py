@@ -347,6 +347,11 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 16px;
     }
 
+    .section-head > div {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
     .section-title {
       margin: 0;
       font-size: clamp(20px, 2vw, 24px);
@@ -1288,11 +1293,11 @@ SUPPORT_APP_HTML = """<!doctype html>
         <div class="section-head">
           <div>
             <h2 class="section-title">Лайфхаки</h2>
-            <p class="section-copy">Попросите короткий лайфхак под конкретную ситуацию или сохраните то, что пригодится позже.</p>
+            <p class="section-copy">Короткий лайфхак под ваш запрос.</p>
           </div>
         </div>
         <div class="composer">
-          <input class="composer-input" id="lifehackPrompt" placeholder="Что вам сейчас пригодилось бы?" />
+          <input class="composer-input" id="lifehackPrompt" placeholder="Какой лайфхак нужен?" />
           <button class="composer-button" id="generateLifehackButton" type="button">Спросить</button>
         </div>
       </div>
@@ -1314,7 +1319,7 @@ SUPPORT_APP_HTML = """<!doctype html>
         <div class="section-head">
           <div>
             <h2 class="section-title">Дневник</h2>
-            <p class="section-copy">Здесь собираются важные осознания: те, что заметил бот, и те, которые вы хотите зафиксировать сами.</p>
+            <p class="section-copy">Ваши осознания и важные заметки о себе.</p>
           </div>
           <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
         </div>
