@@ -426,10 +426,12 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-card {
       position: relative;
       overflow: hidden;
+      min-height: 230px;
       color: #fff;
       background: var(--lifehack-gradient);
       border-color: rgba(255, 255, 255, .24);
       box-shadow: 0 18px 42px rgba(76, 92, 130, .18);
+      justify-content: center;
     }
 
     .lifehack-card::before {
@@ -479,28 +481,59 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .lifehack-head {
-      display: grid;
-      gap: 16px;
+      position: relative;
+      min-height: 198px;
+      display: block;
+      text-align: center;
+    }
+
+    .lifehack-title {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-82px);
+      margin: 0;
+      transition: top .32s ease, transform .32s ease, opacity .24s ease;
     }
 
     .lifehack-detail {
-      display: grid;
-      gap: 12px;
-      max-height: 0;
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 72px;
+      bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
       opacity: 0;
+      visibility: hidden;
       overflow: hidden;
-      transform: translateY(-4px);
-      transition: max-height .28s ease, opacity .24s ease, transform .24s ease;
+      transform: translateY(10px) scale(.98);
+      transition:
+        opacity .34s ease .08s,
+        transform .34s ease .08s,
+        visibility .34s ease;
+    }
+
+    .lifehack-card.open .lifehack-title {
+      top: 10px;
+      transform: translateY(0) scale(.94);
     }
 
     .lifehack-card.open .lifehack-detail {
-      max-height: 260px;
       opacity: 1;
-      transform: translateY(0);
+      visibility: visible;
+      transform: translateY(0) scale(1);
     }
 
     .reveal-button {
-      align-self: start;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 148px;
       min-height: 36px;
       padding: 8px 12px;
       border: 1px solid rgba(255, 255, 255, .44);
@@ -510,6 +543,22 @@ SUPPORT_APP_HTML = """<!doctype html>
       font-weight: 800;
       cursor: pointer;
       backdrop-filter: blur(10px);
+      transition:
+        opacity .24s ease,
+        transform .24s ease,
+        visibility .24s ease,
+        background .18s ease;
+    }
+
+    .reveal-button:hover {
+      background: rgba(255, 255, 255, .24);
+    }
+
+    .lifehack-card.open .reveal-button {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(.94);
     }
 
     .insight-card {
@@ -886,7 +935,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       return `
         <article class="data-card lifehack-card" data-style="${styleIndex}">
           <div class="lifehack-head">
-            <h3>${title}</h3>
+            <h3 class="lifehack-title">${title}</h3>
             <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false">Посмотреть</button>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
@@ -907,9 +956,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       el.querySelectorAll("[data-lifehack]").forEach((button) => {
         button.addEventListener("click", () => {
           const card = button.closest(".lifehack-card");
-          const isOpen = card.classList.toggle("open");
-          button.setAttribute("aria-expanded", String(isOpen));
-          button.textContent = isOpen ? "Скрыть" : "Посмотреть";
+          card.classList.add("open");
+          button.setAttribute("aria-expanded", "true");
+          button.setAttribute("tabindex", "-1");
         });
       });
     }
