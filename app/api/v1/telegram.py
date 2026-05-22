@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Annotated, Any
@@ -12,7 +13,7 @@ from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.message import MessageResponse
 from app.schemas.user import UserCreate
 from app.services.dialogue import add_message, get_active_session, handle_user_text
-from app.services.memory import apply_memory_control, store_memory_updates
+from app.services.memory import apply_memory_control, store_memory_updates_deferred
 from app.services.telegram import (
     delete_message,
     extract_chat_id,
@@ -26,7 +27,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 LOADING_MESSAGE_TEXT = (
-    "```markdown\nВаш ответ анализируется...\n\nСушкевич Бот формирует ответ.\n```"
+    "<pre>Ваш ответ анализируется...\nСушкевич Бот формирует ответ.</pre>"
 )
 
 
@@ -114,15 +115,19 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
 
     reply, risk_level = await handle_user_text(db, user=user, session=session, text=text)
     await add_message(db, user=user, session=session, role="assistant", content=reply)
-    await store_memory_updates(
-        db,
-        user=user,
-        session=session,
-        source_message=user_message,
-        user_text=text,
-        assistant_reply=reply,
-    )
+    user_id = user.id
+    session_id = session.id
+    source_message_id = user_message.id
     await db.commit()
+    asyncio.create_task(
+        store_memory_updates_deferred(
+            user_id=user_id,
+            session_id=session_id,
+            source_message_id=source_message_id,
+            user_text=text,
+            assistant_reply=reply,
+        )
+    )
     return MessageResponse(
         user_id=user.id,
         session_id=session.id,
@@ -140,7 +145,7 @@ async def process_direct_telegram_update(update: dict[str, Any]) -> None:
                 loading_responses = await send_message(
                     chat_id,
                     LOADING_MESSAGE_TEXT,
-                    parse_mode="Markdown",
+                    parse_mode="HTML",
                     clean=False,
                 )
                 loading_result = (

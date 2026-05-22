@@ -426,11 +426,12 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-card {
       position: relative;
       overflow: hidden;
-      min-height: 230px;
+      min-height: 208px;
       cursor: pointer;
       color: #fff;
       background: var(--lifehack-gradient);
       border-color: rgba(255, 255, 255, .24);
+      border-radius: 16px;
       box-shadow: 0 18px 42px rgba(76, 92, 130, .18);
       justify-content: center;
       transition: transform .24s ease, box-shadow .24s ease;
@@ -510,7 +511,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .lifehack-head {
       position: relative;
-      min-height: 198px;
+      min-height: 172px;
       display: block;
       text-align: center;
     }
@@ -520,12 +521,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      min-width: 154px;
-      min-height: 154px;
-      padding: 18px 20px;
+      width: 136px;
+      height: 136px;
+      padding: 14px;
       display: grid;
       place-items: center;
-      gap: 10px;
+      gap: 0;
       border: 1px solid rgba(255, 255, 255, .42);
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .12));
@@ -545,35 +546,35 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .lifehack-gesture svg {
-      width: 30px;
-      height: 30px;
+      width: 68px;
+      height: 68px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.9;
     }
 
-    .lifehack-gesture strong {
+    .lifehack-hint {
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 34px);
+      transform: translateX(-50%) translateY(6px);
       display: block;
-      font-size: 24px;
-      line-height: 1;
-      letter-spacing: 0;
-    }
-
-    .lifehack-gesture span {
-      display: block;
+      width: max-content;
+      max-width: 120px;
       font-size: 12px;
       line-height: 1.2;
       text-transform: uppercase;
       letter-spacing: .08em;
-      opacity: .8;
+      opacity: 0;
+      animation: lifehackHintLoop 5.4s ease-in-out infinite;
     }
 
     .lifehack-detail {
       position: absolute;
       left: 18px;
       right: 18px;
-      top: 18px;
-      bottom: 18px;
+      top: 16px;
+      bottom: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -610,14 +611,50 @@ SUPPORT_APP_HTML = """<!doctype html>
       }
     }
 
+    @keyframes lifehackHintLoop {
+      0%, 58% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(8px);
+      }
+      72%, 82% {
+        opacity: .84;
+        transform: translateX(-50%) translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px);
+      }
+    }
+
     .insight-card {
-      min-height: 154px;
+      position: relative;
+      overflow: hidden;
+      min-height: 146px;
       color: #fff;
       background:
         radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .2), transparent 42%),
         var(--insight-gradient);
       border-color: rgba(255, 255, 255, .22);
+      border-radius: 16px;
       box-shadow: 0 18px 42px rgba(76, 92, 130, .16);
+      transition: transform .24s ease, box-shadow .24s ease;
+    }
+
+    .insight-card::before {
+      content: "";
+      position: absolute;
+      inset: -28px -30px auto auto;
+      width: 132px;
+      height: 96px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .14);
+      filter: blur(16px);
+      pointer-events: none;
+    }
+
+    .insight-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 48px rgba(76, 92, 130, .2);
     }
 
     .insight-card[data-tone="growth"] {
@@ -990,10 +1027,7 @@ SUPPORT_APP_HTML = """<!doctype html>
                 <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6Z"></path>
                 <circle cx="12" cy="12" r="3.2"></circle>
               </svg>
-              <div>
-                <strong>Открыть</strong>
-                <span>нажмите на карточку</span>
-              </div>
+              <span class="lifehack-hint">нажмите на карточку</span>
             </div>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}

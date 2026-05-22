@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.db.session import AsyncSessionLocal
 from app.models.memory import ImportantFact, KnownPerson, OpenTopic, UserMemory
 from app.models.message import Message
 from app.models.session import ConversationSession
@@ -776,3 +777,35 @@ async def store_memory_updates(
 
     await consolidate_user_memory(db, user)
     await db.flush()
+
+
+async def store_memory_updates_deferred(
+    *,
+    user_id: Any,
+    session_id: Any,
+    source_message_id: Any,
+    user_text: str,
+    assistant_reply: str,
+) -> None:
+    if not settings.memory_extraction_enabled or not settings.openrouter_api_key:
+        return
+
+    async with AsyncSessionLocal() as db:
+        try:
+            user = await db.get(User, user_id)
+            session = await db.get(ConversationSession, session_id)
+            source_message = await db.get(Message, source_message_id)
+            if user is None or session is None or source_message is None:
+                return
+            await store_memory_updates(
+                db,
+                user=user,
+                session=session,
+                source_message=source_message,
+                user_text=user_text,
+                assistant_reply=assistant_reply,
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception("Failed to store memory updates in deferred task")

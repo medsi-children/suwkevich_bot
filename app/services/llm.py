@@ -10,6 +10,7 @@ import httpx
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+_OPENROUTER_CLIENT: httpx.AsyncClient | None = None
 
 
 class LlmUnavailableError(RuntimeError):
@@ -44,6 +45,13 @@ def clean_generated_text(text: str) -> str:
     return cleaned.strip()
 
 
+def _create_openrouter_client() -> httpx.AsyncClient:
+    try:
+        return httpx.AsyncClient(timeout=60, http2=True)
+    except TypeError:
+        return httpx.AsyncClient(timeout=60)
+
+
 async def openrouter_chat(
     messages: list[dict[str, str]],
     *,
@@ -71,13 +79,15 @@ async def openrouter_chat(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
+        global _OPENROUTER_CLIENT
+        if _OPENROUTER_CLIENT is None:
+            _OPENROUTER_CLIENT = _create_openrouter_client()
+        response = await _OPENROUTER_CLIENT.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+        )
+        response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         body = exc.response.text[:1200]
         logger.warning(
