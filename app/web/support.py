@@ -427,11 +427,23 @@ SUPPORT_APP_HTML = """<!doctype html>
       position: relative;
       overflow: hidden;
       min-height: 230px;
+      cursor: pointer;
       color: #fff;
       background: var(--lifehack-gradient);
       border-color: rgba(255, 255, 255, .24);
       box-shadow: 0 18px 42px rgba(76, 92, 130, .18);
       justify-content: center;
+      transition: transform .24s ease, box-shadow .24s ease;
+    }
+
+    .lifehack-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 48px rgba(76, 92, 130, .22);
+    }
+
+    .lifehack-card:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, .75);
+      outline-offset: 3px;
     }
 
     .lifehack-card::before {
@@ -480,6 +492,22 @@ SUPPORT_APP_HTML = """<!doctype html>
       z-index: 1;
     }
 
+    .lifehack-flash {
+      position: absolute;
+      inset: -12% auto -12% -45%;
+      width: 42%;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .5), rgba(255, 255, 255, 0));
+      transform: skewX(-20deg) translateX(0);
+      opacity: 0;
+      pointer-events: none;
+      filter: blur(3px);
+    }
+
+    .lifehack-card.opening .lifehack-flash {
+      opacity: 1;
+      animation: lifehackFlash .46s ease forwards;
+    }
+
     .lifehack-head {
       position: relative;
       min-height: 198px;
@@ -487,16 +515,69 @@ SUPPORT_APP_HTML = """<!doctype html>
       text-align: center;
     }
 
+    .lifehack-gesture {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 154px;
+      min-height: 154px;
+      padding: 18px 20px;
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, .42);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .12));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .24),
+        0 12px 26px rgba(40, 53, 79, .16);
+      backdrop-filter: blur(12px);
+      transition:
+        opacity .24s ease,
+        transform .24s ease,
+        visibility .24s ease,
+        background .18s ease;
+    }
+
+    .lifehack-card:hover .lifehack-gesture {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .16));
+    }
+
+    .lifehack-gesture svg {
+      width: 30px;
+      height: 30px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .lifehack-gesture strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lifehack-gesture span {
+      display: block;
+      font-size: 12px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      opacity: .8;
+    }
+
     .lifehack-detail {
       position: absolute;
-      left: 10px;
-      right: 10px;
-      top: 16px;
-      bottom: 16px;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      bottom: 18px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       opacity: 0;
       visibility: hidden;
       overflow: hidden;
@@ -513,38 +594,20 @@ SUPPORT_APP_HTML = """<!doctype html>
       transform: translateY(0) scale(1);
     }
 
-    .reveal-button {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      min-width: 220px;
-      min-height: 64px;
-      padding: 16px 28px;
-      border: 2px solid rgba(255, 255, 255, .42);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .18);
-      color: #fff;
-      font-size: 22px;
-      font-weight: 800;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-      transition:
-        opacity .24s ease,
-        transform .24s ease,
-        visibility .24s ease,
-        background .18s ease;
-    }
-
-    .reveal-button:hover {
-      background: rgba(255, 255, 255, .24);
-    }
-
-    .lifehack-card.open .reveal-button {
+    .lifehack-card.open .lifehack-gesture {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transform: translate(-50%, -50%) scale(.94);
+      transform: translate(-50%, -50%) scale(.92);
+    }
+
+    @keyframes lifehackFlash {
+      0% {
+        transform: skewX(-20deg) translateX(0);
+      }
+      100% {
+        transform: skewX(-20deg) translateX(420%);
+      }
     }
 
     .insight-card {
@@ -919,9 +982,19 @@ SUPPORT_APP_HTML = """<!doctype html>
       const nextStep = escapeHtml(card.next_step || "");
       const styleIndex = index % 4;
       return `
-        <article class="data-card lifehack-card" data-style="${styleIndex}">
+        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" tabindex="0" role="button" aria-expanded="false" aria-label="Открыть лайфхак: ${title}">
+          <div class="lifehack-flash" aria-hidden="true"></div>
           <div class="lifehack-head">
-            <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false" aria-label="Посмотреть: ${title}">Посмотреть</button>
+            <div class="lifehack-gesture" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6Z"></path>
+                <circle cx="12" cy="12" r="3.2"></circle>
+              </svg>
+              <div>
+                <strong>Открыть</strong>
+                <span>нажмите на карточку</span>
+              </div>
+            </div>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
               ${nextStep ? `<p>${nextStep}</p>` : ""}
@@ -938,12 +1011,22 @@ SUPPORT_APP_HTML = """<!doctype html>
         return;
       }
       el.innerHTML = cards.map((card, index) => lifehackTemplate(card, index)).join("");
-      el.querySelectorAll("[data-lifehack]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const card = button.closest(".lifehack-card");
+      const openLifehack = (card) => {
+        if (!card || card.classList.contains("open") || card.classList.contains("opening")) return;
+        card.classList.add("opening");
+        window.setTimeout(() => {
           card.classList.add("open");
-          button.setAttribute("aria-expanded", "true");
-          button.setAttribute("tabindex", "-1");
+          card.classList.remove("opening");
+          card.setAttribute("aria-expanded", "true");
+        }, 220);
+      };
+      el.querySelectorAll("[data-lifehack-card]").forEach((card) => {
+        card.addEventListener("click", () => openLifehack(card));
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLifehack(card);
+          }
         });
       });
     }
