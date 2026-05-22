@@ -186,10 +186,16 @@ SUPPORT_APP_HTML = """<!doctype html>
     h1 {
       margin: 0;
       max-width: 760px;
-      font-size: clamp(34px, 9vw, 68px);
-      line-height: .96;
+      font-size: clamp(28px, 6.2vw, 52px);
+      line-height: 1.02;
       letter-spacing: 0;
-      font-weight: 820;
+      font-weight: 760;
+      color: #4e978f;
+      background: linear-gradient(135deg, #4f9f91 0%, #6f9fed 52%, #8f7fe1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-wrap: balance;
     }
 
     .summary-text {
