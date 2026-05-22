@@ -1351,158 +1351,117 @@ SUPPORT_APP_HTML = """<!doctype html>
   </div>
 
   <script>
-    const root = document.querySelector(".app");
-    const statusEl = document.getElementById("status");
-    const diaryDialog = document.getElementById("diaryDialog");
-    const diaryTitleInput = document.getElementById("diaryTitle");
-    const diaryTextInput = document.getElementById("diaryText");
-    const diarySwatches = document.getElementById("diarySwatches");
-    const lifehackStatus = document.getElementById("lifehackStatus");
-    const lifehackPromptInput = document.getElementById("lifehackPrompt");
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor("#f9fbff");
-      tg.setBackgroundColor("#f9fbff");
-    }
-    const escapeHtml = (value) => String(value || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-    const params = new URLSearchParams(window.location.search);
-    const tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user || {} : {};
-    const demoMode = params.get("demo") === "1";
-    const localTelegramId = Number(params.get("telegram_id") || 0);
-    const telegramId = Number(tgUser.id || localTelegramId || 0);
-    const diaryThemes = {
-      agency: { label: "Субъектность", soft: "#8fd6c8", tone: "#5bb8a9" },
-      empathy: { label: "Эмпатия", soft: "#ffd6a6", tone: "#f3ad61" },
-      boundaries: { label: "Границы", soft: "#c9b7ff", tone: "#987de8" },
-      sensitivity: { label: "Чувствительность", soft: "#b7e6ff", tone: "#67badc" },
-      clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
-      rationality: { label: "Рациональность", soft: "#f5b8c8", tone: "#df7f9a" },
+(() => {
+  var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+  const root = document.querySelector(".app");
+  const statusEl = document.getElementById("status");
+  const diaryDialog = document.getElementById("diaryDialog");
+  const diaryTitleInput = document.getElementById("diaryTitle");
+  const diaryTextInput = document.getElementById("diaryText");
+  const diarySwatches = document.getElementById("diarySwatches");
+  const lifehackStatus = document.getElementById("lifehackStatus");
+  const lifehackPromptInput = document.getElementById("lifehackPrompt");
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor("#f9fbff");
+    tg.setBackgroundColor("#f9fbff");
+  }
+  const escapeHtml = (value) => String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  const params = new URLSearchParams(window.location.search);
+  const tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user || {} : {};
+  const demoMode = params.get("demo") === "1";
+  const localTelegramId = Number(params.get("telegram_id") || 0);
+  const telegramId = Number(tgUser.id || localTelegramId || 0);
+  const diaryThemes = {
+    agency: { label: "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C", soft: "#8fd6c8", tone: "#5bb8a9" },
+    empathy: { label: "\u042D\u043C\u043F\u0430\u0442\u0438\u044F", soft: "#ffd6a6", tone: "#f3ad61" },
+    boundaries: { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", soft: "#c9b7ff", tone: "#987de8" },
+    sensitivity: { label: "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#b7e6ff", tone: "#67badc" },
+    clarity: { label: "\u042F\u0441\u043D\u043E\u0441\u0442\u044C", soft: "#a9c8ff", tone: "#6f9fed" },
+    rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" }
+  };
+  let currentProfileData = null;
+  let currentDiaryDraft = { item_id: null, theme: "clarity" };
+  const metricLabels = [
+    "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C",
+    "\u042D\u043C\u043F\u0430\u0442\u0438\u044F",
+    "\u0413\u0440\u0430\u043D\u0438\u0446\u044B",
+    "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C",
+    "\u042F\u0441\u043D\u043E\u0441\u0442\u044C",
+    "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C"
+  ];
+  function emptyMetrics() {
+    return metricLabels.map((label, order) => ({
+      label,
+      order,
+      value: null,
+      empty: true,
+      hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E",
+      tone: ["#eef2f6", "#aeb8c4"]
+    }));
+  }
+  function placeholderProfile(firstName) {
+    return {
+      user: {
+        first_name: firstName || null,
+        profile_summary: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E. \u041F\u0440\u043E\u0444\u0438\u043B\u044C \u0441\u0442\u0430\u043D\u0435\u0442 \u0442\u043E\u0447\u043D\u0435\u0435 \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u0432."
+      },
+      metrics: emptyMetrics(),
+      activity: [],
+      lifehack_cards: [],
+      insights: [],
+      disclaimer: "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438."
     };
-    let currentProfileData = null;
-    let currentDiaryDraft = { item_id: null, theme: "clarity" };
-    const metricLabels = [
-      "Субъектность",
-      "Эмпатия",
-      "Границы",
-      "Чувствительность",
-      "Ясность",
-      "Рациональность",
-    ];
-    function emptyMetrics() {
-      return metricLabels.map((label, order) => ({
-        label,
-        order,
-        value: null,
-        empty: true,
-        hint: "Информации о вас пока мало",
-        tone: ["#eef2f6", "#aeb8c4"],
-      }));
-    }
-    function placeholderProfile(firstName) {
-      return {
-        user: {
-          first_name: firstName || null,
-          profile_summary: "Информации о вас пока мало. Профиль станет точнее после нескольких разговоров.",
-        },
-        metrics: emptyMetrics(),
-        activity: [],
-        lifehack_cards: [],
-        insights: [],
-        disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
-      };
-    }
-    function buildSupportPayload() {
-      return {
-        telegram_id: telegramId,
-        init_data: tg ? tg.initData : params.get("init_data") || "",
-        username: tgUser.username || params.get("username") || null,
-        first_name: tgUser.first_name || params.get("first_name") || null,
-        language_code: tgUser.language_code || params.get("language_code") || null,
-      };
-    }
-    function setText(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
-    }
-    function shortProfileDescription(text) {
-      const clean = String(text || "").replace(/\\s+/g, " ").trim();
-      if (!clean) return "Здесь появится короткое описание вас на основе ваших разговоров с ботом.";
-      const firstSentence = clean.match(/.+?[.!?](\\s|$)/);
-      const short = firstSentence ? firstSentence[0].trim() : clean;
-      return short.length > 170 ? `${short.slice(0, 167).trimEnd()}...` : short;
-    }
-    function sendPrompt(text) {
-      const payload = JSON.stringify({ type: "support_prompt", text });
-      if (tg && tg.sendData) {
-        tg.sendData(payload);
-        tg.close();
-        return;
-      }
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-          statusEl.textContent = "Текст скопирован. Его можно вставить в чат с ботом.";
-        });
-        return;
-      }
-      statusEl.textContent = text;
-    }
-    function cardTemplate(card, actionText) {
-      const title = escapeHtml(card.title || "Без названия");
-      const text = escapeHtml(card.text || card.next_step || "");
-      const meta = escapeHtml(card.source || card.kind || card.date || "");
-      const nextStep = escapeHtml(card.next_step || "");
-      const prompt = `Хочу обсудить: ${card.title || ""}. ${card.next_step || card.text || ""}`.trim();
-      // Build the HTML for a card. If no actionText is provided, omit the action button.
-      const actionsHtml = actionText
-        ? `<div class="card-actions">
-            <button class="action-button" type="button" data-prompt="${escapeHtml(prompt)}">
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
-              </svg>
-              ${escapeHtml(actionText)}
-            </button>
-          </div>`
-        : "";
-      return `
-        <article class="data-card">
-          <div>
-            ${meta ? `<small>${meta}</small>` : ""}
-            <h3>${title}</h3>
-            ${text ? `<p>${text}</p>` : ""}
-            ${nextStep ? `<p style="margin-top: 10px;">${nextStep}</p>` : ""}
-          </div>
-          ${actionsHtml}
-        </article>
-      `;
-    }
-    function renderCards(id, cards, emptyTitle, emptyText, actionText) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (!cards || !cards.length) {
-        el.innerHTML = `<div class="empty-state"><strong>${escapeHtml(emptyTitle)}</strong><span>${escapeHtml(emptyText)}</span></div>`;
-        return;
-      }
-      el.innerHTML = cards.map((card) => cardTemplate(card, actionText)).join("");
-      el.querySelectorAll("[data-prompt]").forEach((button) => {
-        button.addEventListener("click", () => sendPrompt(button.dataset.prompt));
-      });
-    }
-    function lifehackTemplate(card, index) {
-      const title = escapeHtml(card.title || "Лайфхак");
-      const text = escapeHtml(card.text || "");
-      const nextStep = escapeHtml(card.next_step || "");
-      const itemId = escapeHtml(card.id || "");
-      const feedback = String(card.feedback || "");
-      const styleIndex = index % 4;
-      return `
-        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" data-lifehack-id="${itemId}" tabindex="0" role="button" aria-expanded="false" aria-label="Открыть лайфхак: ${title}">
+  }
+  function buildSupportPayload() {
+    return {
+      telegram_id: telegramId,
+      init_data: tg ? tg.initData : params.get("init_data") || "",
+      username: tgUser.username || params.get("username") || null,
+      first_name: tgUser.first_name || params.get("first_name") || null,
+      language_code: tgUser.language_code || params.get("language_code") || null
+    };
+  }
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function shortProfileDescription(text) {
+    const clean = String(text || "").replace(/\\s+/g, " ").trim();
+    if (!clean) return "\u0417\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u043A\u043E\u0440\u043E\u0442\u043A\u043E\u0435 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0432\u0430\u0441 \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0432\u0430\u0448\u0438\u0445 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u0432 \u0441 \u0431\u043E\u0442\u043E\u043C.";
+    const firstSentence = clean.match(/.+?[.!?](\\s|$)/);
+    const short = firstSentence ? firstSentence[0].trim() : clean;
+    return short.length > 170 ? `${short.slice(0, 167).replace(/\\s+$/, "")}...` : short;
+  }
+  function lifehackTemplate(card, index) {
+    const title = escapeHtml(card.title || "\u041B\u0430\u0439\u0444\u0445\u0430\u043A");
+    const text = escapeHtml(card.text || "");
+    const nextStep = escapeHtml(card.next_step || "");
+    const itemId = escapeHtml(card.id || "");
+    const feedback = String(card.feedback || "");
+    const styleIndex = index % 4;
+    return `
+        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" data-lifehack-id="${itemId}" tabindex="0" role="button" aria-expanded="false" aria-label="\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043B\u0430\u0439\u0444\u0445\u0430\u043A: ${title}">
           <div class="lifehack-flash" aria-hidden="true"></div>
           <div class="lifehack-head">
             <div class="lifehack-gesture" aria-hidden="true">
@@ -1510,185 +1469,185 @@ SUPPORT_APP_HTML = """<!doctype html>
                 <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6Z"></path>
                 <circle cx="12" cy="12" r="3.2"></circle>
               </svg>
-              <span class="lifehack-hint">нажмите на карточку</span>
+              <span class="lifehack-hint">\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u043D\u0430 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443</span>
             </div>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
               ${nextStep ? `<p>${nextStep}</p>` : ""}
               ${itemId ? `
               <div class="lifehack-actions">
-                <button class="lifehack-feedback${feedback === "helped" ? " active" : ""}" type="button" data-lifehack-feedback="helped">Помог</button>
-                <button class="lifehack-feedback${feedback === "not_helped" ? " active" : ""}" type="button" data-lifehack-feedback="not_helped">Не помог</button>
+                <button class="lifehack-feedback${feedback === "helped" ? " active" : ""}" type="button" data-lifehack-feedback="helped">\u041F\u043E\u043C\u043E\u0433</button>
+                <button class="lifehack-feedback${feedback === "not_helped" ? " active" : ""}" type="button" data-lifehack-feedback="not_helped">\u041D\u0435 \u043F\u043E\u043C\u043E\u0433</button>
               </div>` : ""}
             </div>
           </div>
         </article>
       `;
+  }
+  function renderLifehacks(cards) {
+    const el = document.getElementById("lifehackCards");
+    if (!el) return;
+    if (!cards || !cards.length) {
+      el.innerHTML = `<div class="inline-empty">\u041B\u0430\u0439\u0444\u0445\u0430\u043A\u0438 \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0442\u043E\u0433\u043E, \u043A\u0430\u043A \u0432\u044B \u043D\u0435\u043C\u043D\u043E\u0433\u043E \u043F\u043E\u043E\u0431\u0449\u0430\u0435\u0442\u0435\u0441\u044C \u0441 \u0431\u043E\u0442\u043E\u043C.</div>`;
+      return;
     }
-    function renderLifehacks(cards) {
-      const el = document.getElementById("lifehackCards");
-      if (!el) return;
-      if (!cards || !cards.length) {
-        el.innerHTML = `<div class="inline-empty">Лайфхаки появятся после того, как вы немного пообщаетесь с ботом.</div>`;
-        return;
-      }
-      el.innerHTML = cards.map((card, index) => lifehackTemplate(card, index)).join("");
-      const openLifehack = (card) => {
-        if (!card || card.classList.contains("open") || card.classList.contains("opening")) return;
-        card.classList.add("opening");
-        window.setTimeout(() => {
-          card.classList.add("open");
-          card.classList.remove("opening");
-          card.setAttribute("aria-expanded", "true");
-        }, 220);
-      };
-      el.querySelectorAll("[data-lifehack-card]").forEach((card) => {
-        card.addEventListener("click", () => openLifehack(card));
-        card.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openLifehack(card);
+    el.innerHTML = cards.map((card, index) => lifehackTemplate(card, index)).join("");
+    const openLifehack = (card) => {
+      if (!card || card.classList.contains("open") || card.classList.contains("opening")) return;
+      card.classList.add("opening");
+      window.setTimeout(() => {
+        card.classList.add("open");
+        card.classList.remove("opening");
+        card.setAttribute("aria-expanded", "true");
+      }, 220);
+    };
+    el.querySelectorAll("[data-lifehack-card]").forEach((card) => {
+      card.addEventListener("click", () => openLifehack(card));
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openLifehack(card);
+        }
+      });
+      card.querySelectorAll("[data-lifehack-feedback]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const itemId = card.dataset.lifehackId || "";
+          const feedback = button.dataset.lifehackFeedback || "";
+          if (!itemId || !feedback || demoMode || !telegramId) return;
+          lifehackStatus.textContent = "\u0421\u043E\u0445\u0440\u0430\u043D\u044F\u044E \u043E\u0446\u0435\u043D\u043A\u0443\u2026";
+          try {
+            const response = await fetch("/api/v1/support/lifehacks/feedback", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(__spreadProps(__spreadValues({}, buildSupportPayload()), {
+                item_id: itemId,
+                feedback
+              }))
+            });
+            if (!response.ok) {
+              const detail = await response.json().catch(() => ({}));
+              throw new Error(detail.detail || `HTTP ${response.status}`);
+            }
+            lifehackStatus.textContent = "";
+            renderProfile(await response.json());
+          } catch (error) {
+            lifehackStatus.textContent = String(error.message || error);
           }
         });
-        card.querySelectorAll("[data-lifehack-feedback]").forEach((button) => {
-          button.addEventListener("click", async (event) => {
-            event.stopPropagation();
-            const itemId = card.dataset.lifehackId || "";
-            const feedback = button.dataset.lifehackFeedback || "";
-            if (!itemId || !feedback || demoMode || !telegramId) return;
-            lifehackStatus.textContent = "Сохраняю оценку…";
-            try {
-              const response = await fetch("/api/v1/support/lifehacks/feedback", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  ...buildSupportPayload(),
-                  item_id: itemId,
-                  feedback,
-                }),
-              });
-              if (!response.ok) {
-                const detail = await response.json().catch(() => ({}));
-                throw new Error(detail.detail || `HTTP ${response.status}`);
-              }
-              lifehackStatus.textContent = "";
-              renderProfile(await response.json());
-            } catch (error) {
-              lifehackStatus.textContent = String(error.message || error);
-            }
-          });
-        });
       });
+    });
+  }
+  async function generateLifehack() {
+    if (demoMode || !telegramId) return;
+    const prompt = lifehackPromptInput.value.trim();
+    if (!prompt) {
+      lifehackStatus.textContent = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043A\u0430\u043A\u043E\u0439 \u043B\u0430\u0439\u0444\u0445\u0430\u043A \u0432\u0430\u043C \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u0443\u0436\u0435\u043D.";
+      return;
     }
-
-    async function generateLifehack() {
-      if (demoMode || !telegramId) return;
-      const prompt = lifehackPromptInput.value.trim();
-      if (!prompt) {
-        lifehackStatus.textContent = "Напишите, какой лайфхак вам сейчас нужен.";
-        return;
-      }
-      lifehackStatus.textContent = "Генерируем лайфхак...";
-      const response = await fetch("/api/v1/support/lifehacks/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...buildSupportPayload(),
-          prompt,
-        }),
-      });
-      if (!response.ok) {
-        const detail = await response.json().catch(() => ({}));
-        throw new Error(detail.detail || `HTTP ${response.status}`);
-      }
-      lifehackPromptInput.value = "";
-      lifehackStatus.textContent = "";
-      renderProfile(await response.json());
+    lifehackStatus.textContent = "\u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u043C \u043B\u0430\u0439\u0444\u0445\u0430\u043A...";
+    const response = await fetch("/api/v1/support/lifehacks/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(__spreadProps(__spreadValues({}, buildSupportPayload()), {
+        prompt
+      }))
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail || `HTTP ${response.status}`);
     }
-    function renderInsights(cards) {
-      const el = document.getElementById("insightCards");
-      if (!el) return;
-      if (!cards || !cards.length) {
-        el.innerHTML = `<div class="inline-empty">Осознания появятся здесь, когда вы захотите что-то зафиксировать сами или бот заметит важную мысль в диалоге.</div>`;
-        return;
+    lifehackPromptInput.value = "";
+    lifehackStatus.textContent = "";
+    renderProfile(await response.json());
+  }
+  function renderInsights(cards) {
+    const el = document.getElementById("insightCards");
+    if (!el) return;
+    if (!cards || !cards.length) {
+      el.innerHTML = `<div class="inline-empty">\u041E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u044F \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u0437\u0434\u0435\u0441\u044C, \u043A\u043E\u0433\u0434\u0430 \u0432\u044B \u0437\u0430\u0445\u043E\u0442\u0438\u0442\u0435 \u0447\u0442\u043E-\u0442\u043E \u0437\u0430\u0444\u0438\u043A\u0441\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u0430\u043C\u0438 \u0438\u043B\u0438 \u0431\u043E\u0442 \u0437\u0430\u043C\u0435\u0442\u0438\u0442 \u0432\u0430\u0436\u043D\u0443\u044E \u043C\u044B\u0441\u043B\u044C \u0432 \u0434\u0438\u0430\u043B\u043E\u0433\u0435.</div>`;
+      return;
+    }
+    const inferInsightTheme = (card) => {
+      if (card.theme && diaryThemes[card.theme]) return card.theme;
+      const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
+      const checks = [
+        ["sensitivity", ["\u0441\u043E\u043D", "\u0442\u0435\u043B\u043E", "\u0434\u044B\u0445", "\u043D\u0430\u043F\u0440\u044F\u0436", "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438", "\u0442\u0440\u0435\u0432\u043E\u0433", "\u0443\u0441\u0442\u0430\u043B", "\u0447\u0443\u0432\u0441\u0442\u0432"]],
+        ["empathy", ["\u0434\u0440\u0443\u0433\u0438\u0445", "\u0434\u0440\u0443\u0433\u043E\u043C\u0443", "\u0435\u043C\u0443", "\u0435\u0439", "\u043B\u044E\u0434\u044F\u043C", "\u043E\u0431\u0438\u0434", "\u043F\u043E\u0434\u0434\u0435\u0440\u0436", "\u0447\u0443\u0432\u0441\u0442\u0432\u0430 \u0434\u0440\u0443\u0433\u0438\u0445"]],
+        ["boundaries", ["\u0433\u0440\u0430\u043D\u0438\u0446", "\u043F\u0440\u043E\u0441\u044C\u0431", "\u043E\u0442\u043A\u0430\u0437", "\u043D\u0435 \u043E\u0431\u044F\u0437", "\u0441\u043A\u0430\u0437\u0430\u0442\u044C \u043D\u0435\u0442"]],
+        ["agency", ["\u0448\u0430\u0433", "\u0432\u044B\u0431\u043E\u0440", "\u0440\u0435\u0448\u0438\u043B", "\u0434\u0435\u0439\u0441\u0442\u0432", "\u043E\u0442\u0432\u0435\u0442", "\u0441\u043A\u0430\u0437\u0430\u0442\u044C"]],
+        ["clarity", ["\u044F\u0441\u043D", "\u043F\u043E\u043D\u044F\u0442", "\u0432\u0438\u0434\u043D\u043E", "\u0437\u0430\u043C\u0435\u0442\u0438\u043B\u0438", "\u043E\u0441\u043E\u0437\u043D", "\u0441\u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440", "\u043E\u0448\u0438\u0431", "\u043C\u043E\u044F \u0440\u043E\u043B\u044C"]],
+        ["rationality", ["\u0444\u0430\u043A\u0442", "\u0434\u043E\u043A\u0430\u0437", "\u0440\u0435\u0430\u043B\u044C\u043D", "\u043F\u0440\u043E\u0432\u0435\u0440", "\u043B\u043E\u0433\u0438\u0447", "\u043F\u0440\u0430\u0432\u0434\u0430", "\u0431\u0435\u0437 \u0434\u043E\u043A\u0430\u0437"]]
+      ];
+      for (const entry of checks) {
+        const key = entry[0];
+        const words = entry[1];
+        if (words.some((word) => text.includes(word))) return key;
       }
-      const inferInsightTheme = (card) => {
-        if (card.theme && diaryThemes[card.theme]) return card.theme;
-        const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
-        const checks = [
-          ["sensitivity", ["сон", "тело", "дых", "напряж", "состояни", "тревог", "устал", "чувств"]],
-          ["empathy", ["других", "другому", "ему", "ей", "людям", "обид", "поддерж", "чувства других"]],
-          ["boundaries", ["границ", "просьб", "отказ", "не обяз", "сказать нет"]],
-          ["agency", ["шаг", "выбор", "решил", "действ", "ответ", "сказать"]],
-          ["clarity", ["ясн", "понят", "видно", "заметили", "осозн", "сформулир", "ошиб", "моя роль"]],
-          ["rationality", ["факт", "доказ", "реальн", "провер", "логич", "правда", "без доказ"]],
-        ];
-        for (const [key, words] of checks) {
-          if (words.some((word) => text.includes(word))) return key;
-        }
-        const fallback = {
-          growth: "agency",
-          attention: "sensitivity",
-          resource: "empathy",
-          calm: "clarity",
-        };
-        return fallback[card.tone || "calm"] || "clarity";
+      const fallback = {
+        growth: "agency",
+        attention: "sensitivity",
+        resource: "empathy",
+        calm: "clarity"
       };
-      el.innerHTML = cards.map((card, index) => {
-        const themeKey = inferInsightTheme(card);
-        const theme = diaryThemes[themeKey] || diaryThemes.clarity;
-        const sourceLabel = card.manual ? "Ваше" : "Замечено ботом";
-        return `
+      return fallback[card.tone || "calm"] || "clarity";
+    };
+    el.innerHTML = cards.map((card, index) => {
+      const themeKey = inferInsightTheme(card);
+      const theme = diaryThemes[themeKey] || diaryThemes.clarity;
+      const sourceLabel = card.manual ? "\u0412\u0430\u0448\u0435" : "\u0417\u0430\u043C\u0435\u0447\u0435\u043D\u043E \u0431\u043E\u0442\u043E\u043C";
+      return `
         <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
           <div>
             <div class="insight-badges">
               <small class="insight-meta">${escapeHtml(theme.label)}</small>
               <small class="insight-source">${escapeHtml(sourceLabel)}</small>
             </div>
-            <h3>${escapeHtml(card.title || "Осознание")}</h3>
+            <h3>${escapeHtml(card.title || "\u041E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435")}</h3>
             <p>${escapeHtml(card.text || "")}</p>
             <div class="insight-actions">
-              <button class="insight-action" type="button" data-edit-diary="${escapeHtml(card.id || "")}" aria-label="Редактировать осознание">
+              <button class="insight-action" type="button" data-edit-diary="${escapeHtml(card.id || "")}" aria-label="\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435">
                 <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
               ${card.manual ? `
-              <button class="insight-action" type="button" data-delete-diary="${escapeHtml(card.id || "")}" aria-label="Удалить осознание">
+              <button class="insight-action" type="button" data-delete-diary="${escapeHtml(card.id || "")}" aria-label="\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435">
                 <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
               </button>` : ""}
             </div>
           </div>
         </article>
       `;
-      }).join("");
-      el.querySelectorAll("[data-edit-diary]").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          event.stopPropagation();
-          const index = Number(button.closest(".insight-card")?.dataset.diaryIndex || -1);
-          openDiaryEditor(cards[index] || null);
-        });
+    }).join("");
+    el.querySelectorAll("[data-edit-diary]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const cardEl = button.closest(".insight-card");
+        const index = Number((cardEl && cardEl.dataset ? cardEl.dataset.diaryIndex : -1) || -1);
+        openDiaryEditor(cards[index] || null);
       });
-      el.querySelectorAll("[data-delete-diary]").forEach((button) => {
-        button.addEventListener("click", async (event) => {
-          event.stopPropagation();
-          const id = button.dataset.deleteDiary || "";
-          if (!id) return;
-          await deleteDiaryEntry(id);
-        });
+    });
+    el.querySelectorAll("[data-delete-diary]").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const id = button.dataset.deleteDiary || "";
+        if (!id) return;
+        await deleteDiaryEntry(id);
       });
+    });
+  }
+  function renderMetrics(metrics) {
+    const grid = document.getElementById("metricsGrid");
+    if (!metrics || !metrics.length) {
+      grid.innerHTML = `<div class="empty-state"><strong>\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E</strong><span>\u041F\u0440\u043E\u0444\u0438\u043B\u044C \u0441\u0442\u0430\u043D\u0435\u0442 \u0442\u043E\u0447\u043D\u0435\u0435 \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0432 \u0431\u043E\u0442\u0435.</span></div>`;
+      return;
     }
-    function renderMetrics(metrics) {
-      const grid = document.getElementById("metricsGrid");
-      if (!metrics || !metrics.length) {
-        grid.innerHTML = `<div class="empty-state"><strong>Информации о вас пока мало</strong><span>Профиль станет точнее после нескольких сообщений в боте.</span></div>`;
-        return;
-      }
-      grid.innerHTML = metrics.map((metric) => {
-        const isEmpty = metric.empty || metric.value === null || metric.value === undefined;
-        const value = isEmpty ? 0 : Math.max(0, Math.min(100, Number(metric.value || 0)));
-        const soft = isEmpty ? "#eef2f6" : (metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff");
-        const tone = isEmpty ? "#aeb8c4" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed");
-        const detail = isEmpty ? String(metric.hint || "Информации о вас пока мало") : String(metric.detail || "");
-        return `
+    grid.innerHTML = metrics.map((metric) => {
+      const isEmpty = metric.empty || metric.value === null || metric.value === void 0;
+      const value = isEmpty ? 0 : Math.max(0, Math.min(100, Number(metric.value || 0)));
+      const soft = isEmpty ? "#eef2f6" : metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff";
+      const tone = isEmpty ? "#aeb8c4" : metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed";
+      const detail = isEmpty ? String(metric.hint || "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E") : String(metric.detail || "");
+      return `
           <article class="metric-card${isEmpty ? " empty" : ""}" style="--value: ${value}; --metric-soft: ${soft}; --metric-tone: ${tone};">
             <div class="metric-top">
               <h3 class="metric-label">${escapeHtml(metric.label)}</h3>
@@ -1698,127 +1657,124 @@ SUPPORT_APP_HTML = """<!doctype html>
             <div class="bar" aria-hidden="true"><span></span></div>
           </article>
         `;
-      }).join("");
-    }
-    function renderActivity(activity) {
-      const el = document.getElementById("activityBars");
-      el.innerHTML = (activity || []).map((day) => `
+    }).join("");
+  }
+  function renderActivity(activity) {
+    const el = document.getElementById("activityBars");
+    el.innerHTML = (activity || []).map((day) => `
         <div class="day" style="--height: ${Number(day.value || 0)};">
-          <i title="${Number(day.count || 0)} сообщений"></i>
+          <i title="${Number(day.count || 0)} \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439"></i>
           <span>${escapeHtml(day.label)}</span>
         </div>
       `).join("");
-    }
-    function drawRadar(metrics) {
-      const canvas = document.getElementById("radar");
-      const ctx = canvas.getContext("2d");
-      const size = canvas.width;
-      const center = size / 2;
-      const radius = size * .34;
-      if (!metrics || !metrics.length) {
-        ctx.clearRect(0, 0, size, size);
-        return;
-      }
+  }
+  function drawRadar(metrics) {
+    const canvas = document.getElementById("radar");
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = size * 0.34;
+    if (!metrics || !metrics.length) {
       ctx.clearRect(0, 0, size, size);
-      const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
-      const metricValue = (metric) => Math.max(0, Math.min(100, Number(metric.value || 0)));
-      ctx.lineWidth = 2;
-      ctx.font = "24px Inter, system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const count = metrics.length || 1;
-      const angleFor = (index) => -Math.PI / 2 + index * (Math.PI * 2 / count);
-      for (let ring = 1; ring <= 4; ring += 1) {
-        ctx.beginPath();
-        const ringRadius = radius * ring / 4;
-        for (let i = 0; i < count; i += 1) {
-          const angle = angleFor(i);
-          const x = center + Math.cos(angle) * ringRadius;
-          const y = center + Math.sin(angle) * ringRadius;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = "rgba(87, 112, 136, .16)";
-        ctx.stroke();
-      }
-      metrics.forEach((metric, index) => {
-        const angle = angleFor(index);
-        ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.lineTo(center + Math.cos(angle) * radius, center + Math.sin(angle) * radius);
-        ctx.strokeStyle = "rgba(87, 112, 136, .12)";
-        ctx.stroke();
-        const labelRadius = radius + 46;
-        const lx = Math.max(74, Math.min(size - 74, center + Math.cos(angle) * labelRadius));
-        const ly = Math.max(42, Math.min(size - 42, center + Math.sin(angle) * labelRadius));
-        ctx.fillStyle = hasRealMetrics ? "#5f6d7a" : "#8b96a3";
-        const words = String(metric.label || "").split(" ");
-        const lines = words.length > 2 ? [words.slice(0, -1).join(" "), words.at(-1)] : words;
-        const startY = ly - (lines.length - 1) * 12;
-        lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
-      });
-      if (!hasRealMetrics) return;
-      const neutralValue = 36;
-      const displayValue = (metric) => (
-        metric.empty || metric.value === null || metric.value === undefined
-          ? neutralValue
-          : metricValue(metric)
-      );
+      return;
+    }
+    ctx.clearRect(0, 0, size, size);
+    const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === void 0));
+    const metricValue = (metric) => Math.max(0, Math.min(100, Number(metric.value || 0)));
+    ctx.lineWidth = 2;
+    ctx.font = "24px Inter, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const count = metrics.length || 1;
+    const angleFor = (index) => -Math.PI / 2 + index * (Math.PI * 2 / count);
+    for (let ring = 1; ring <= 4; ring += 1) {
       ctx.beginPath();
-      metrics.forEach((metric, index) => {
-        const valueRadius = radius * displayValue(metric) / 100;
-        const angle = angleFor(index);
-        const x = center + Math.cos(angle) * valueRadius;
-        const y = center + Math.sin(angle) * valueRadius;
-        if (index === 0) ctx.moveTo(x, y);
+      const ringRadius = radius * ring / 4;
+      for (let i = 0; i < count; i += 1) {
+        const angle = angleFor(i);
+        const x = center + Math.cos(angle) * ringRadius;
+        const y = center + Math.sin(angle) * ringRadius;
+        if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-      });
+      }
       ctx.closePath();
-      const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
-      fill.addColorStop(0, "rgba(143, 214, 200, .44)");
-      fill.addColorStop(.5, "rgba(169, 200, 255, .36)");
-      fill.addColorStop(1, "rgba(255, 214, 166, .34)");
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(91, 184, 169, .8)";
-      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(87, 112, 136, .16)";
       ctx.stroke();
-      metrics.forEach((metric, index) => {
-        const isEmpty = metric.empty || metric.value === null || metric.value === undefined;
-        const valueRadius = radius * displayValue(metric) / 100;
-        const angle = angleFor(index);
-        const x = center + Math.cos(angle) * valueRadius;
-        const y = center + Math.sin(angle) * valueRadius;
-        ctx.beginPath();
-        ctx.arc(x, y, isEmpty ? 6 : 8, 0, Math.PI * 2);
-        ctx.fillStyle = isEmpty ? "rgba(174, 184, 196, .72)" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9");
-        ctx.fill();
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = isEmpty ? 2 : 3;
-        ctx.stroke();
-      });
     }
-    function renderProfile(data) {
-      currentProfileData = data;
-      const firstName = data.user && data.user.first_name ? data.user.first_name : "вы";
-      const metrics = data.metrics || [];
-      const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
-      document.getElementById("hero").classList.toggle("no-radar", !hasRealMetrics);
-      setText("hello", firstName === "вы" ? "Профиль" : firstName);
-      setText("profileSummary", shortProfileDescription(data.user.profile_summary));
-      setText("disclaimer", data.disclaimer);
-      renderMetrics(metrics);
-      renderActivity(data.activity || []);
-      drawRadar(hasRealMetrics ? metrics : []);
-      renderLifehacks(data.lifehack_cards);
-      renderInsights(data.insights);
-      root.classList.remove("loading");
-      statusEl.textContent = "";
-    }
-
-    function renderDiarySwatches(selectedTheme) {
-      diarySwatches.innerHTML = Object.entries(diaryThemes).map(([key, theme]) => `
+    metrics.forEach((metric, index) => {
+      const angle = angleFor(index);
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.lineTo(center + Math.cos(angle) * radius, center + Math.sin(angle) * radius);
+      ctx.strokeStyle = "rgba(87, 112, 136, .12)";
+      ctx.stroke();
+      const labelRadius = radius + 46;
+      const lx = Math.max(74, Math.min(size - 74, center + Math.cos(angle) * labelRadius));
+      const ly = Math.max(42, Math.min(size - 42, center + Math.sin(angle) * labelRadius));
+      ctx.fillStyle = hasRealMetrics ? "#5f6d7a" : "#8b96a3";
+      const words = String(metric.label || "").split(" ");
+      const lines = words.length > 2 ? [words.slice(0, -1).join(" "), words[words.length - 1]] : words;
+      const startY = ly - (lines.length - 1) * 12;
+      lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
+    });
+    if (!hasRealMetrics) return;
+    const neutralValue = 36;
+    const displayValue = (metric) => metric.empty || metric.value === null || metric.value === void 0 ? neutralValue : metricValue(metric);
+    ctx.beginPath();
+    metrics.forEach((metric, index) => {
+      const valueRadius = radius * displayValue(metric) / 100;
+      const angle = angleFor(index);
+      const x = center + Math.cos(angle) * valueRadius;
+      const y = center + Math.sin(angle) * valueRadius;
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    const fill = ctx.createLinearGradient(120, 80, size - 120, size - 80);
+    fill.addColorStop(0, "rgba(143, 214, 200, .44)");
+    fill.addColorStop(0.5, "rgba(169, 200, 255, .36)");
+    fill.addColorStop(1, "rgba(255, 214, 166, .34)");
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(91, 184, 169, .8)";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    metrics.forEach((metric, index) => {
+      const isEmpty = metric.empty || metric.value === null || metric.value === void 0;
+      const valueRadius = radius * displayValue(metric) / 100;
+      const angle = angleFor(index);
+      const x = center + Math.cos(angle) * valueRadius;
+      const y = center + Math.sin(angle) * valueRadius;
+      ctx.beginPath();
+      ctx.arc(x, y, isEmpty ? 6 : 8, 0, Math.PI * 2);
+      ctx.fillStyle = isEmpty ? "rgba(174, 184, 196, .72)" : metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = isEmpty ? 2 : 3;
+      ctx.stroke();
+    });
+  }
+  function renderProfile(data) {
+    currentProfileData = data;
+    const firstName = data.user && data.user.first_name ? data.user.first_name : "\u0432\u044B";
+    const metrics = data.metrics || [];
+    const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === void 0));
+    document.getElementById("hero").classList.toggle("no-radar", !hasRealMetrics);
+    setText("hello", firstName === "\u0432\u044B" ? "\u041F\u0440\u043E\u0444\u0438\u043B\u044C" : firstName);
+    setText("profileSummary", shortProfileDescription(data.user.profile_summary));
+    setText("disclaimer", data.disclaimer);
+    renderMetrics(metrics);
+    renderActivity(data.activity || []);
+    drawRadar(hasRealMetrics ? metrics : []);
+    renderLifehacks(data.lifehack_cards);
+    renderInsights(data.insights);
+    root.classList.remove("loading");
+    statusEl.textContent = "";
+  }
+  function renderDiarySwatches(selectedTheme) {
+    diarySwatches.innerHTML = Object.keys(diaryThemes).map((key) => {
+      const theme = diaryThemes[key];
+      return `
         <button
           class="swatch${selectedTheme === key ? " active" : ""}"
           type="button"
@@ -1826,205 +1782,201 @@ SUPPORT_APP_HTML = """<!doctype html>
           title="${escapeHtml(theme.label)}"
           style="background: linear-gradient(135deg, ${theme.soft}, ${theme.tone});"
         ></button>
-      `).join("");
-      diarySwatches.querySelectorAll("[data-swatch-theme]").forEach((button) => {
-        button.addEventListener("click", () => {
-          currentDiaryDraft.theme = button.dataset.swatchTheme || "clarity";
-          renderDiarySwatches(currentDiaryDraft.theme);
-        });
-      });
-    }
-
-    function openDiaryEditor(card) {
-      currentDiaryDraft = {
-        item_id: card && card.manual ? (card.id || null) : null,
-        theme: card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity",
-      };
-      diaryTitleInput.value = card && card.title ? card.title : "";
-      diaryTextInput.value = card && card.text ? card.text : "";
-      document.getElementById("diaryDialogTitle").textContent = card && card.manual ? "Редактировать осознание" : "Новое осознание";
-      renderDiarySwatches(currentDiaryDraft.theme);
-      diaryDialog.classList.add("open");
-    }
-
-    function closeDiaryEditor() {
-      diaryDialog.classList.remove("open");
-    }
-
-    async function saveDiaryEntry() {
-      if (demoMode || !telegramId) return;
-      const title = diaryTitleInput.value.trim();
-      const text = diaryTextInput.value.trim();
-      if (!title || !text) {
-        statusEl.textContent = "Заполните заголовок и текст осознания.";
-        return;
-      }
-      statusEl.textContent = "Сохраняю осознание…";
-      const payload = {
-        ...buildSupportPayload(),
-        item_id: currentDiaryDraft.item_id,
-        title,
-        text,
-        theme: currentDiaryDraft.theme,
-      };
-      const response = await fetch("/api/v1/support/diary/upsert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const detail = await response.json().catch(() => ({}));
-        throw new Error(detail.detail || `HTTP ${response.status}`);
-      }
-      closeDiaryEditor();
-      renderProfile(await response.json());
-    }
-
-    async function deleteDiaryEntry(itemId) {
-      if (demoMode || !telegramId || !itemId) return;
-      statusEl.textContent = "Удаляю осознание…";
-      const response = await fetch("/api/v1/support/diary/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...buildSupportPayload(),
-          item_id: itemId,
-        }),
-      });
-      if (!response.ok) {
-        const detail = await response.json().catch(() => ({}));
-        throw new Error(detail.detail || `HTTP ${response.status}`);
-      }
-      renderProfile(await response.json());
-    }
-    function demoProfile() {
-      return {
-        user: {
-          first_name: params.get("first_name") || "Антон",
-          profile_summary: "В последних диалогах заметны усталость, желание ясности и попытка вернуть себе управление. Сейчас важнее не давить на себя, а выбрать один понятный шаг и заметить опоры, которые уже работают.",
-        },
-        summary: {
-          memory_count: 18,
-          open_topics_count: 4,
-          support_items_count: 6,
-          latest_update: "21.05.2026",
-        },
-        disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
-        metrics: [
-          { label: "Субъектность", value: 68, hint: "Информации о вас пока мало", detail: "Сейчас вы чаще сами задаете курс своей жизни и принимаете решения сами, не живете в позиции вечной уступки или подчинения чужой воле.", tone: ["#8fd6c8", "#5bb8a9"] },
-          { label: "Эмпатия", value: 63, hint: "Информации о вас пока мало", detail: "Вы обычно замечаете состояние других людей и в целом понимаете, что они чувствуют, хотя в перегрузе можете упрощать их переживания.", tone: ["#ffd6a6", "#f3ad61"] },
-          { label: "Границы", value: 52, hint: "Информации о вас пока мало", detail: "В понятных ситуациях вы умеете говорить \"нет\" и обозначать свои пределы, но в чувствительных темах границы еще могут шататься.", tone: ["#c9b7ff", "#987de8"] },
-          { label: "Чувствительность", value: 70, hint: "Информации о вас пока мало", detail: "Вы хорошо чувствуете свое тело и эмоции, поэтому обычно раньше замечаете перегруз, напряжение и смену состояния.", tone: ["#b7e6ff", "#67badc"] },
-          { label: "Ясность", value: 61, hint: "Информации о вас пока мало", detail: "Вы уже умеете разбираться в происходящем и отделять факты от эмоций, хотя в заряженных темах вас еще может уносить в субъективность.", tone: ["#a9c8ff", "#6f9fed"] },
-          { label: "Рациональность", value: 56, hint: "Информации о вас пока мало", detail: "Вы в целом опираетесь на факты, проверку и здравый смысл, хотя в эмоциональных темах логика не всегда удерживает позицию.", tone: ["#f5b8c8", "#df7f9a"] },
-        ],
-        activity: [
-          { label: "15.05", count: 1, value: 28 },
-          { label: "16.05", count: 0, value: 0 },
-          { label: "17.05", count: 3, value: 72 },
-          { label: "18.05", count: 2, value: 50 },
-          { label: "19.05", count: 4, value: 100 },
-          { label: "20.05", count: 2, value: 50 },
-          { label: "21.05", count: 3, value: 72 },
-        ],
-        lifehack_cards: [
-          { title: "Пауза перед ответом", text: "Если разговор задевает, не отвечать сразу. Открыть заметку и набросать фразу, которую хочется сказать без оправданий.", next_step: "Вернуться к сообщению через 10 минут." },
-          { title: "Разобрать вечер", text: "Перед сном отметить, что сегодня забрало силы и что немного помогло.", next_step: "Оставить только один пункт, к которому стоит вернуться завтра." },
-          { title: "Подготовить разговор", text: "Перед сложной темой записать цель разговора и одну границу, которую не хочется отдавать.", next_step: "Начать с конкретного факта, без длинного вступления." },
-        ],
-        attention_cards: [
-          { kind: "на что обратить внимание", title: "Перегруз после общения", text: "После напряженных разговоров стоит заранее закладывать время на восстановление." },
-          { kind: "бережная заметка", title: "Сон как маркер", text: "Если несколько ночей подряд сон резко ухудшается, это важно обсудить со специалистом." },
-        ],
-        insights: [
-          { id: "demo-1", tone: "growth", theme: "agency", title: "После паузы точнее слова", text: "Вы заметили, что несколько минут между эмоцией и ответом помогают говорить меньше из защиты.", manual: false },
-          { id: "demo-2", tone: "resource", theme: "boundaries", title: "Границы стали спокойнее", text: "Вы стали чаще видеть, что честная просьба не обязательно превращается в конфликт.", manual: true },
-          { id: "demo-3", tone: "attention", theme: "sensitivity", title: "Сон связан с перегрузом", text: "Стало видно, что после нескольких напряженных дней сон первым показывает нехватку сил.", manual: false },
-        ],
-      };
-    }
-    async function loadProfile() {
-      root.classList.add("loading");
-      if (demoMode) {
-        renderProfile(demoProfile());
-        statusEl.textContent = "Demo-режим: реальный профиль появится при открытии из Telegram.";
-        return;
-      }
-      if (!telegramId) {
-        renderProfile(placeholderProfile(null));
-        setText("hello", "Откройте профиль из Telegram");
-        setText("profileSummary", "Так mini-app сможет безопасно понять, чей профиль поддержки показать.");
-        statusEl.textContent = "Для локальной проверки можно открыть /app/support?telegram_id=123.";
-        return;
-      }
-      const payload = buildSupportPayload();
-      renderProfile(placeholderProfile(payload.first_name));
-      statusEl.textContent = "Обновляю профиль…";
-      try {
-        const response = await fetch("/api/v1/support/me", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          const detail = await response.json().catch(() => ({}));
-          throw new Error(detail.detail || `HTTP ${response.status}`);
-        }
-        renderProfile(await response.json());
-      } catch (error) {
-        root.classList.remove("loading");
-        setText("hello", "Не получилось открыть профиль");
-        setText("profileSummary", "Проверьте, что mini-app открыта из Telegram и backend доступен.");
-        statusEl.textContent = String(error.message || error);
-      }
-    }
-    document.querySelectorAll(".tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
-        tab.classList.add("active");
-        document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+      `;
+    }).join("");
+    diarySwatches.querySelectorAll("[data-swatch-theme]").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentDiaryDraft.theme = button.dataset.swatchTheme || "clarity";
+        renderDiarySwatches(currentDiaryDraft.theme);
       });
     });
-    document.getElementById("addDiaryButton").addEventListener("click", () => openDiaryEditor(null));
-    document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
-    document.getElementById("cancelDiaryButton").addEventListener("click", closeDiaryEditor);
-    document.getElementById("generateLifehackButton").addEventListener("click", async () => {
-      try {
-        await generateLifehack();
-      } catch (error) {
-        lifehackStatus.textContent = String(error.message || error);
-      }
-    });
-    lifehackPromptInput.addEventListener("keydown", async (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      try {
-        await generateLifehack();
-      } catch (error) {
-        lifehackStatus.textContent = String(error.message || error);
-      }
-    });
-    document.getElementById("saveDiaryButton").addEventListener("click", async () => {
-      try {
-        await saveDiaryEntry();
-      } catch (error) {
-        statusEl.textContent = String(error.message || error);
-      }
-    });
-    diaryDialog.addEventListener("click", (event) => {
-      if (event.target === diaryDialog) closeDiaryEditor();
-    });
-    window.addEventListener("resize", () => {
-      const metrics = window.__supportMetrics || [];
-      if (metrics.length) drawRadar(metrics);
-    });
-    const originalRenderProfile = renderProfile;
-    renderProfile = (data) => {
-      window.__supportMetrics = data.metrics || [];
-      originalRenderProfile(data);
+  }
+  function openDiaryEditor(card) {
+    currentDiaryDraft = {
+      item_id: card && card.manual ? card.id || null : null,
+      theme: card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity"
     };
-    loadProfile();
+    diaryTitleInput.value = card && card.title ? card.title : "";
+    diaryTextInput.value = card && card.text ? card.text : "";
+    document.getElementById("diaryDialogTitle").textContent = card && card.manual ? "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435" : "\u041D\u043E\u0432\u043E\u0435 \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435";
+    renderDiarySwatches(currentDiaryDraft.theme);
+    diaryDialog.classList.add("open");
+  }
+  function closeDiaryEditor() {
+    diaryDialog.classList.remove("open");
+  }
+  async function saveDiaryEntry() {
+    if (demoMode || !telegramId) return;
+    const title = diaryTitleInput.value.trim();
+    const text = diaryTextInput.value.trim();
+    if (!title || !text) {
+      statusEl.textContent = "\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0438 \u0442\u0435\u043A\u0441\u0442 \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u044F.";
+      return;
+    }
+    statusEl.textContent = "\u0421\u043E\u0445\u0440\u0430\u043D\u044F\u044E \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435\u2026";
+    const payload = __spreadProps(__spreadValues({}, buildSupportPayload()), {
+      item_id: currentDiaryDraft.item_id,
+      title,
+      text,
+      theme: currentDiaryDraft.theme
+    });
+    const response = await fetch("/api/v1/support/diary/upsert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail || `HTTP ${response.status}`);
+    }
+    closeDiaryEditor();
+    renderProfile(await response.json());
+  }
+  async function deleteDiaryEntry(itemId) {
+    if (demoMode || !telegramId || !itemId) return;
+    statusEl.textContent = "\u0423\u0434\u0430\u043B\u044F\u044E \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435\u2026";
+    const response = await fetch("/api/v1/support/diary/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(__spreadProps(__spreadValues({}, buildSupportPayload()), {
+        item_id: itemId
+      }))
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail || `HTTP ${response.status}`);
+    }
+    renderProfile(await response.json());
+  }
+  function demoProfile() {
+    return {
+      user: {
+        first_name: params.get("first_name") || "\u0410\u043D\u0442\u043E\u043D",
+        profile_summary: "\u0412 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0445 \u0434\u0438\u0430\u043B\u043E\u0433\u0430\u0445 \u0437\u0430\u043C\u0435\u0442\u043D\u044B \u0443\u0441\u0442\u0430\u043B\u043E\u0441\u0442\u044C, \u0436\u0435\u043B\u0430\u043D\u0438\u0435 \u044F\u0441\u043D\u043E\u0441\u0442\u0438 \u0438 \u043F\u043E\u043F\u044B\u0442\u043A\u0430 \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u0441\u0435\u0431\u0435 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435. \u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u0430\u0436\u043D\u0435\u0435 \u043D\u0435 \u0434\u0430\u0432\u0438\u0442\u044C \u043D\u0430 \u0441\u0435\u0431\u044F, \u0430 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u043E\u0434\u0438\u043D \u043F\u043E\u043D\u044F\u0442\u043D\u044B\u0439 \u0448\u0430\u0433 \u0438 \u0437\u0430\u043C\u0435\u0442\u0438\u0442\u044C \u043E\u043F\u043E\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0443\u0436\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442."
+      },
+      summary: {
+        memory_count: 18,
+        open_topics_count: 4,
+        support_items_count: 6,
+        latest_update: "21.05.2026"
+      },
+      disclaimer: "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438.",
+      metrics: [
+        { label: "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C", value: 68, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u044B \u0447\u0430\u0449\u0435 \u0441\u0430\u043C\u0438 \u0437\u0430\u0434\u0430\u0435\u0442\u0435 \u043A\u0443\u0440\u0441 \u0441\u0432\u043E\u0435\u0439 \u0436\u0438\u0437\u043D\u0438 \u0438 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0435\u0442\u0435 \u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0441\u0430\u043C\u0438, \u043D\u0435 \u0436\u0438\u0432\u0435\u0442\u0435 \u0432 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 \u0432\u0435\u0447\u043D\u043E\u0439 \u0443\u0441\u0442\u0443\u043F\u043A\u0438 \u0438\u043B\u0438 \u043F\u043E\u0434\u0447\u0438\u043D\u0435\u043D\u0438\u044F \u0447\u0443\u0436\u043E\u0439 \u0432\u043E\u043B\u0435.", tone: ["#8fd6c8", "#5bb8a9"] },
+        { label: "\u042D\u043C\u043F\u0430\u0442\u0438\u044F", value: 63, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u043E\u0431\u044B\u0447\u043D\u043E \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u0440\u0443\u0433\u0438\u0445 \u043B\u044E\u0434\u0435\u0439 \u0438 \u0432 \u0446\u0435\u043B\u043E\u043C \u043F\u043E\u043D\u0438\u043C\u0430\u0435\u0442\u0435, \u0447\u0442\u043E \u043E\u043D\u0438 \u0447\u0443\u0432\u0441\u0442\u0432\u0443\u044E\u0442, \u0445\u043E\u0442\u044F \u0432 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u0435 \u043C\u043E\u0436\u0435\u0442\u0435 \u0443\u043F\u0440\u043E\u0449\u0430\u0442\u044C \u0438\u0445 \u043F\u0435\u0440\u0435\u0436\u0438\u0432\u0430\u043D\u0438\u044F.", tone: ["#ffd6a6", "#f3ad61"] },
+        { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", value: 52, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: '\u0412 \u043F\u043E\u043D\u044F\u0442\u043D\u044B\u0445 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044F\u0445 \u0432\u044B \u0443\u043C\u0435\u0435\u0442\u0435 \u0433\u043E\u0432\u043E\u0440\u0438\u0442\u044C "\u043D\u0435\u0442" \u0438 \u043E\u0431\u043E\u0437\u043D\u0430\u0447\u0430\u0442\u044C \u0441\u0432\u043E\u0438 \u043F\u0440\u0435\u0434\u0435\u043B\u044B, \u043D\u043E \u0432 \u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0433\u0440\u0430\u043D\u0438\u0446\u044B \u0435\u0449\u0435 \u043C\u043E\u0433\u0443\u0442 \u0448\u0430\u0442\u0430\u0442\u044C\u0441\u044F.', tone: ["#c9b7ff", "#987de8"] },
+        { label: "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 70, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0445\u043E\u0440\u043E\u0448\u043E \u0447\u0443\u0432\u0441\u0442\u0432\u0443\u0435\u0442\u0435 \u0441\u0432\u043E\u0435 \u0442\u0435\u043B\u043E \u0438 \u044D\u043C\u043E\u0446\u0438\u0438, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043E\u0431\u044B\u0447\u043D\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437, \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u0435 \u0438 \u0441\u043C\u0435\u043D\u0443 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.", tone: ["#b7e6ff", "#67badc"] },
+        { label: "\u042F\u0441\u043D\u043E\u0441\u0442\u044C", value: 61, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0443\u0436\u0435 \u0443\u043C\u0435\u0435\u0442\u0435 \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0442\u044C\u0441\u044F \u0432 \u043F\u0440\u043E\u0438\u0441\u0445\u043E\u0434\u044F\u0449\u0435\u043C \u0438 \u043E\u0442\u0434\u0435\u043B\u044F\u0442\u044C \u0444\u0430\u043A\u0442\u044B \u043E\u0442 \u044D\u043C\u043E\u0446\u0438\u0439, \u0445\u043E\u0442\u044F \u0432 \u0437\u0430\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0432\u0430\u0441 \u0435\u0449\u0435 \u043C\u043E\u0436\u0435\u0442 \u0443\u043D\u043E\u0441\u0438\u0442\u044C \u0432 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C.", tone: ["#a9c8ff", "#6f9fed"] },
+        { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 56, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0432 \u0446\u0435\u043B\u043E\u043C \u043E\u043F\u0438\u0440\u0430\u0435\u0442\u0435\u0441\u044C \u043D\u0430 \u0444\u0430\u043A\u0442\u044B, \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0438 \u0437\u0434\u0440\u0430\u0432\u044B\u0439 \u0441\u043C\u044B\u0441\u043B, \u0445\u043E\u0442\u044F \u0432 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u043B\u043E\u0433\u0438\u043A\u0430 \u043D\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043F\u043E\u0437\u0438\u0446\u0438\u044E.", tone: ["#f5b8c8", "#df7f9a"] }
+      ],
+      activity: [
+        { label: "15.05", count: 1, value: 28 },
+        { label: "16.05", count: 0, value: 0 },
+        { label: "17.05", count: 3, value: 72 },
+        { label: "18.05", count: 2, value: 50 },
+        { label: "19.05", count: 4, value: 100 },
+        { label: "20.05", count: 2, value: 50 },
+        { label: "21.05", count: 3, value: 72 }
+      ],
+      lifehack_cards: [
+        { title: "\u041F\u0430\u0443\u0437\u0430 \u043F\u0435\u0440\u0435\u0434 \u043E\u0442\u0432\u0435\u0442\u043E\u043C", text: "\u0415\u0441\u043B\u0438 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440 \u0437\u0430\u0434\u0435\u0432\u0430\u0435\u0442, \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C \u0441\u0440\u0430\u0437\u0443. \u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043C\u0435\u0442\u043A\u0443 \u0438 \u043D\u0430\u0431\u0440\u043E\u0441\u0430\u0442\u044C \u0444\u0440\u0430\u0437\u0443, \u043A\u043E\u0442\u043E\u0440\u0443\u044E \u0445\u043E\u0447\u0435\u0442\u0441\u044F \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0431\u0435\u0437 \u043E\u043F\u0440\u0430\u0432\u0434\u0430\u043D\u0438\u0439.", next_step: "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044E \u0447\u0435\u0440\u0435\u0437 10 \u043C\u0438\u043D\u0443\u0442." },
+        { title: "\u0420\u0430\u0437\u043E\u0431\u0440\u0430\u0442\u044C \u0432\u0435\u0447\u0435\u0440", text: "\u041F\u0435\u0440\u0435\u0434 \u0441\u043D\u043E\u043C \u043E\u0442\u043C\u0435\u0442\u0438\u0442\u044C, \u0447\u0442\u043E \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u0437\u0430\u0431\u0440\u0430\u043B\u043E \u0441\u0438\u043B\u044B \u0438 \u0447\u0442\u043E \u043D\u0435\u043C\u043D\u043E\u0433\u043E \u043F\u043E\u043C\u043E\u0433\u043B\u043E.", next_step: "\u041E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u0434\u0438\u043D \u043F\u0443\u043D\u043A\u0442, \u043A \u043A\u043E\u0442\u043E\u0440\u043E\u043C\u0443 \u0441\u0442\u043E\u0438\u0442 \u0432\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u0437\u0430\u0432\u0442\u0440\u0430." },
+        { title: "\u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440", text: "\u041F\u0435\u0440\u0435\u0434 \u0441\u043B\u043E\u0436\u043D\u043E\u0439 \u0442\u0435\u043C\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0446\u0435\u043B\u044C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u0430 \u0438 \u043E\u0434\u043D\u0443 \u0433\u0440\u0430\u043D\u0438\u0446\u0443, \u043A\u043E\u0442\u043E\u0440\u0443\u044E \u043D\u0435 \u0445\u043E\u0447\u0435\u0442\u0441\u044F \u043E\u0442\u0434\u0430\u0432\u0430\u0442\u044C.", next_step: "\u041D\u0430\u0447\u0430\u0442\u044C \u0441 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u043E\u0433\u043E \u0444\u0430\u043A\u0442\u0430, \u0431\u0435\u0437 \u0434\u043B\u0438\u043D\u043D\u043E\u0433\u043E \u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F." }
+      ],
+      attention_cards: [
+        { kind: "\u043D\u0430 \u0447\u0442\u043E \u043E\u0431\u0440\u0430\u0442\u0438\u0442\u044C \u0432\u043D\u0438\u043C\u0430\u043D\u0438\u0435", title: "\u041F\u0435\u0440\u0435\u0433\u0440\u0443\u0437 \u043F\u043E\u0441\u043B\u0435 \u043E\u0431\u0449\u0435\u043D\u0438\u044F", text: "\u041F\u043E\u0441\u043B\u0435 \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u0432 \u0441\u0442\u043E\u0438\u0442 \u0437\u0430\u0440\u0430\u043D\u0435\u0435 \u0437\u0430\u043A\u043B\u0430\u0434\u044B\u0432\u0430\u0442\u044C \u0432\u0440\u0435\u043C\u044F \u043D\u0430 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435." },
+        { kind: "\u0431\u0435\u0440\u0435\u0436\u043D\u0430\u044F \u0437\u0430\u043C\u0435\u0442\u043A\u0430", title: "\u0421\u043E\u043D \u043A\u0430\u043A \u043C\u0430\u0440\u043A\u0435\u0440", text: "\u0415\u0441\u043B\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u043D\u043E\u0447\u0435\u0439 \u043F\u043E\u0434\u0440\u044F\u0434 \u0441\u043E\u043D \u0440\u0435\u0437\u043A\u043E \u0443\u0445\u0443\u0434\u0448\u0430\u0435\u0442\u0441\u044F, \u044D\u0442\u043E \u0432\u0430\u0436\u043D\u043E \u043E\u0431\u0441\u0443\u0434\u0438\u0442\u044C \u0441\u043E \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u043C." }
+      ],
+      insights: [
+        { id: "demo-1", tone: "growth", theme: "agency", title: "\u041F\u043E\u0441\u043B\u0435 \u043F\u0430\u0443\u0437\u044B \u0442\u043E\u0447\u043D\u0435\u0435 \u0441\u043B\u043E\u0432\u0430", text: "\u0412\u044B \u0437\u0430\u043C\u0435\u0442\u0438\u043B\u0438, \u0447\u0442\u043E \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u043C\u0438\u043D\u0443\u0442 \u043C\u0435\u0436\u0434\u0443 \u044D\u043C\u043E\u0446\u0438\u0435\u0439 \u0438 \u043E\u0442\u0432\u0435\u0442\u043E\u043C \u043F\u043E\u043C\u043E\u0433\u0430\u044E\u0442 \u0433\u043E\u0432\u043E\u0440\u0438\u0442\u044C \u043C\u0435\u043D\u044C\u0448\u0435 \u0438\u0437 \u0437\u0430\u0449\u0438\u0442\u044B.", manual: false },
+        { id: "demo-2", tone: "resource", theme: "boundaries", title: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B \u0441\u0442\u0430\u043B\u0438 \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u0435\u0435", text: "\u0412\u044B \u0441\u0442\u0430\u043B\u0438 \u0447\u0430\u0449\u0435 \u0432\u0438\u0434\u0435\u0442\u044C, \u0447\u0442\u043E \u0447\u0435\u0441\u0442\u043D\u0430\u044F \u043F\u0440\u043E\u0441\u044C\u0431\u0430 \u043D\u0435 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441\u044F \u0432 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442.", manual: true },
+        { id: "demo-3", tone: "attention", theme: "sensitivity", title: "\u0421\u043E\u043D \u0441\u0432\u044F\u0437\u0430\u043D \u0441 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u043E\u043C", text: "\u0421\u0442\u0430\u043B\u043E \u0432\u0438\u0434\u043D\u043E, \u0447\u0442\u043E \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0434\u043D\u0435\u0439 \u0441\u043E\u043D \u043F\u0435\u0440\u0432\u044B\u043C \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u043D\u0435\u0445\u0432\u0430\u0442\u043A\u0443 \u0441\u0438\u043B.", manual: false }
+      ]
+    };
+  }
+  async function loadProfile() {
+    root.classList.add("loading");
+    if (demoMode) {
+      renderProfile(demoProfile());
+      statusEl.textContent = "Demo-\u0440\u0435\u0436\u0438\u043C: \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u043F\u0440\u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0438 \u0438\u0437 Telegram.";
+      return;
+    }
+    if (!telegramId) {
+      renderProfile(placeholderProfile(null));
+      setText("hello", "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u0438\u0437 Telegram");
+      setText("profileSummary", "\u0422\u0430\u043A mini-app \u0441\u043C\u043E\u0436\u0435\u0442 \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E \u043F\u043E\u043D\u044F\u0442\u044C, \u0447\u0435\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0438 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C.");
+      statusEl.textContent = "\u0414\u043B\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0439 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438 \u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0440\u044B\u0442\u044C /app/support?telegram_id=123.";
+      return;
+    }
+    const payload = buildSupportPayload();
+    renderProfile(placeholderProfile(payload.first_name));
+    statusEl.textContent = "\u041E\u0431\u043D\u043E\u0432\u043B\u044F\u044E \u043F\u0440\u043E\u0444\u0438\u043B\u044C\u2026";
+    try {
+      const response = await fetch("/api/v1/support/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${response.status}`);
+      }
+      renderProfile(await response.json());
+    } catch (error) {
+      root.classList.remove("loading");
+      setText("hello", "\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C");
+      setText("profileSummary", "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435, \u0447\u0442\u043E mini-app \u043E\u0442\u043A\u0440\u044B\u0442\u0430 \u0438\u0437 Telegram \u0438 backend \u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.");
+      statusEl.textContent = String(error.message || error);
+    }
+  }
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+  document.getElementById("addDiaryButton").addEventListener("click", () => openDiaryEditor(null));
+  document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
+  document.getElementById("cancelDiaryButton").addEventListener("click", closeDiaryEditor);
+  document.getElementById("generateLifehackButton").addEventListener("click", async () => {
+    try {
+      await generateLifehack();
+    } catch (error) {
+      lifehackStatus.textContent = String(error.message || error);
+    }
+  });
+  lifehackPromptInput.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    try {
+      await generateLifehack();
+    } catch (error) {
+      lifehackStatus.textContent = String(error.message || error);
+    }
+  });
+  document.getElementById("saveDiaryButton").addEventListener("click", async () => {
+    try {
+      await saveDiaryEntry();
+    } catch (error) {
+      statusEl.textContent = String(error.message || error);
+    }
+  });
+  diaryDialog.addEventListener("click", (event) => {
+    if (event.target === diaryDialog) closeDiaryEditor();
+  });
+  window.addEventListener("resize", () => {
+    const metrics = window.__supportMetrics || [];
+    if (metrics.length) drawRadar(metrics);
+  });
+  const originalRenderProfile = renderProfile;
+  renderProfile = (data) => {
+    window.__supportMetrics = data.metrics || [];
+    originalRenderProfile(data);
+  };
+  loadProfile();
+})();
   </script>
 </body>
 </html>
