@@ -48,6 +48,9 @@ def clean_generated_text(text: str) -> str:
 def _create_openrouter_client() -> httpx.AsyncClient:
     try:
         return httpx.AsyncClient(timeout=60, http2=True)
+    except ImportError:
+        logger.info("HTTP/2 is unavailable because the 'h2' package is not installed; falling back")
+        return httpx.AsyncClient(timeout=60)
     except TypeError:
         return httpx.AsyncClient(timeout=60)
 

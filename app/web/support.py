@@ -968,9 +968,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       if (el) el.textContent = value;
     }
     function shortProfileDescription(text) {
-      const clean = String(text || "").replace(/\s+/g, " ").trim();
+      const clean = String(text || "").replace(/\\s+/g, " ").trim();
       if (!clean) return "Здесь появится короткое описание вас на основе ваших разговоров с ботом.";
-      const firstSentence = clean.match(/.+?[.!?](\s|$)/);
+      const firstSentence = clean.match(/.+?[.!?](\\s|$)/);
       const short = firstSentence ? firstSentence[0].trim() : clean;
       return short.length > 170 ? `${short.slice(0, 167).trimEnd()}...` : short;
     }
