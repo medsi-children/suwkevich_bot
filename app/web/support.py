@@ -96,10 +96,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       flex-wrap: wrap;
     }
 
-    .brand-name {
-      color: #687586;
-    }
-
     .brand-note {
       color: #4f9f91;
       font-weight: 780;
@@ -1262,7 +1258,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 <body>
   <main class="app loading">
     <div class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">Сушкевич Бот</span><span class="brand-note">Личный профиль поддержки</span></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-note">Личный профиль поддержки</span></div>
       <!-- refresh button removed -->
     </div>
 
