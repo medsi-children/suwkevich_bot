@@ -26,7 +26,12 @@ from app.services.users import get_or_create_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 DbSession = Annotated[AsyncSession, Depends(get_db)]
-LOADING_MESSAGE_TEXT = "<code>Ваш ответ анализируется...</code>"
+LOADING_MESSAGE_VARIANTS = (
+    "<code>Анализируем...</code>",
+    "<code>Одну минутку...</code>",
+    "<code>Генерируем ответ...</code>",
+    "<code>Собираем ответ...</code>",
+)
 
 
 def _extract_text_from_update(update: dict[str, Any]) -> str:
@@ -46,6 +51,14 @@ def _extract_text_from_update(update: dict[str, Any]) -> str:
 def should_show_loading_message(update: dict[str, Any]) -> bool:
     text = _extract_text_from_update(update)
     return bool(text) and not text.startswith("/")
+
+
+def pick_loading_message(update: dict[str, Any]) -> str:
+    text = _extract_text_from_update(update)
+    if not text:
+        return LOADING_MESSAGE_VARIANTS[0]
+    index = sum(ord(char) for char in text) % len(LOADING_MESSAGE_VARIANTS)
+    return LOADING_MESSAGE_VARIANTS[index]
 
 
 async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> MessageResponse:
@@ -142,7 +155,7 @@ async def process_direct_telegram_update(update: dict[str, Any]) -> None:
             if chat_id is not None and should_show_loading_message(update):
                 loading_responses = await send_message(
                     chat_id,
-                    LOADING_MESSAGE_TEXT,
+                    pick_loading_message(update),
                     parse_mode="HTML",
                     clean=False,
                 )

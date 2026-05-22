@@ -3,6 +3,7 @@ from app.services.dialogue import (
     build_system_prompt,
     detect_risk_level,
     ensure_risk_contact,
+    reply_token_budget,
     should_use_detailed_reply,
 )
 
@@ -31,3 +32,20 @@ def test_system_prompt_keeps_regular_replies_short() -> None:
 def test_detailed_reply_detection_for_tests_and_symptoms() -> None:
     assert should_use_detailed_reply("Помоги разобрать результаты теста на тревогу") is True
     assert should_use_detailed_reply("Мне тревожно и одиноко") is False
+
+
+def test_detailed_reply_detection_for_structured_answers() -> None:
+    text = (
+        "1 - странный вопрос. правильнее спросить, насколько часто "
+        "вы чувствуете, что не контролируете жизнь.\n"
+        "2 - в целом да\n"
+        "3 - порой да и сильно\n"
+        "4 - да, но иногда эмоции сильнее\n"
+        "5 - да, но с недавних пор"
+    )
+    assert should_use_detailed_reply(text) is True
+
+
+def test_reply_token_budget_depends_on_request_shape() -> None:
+    assert reply_token_budget("Мне тревожно и одиноко") == 520
+    assert reply_token_budget("Помоги составить тест по этим метрикам") == 1600

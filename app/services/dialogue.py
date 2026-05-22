@@ -45,7 +45,11 @@ CRISIS_PATTERNS = (
 CRISIS_RE = re.compile("|".join(CRISIS_PATTERNS), re.IGNORECASE)
 DETAILED_REPLY_HINTS = (
     "тест",
+    "составь тест",
     "опросник",
+    "опрос",
+    "анкета",
+    "вопросы",
     "результат",
     "симптом",
     "симптомы",
@@ -237,11 +241,26 @@ def fallback_reply(text: str, risk_level: str) -> str:
     return ensure_risk_contact(base, risk_level)
 
 
+def _looks_like_structured_answers(text: str) -> bool:
+    numbered_points = re.findall(r"(?m)^\s*\d+\s*[-.)]?\s+", text or "")
+    if len(numbered_points) >= 3:
+        return True
+    return (text or "").count("\n") >= 3 and len((text or "").strip()) >= 180
+
+
 def should_use_detailed_reply(text: str) -> bool:
     lower = (text or "").lower()
     if any(hint in lower for hint in DETAILED_REPLY_HINTS):
         return True
+    if _looks_like_structured_answers(text):
+        return True
     return len(text.strip()) >= 900
+
+
+def reply_token_budget(text: str) -> int:
+    if should_use_detailed_reply(text):
+        return 1600
+    return 520
 
 
 async def handle_user_text(
@@ -278,7 +297,7 @@ async def handle_user_text(
         reply = await openrouter_chat(
             messages,
             temperature=0.55,
-            max_tokens=900 if detailed_reply else 420,
+            max_tokens=reply_token_budget(clean),
         )
     except LlmUnavailableError as exc:
         logger.warning(
