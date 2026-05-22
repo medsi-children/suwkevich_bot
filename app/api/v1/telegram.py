@@ -14,6 +14,7 @@ from app.schemas.user import UserCreate
 from app.services.dialogue import add_message, get_active_session, handle_user_text
 from app.services.memory import apply_memory_control, store_memory_updates
 from app.services.telegram import (
+    delete_message,
     extract_chat_id,
     extract_message,
     extract_sender,
@@ -24,11 +25,13 @@ from app.services.users import get_or_create_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+LOADING_MESSAGE_TEXT = (
+    "```markdown\nВаш ответ анализируется...\n\nСушкевич Бот формирует ответ.\n```"
+)
 
 
-async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> MessageResponse:
+def _extract_text_from_update(update: dict[str, Any]) -> str:
     message = extract_message(update)
-    sender = extract_sender(update)
     text = message.get("text")
     web_app_data = message.get("web_app_data") or {}
     if not text and web_app_data.get("data"):
@@ -36,10 +39,20 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
             payload = json.loads(str(web_app_data["data"]))
         except json.JSONDecodeError:
             payload = {}
-        if isinstance(payload, dict):
-            candidate = payload.get("text")
-            if isinstance(candidate, str):
-                text = candidate
+        if isinstance(payload, dict) and isinstance(payload.get("text"), str):
+            text = payload["text"]
+    return str(text or "").strip()
+
+
+def should_show_loading_message(update: dict[str, Any]) -> bool:
+    text = _extract_text_from_update(update)
+    return bool(text) and not text.startswith("/")
+
+
+async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> MessageResponse:
+    message = extract_message(update)
+    sender = extract_sender(update)
+    text = _extract_text_from_update(update)
     telegram_id = sender.get("id")
     chat_id = extract_chat_id(update)
 
@@ -120,15 +133,31 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
 
 async def process_direct_telegram_update(update: dict[str, Any]) -> None:
     chat_id = extract_chat_id(update)
+    loading_message_id: int | None = None
     async with AsyncSessionLocal() as db:
         try:
+            if chat_id is not None and should_show_loading_message(update):
+                loading_responses = await send_message(
+                    chat_id,
+                    LOADING_MESSAGE_TEXT,
+                    parse_mode="Markdown",
+                    clean=False,
+                )
+                loading_result = (
+                    (loading_responses[0].get("result") or {}) if loading_responses else {}
+                )
+                loading_message_id = loading_result.get("message_id")
             response = await build_telegram_response(update, db)
+            if chat_id is not None and loading_message_id is not None:
+                await delete_message(chat_id, loading_message_id)
             if chat_id is not None:
                 await send_message(chat_id, response.reply)
         except Exception:
             await db.rollback()
             logger.exception("Failed to process Telegram update")
             if chat_id is not None:
+                if loading_message_id is not None:
+                    await delete_message(chat_id, loading_message_id)
                 await send_message(
                     chat_id,
                     "Сейчас не получилось ответить. Попробуйте написать еще раз чуть позже.",

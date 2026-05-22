@@ -1,4 +1,9 @@
-from app.services.dialogue import DOCTOR_CONTACT, detect_risk_level, ensure_risk_contact
+from app.services.dialogue import (
+    DOCTOR_CONTACT,
+    build_system_prompt,
+    detect_risk_level,
+    ensure_risk_contact,
+)
 
 
 def test_detects_crisis_language() -> None:
@@ -14,3 +19,9 @@ def test_adds_doctor_contact_for_crisis() -> None:
 def test_does_not_add_contact_for_regular_dialogue() -> None:
     reply = ensure_risk_contact("Похоже, вы устали.", "none")
     assert DOCTOR_CONTACT not in reply
+
+
+def test_system_prompt_keeps_regular_replies_short() -> None:
+    prompt = build_system_prompt()
+    assert "2–3 коротких абзаца" in prompt
+    assert "до 120 слов" in prompt

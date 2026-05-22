@@ -115,6 +115,48 @@ LIFEHACK_FORBIDDEN_WORDS = (
     "проект",
     "файл",
 )
+INSIGHT_ADVICE_WORDS = (
+    "попробуй",
+    "попробуйте",
+    "сделай",
+    "сделайте",
+    "запиши",
+    "запишите",
+    "спроси",
+    "спросите",
+    "поставь",
+    "поставьте",
+    "открой",
+    "откройте",
+    "закрой",
+    "закройте",
+    "выбери",
+    "выберите",
+    "возьми",
+    "возьмите",
+    "сформулируй",
+    "сформулируйте",
+    "стоит ",
+    "нужно ",
+    "лучше ",
+    "можно ",
+    "важно ",
+)
+INSIGHT_REALIZATION_WORDS = (
+    "вы заметили",
+    "вы поняли",
+    "вы осознали",
+    "вы стали",
+    "вы начали",
+    "вы чаще",
+    "вы меньше",
+    "вы больше",
+    "появилось понимание",
+    "стало видно",
+    "становится видно",
+    "прослеживается",
+    "повторяется",
+)
 
 
 def _clip(text: str | None, *, limit: int = 220) -> str:
@@ -489,6 +531,13 @@ def _clean_insights(items: Any) -> list[dict[str, str]]:
         title = _clip(item.get("title"), limit=78)
         text = _clip(item.get("text") or item.get("description"), limit=210)
         tone = str(item.get("tone") or "calm").strip().lower()
+        combined = f"{title} {text}".lower()
+        if any(word in combined for word in LIFEHACK_FORBIDDEN_WORDS):
+            continue
+        if any(word in combined for word in INSIGHT_ADVICE_WORDS):
+            continue
+        if not any(word in combined for word in INSIGHT_REALIZATION_WORDS):
+            continue
         if tone not in allowed_tones:
             tone = "calm"
         if title and text:
@@ -566,7 +615,7 @@ def _build_insights(
                 "tone": _insight_tone(f"{memory.title} {text}"),
             }
         )
-    return insights
+    return _clean_insights(insights)
 
 
 def _build_activity(messages: list[Message]) -> list[dict[str, Any]]:

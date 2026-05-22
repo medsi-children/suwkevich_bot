@@ -91,3 +91,37 @@ def test_insights_ignore_event_history_when_no_cache_or_insight_memories() -> No
     )
 
     assert insights == []
+
+
+def test_insights_reject_advice_cards() -> None:
+    cleaned = support_profile._clean_insights(
+        [
+            {
+                "title": "Пауза перед ответом",
+                "text": "Попробуйте записать одну нейтральную формулировку.",
+                "tone": "growth",
+            }
+        ]
+    )
+
+    assert cleaned == []
+
+
+def test_insights_accept_user_realizations() -> None:
+    cleaned = support_profile._clean_insights(
+        [
+            {
+                "title": "Меньше автоматизма",
+                "text": "Вы заметили, что чаще отделяете свою реакцию от ожиданий других людей.",
+                "tone": "growth",
+            }
+        ]
+    )
+
+    assert cleaned == [
+        {
+            "title": "Меньше автоматизма",
+            "text": "Вы заметили, что чаще отделяете свою реакцию от ожиданий других людей.",
+            "tone": "growth",
+        }
+    ]

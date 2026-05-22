@@ -65,15 +65,32 @@ def split_telegram_text(text: str) -> list[str]:
     return chunks
 
 
-async def send_message(chat_id: int, text: str) -> None:
-    clean_text = clean_generated_text(text)
+async def send_message(
+    chat_id: int,
+    text: str,
+    *,
+    parse_mode: str | None = None,
+    clean: bool = True,
+) -> list[dict[str, Any]]:
+    clean_text = clean_generated_text(text) if clean else text.strip()
+    responses: list[dict[str, Any]] = []
     for chunk in split_telegram_text(clean_text):
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "text": chunk,
             "disable_web_page_preview": True,
         }
-        await telegram_api("sendMessage", payload)
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        responses.append(await telegram_api("sendMessage", payload))
+    return responses
+
+
+async def delete_message(chat_id: int, message_id: int) -> None:
+    try:
+        await telegram_api("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+    except Exception:
+        logger.exception("Failed to delete Telegram message %s in chat %s", message_id, chat_id)
 
 
 async def sync_direct_telegram_webhook() -> str:

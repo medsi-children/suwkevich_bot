@@ -426,10 +426,10 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-card {
       position: relative;
       overflow: hidden;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, .78), rgba(255, 255, 255, .5)),
-        var(--lifehack-gradient);
-      border-color: rgba(125, 142, 166, .16);
+      color: #fff;
+      background: var(--lifehack-gradient);
+      border-color: rgba(255, 255, 255, .24);
+      box-shadow: 0 18px 42px rgba(76, 92, 130, .18);
     }
 
     .lifehack-card::before {
@@ -439,9 +439,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       width: 72%;
       height: 138px;
       border-radius: 999px;
-      background: var(--lifehack-blob);
-      filter: blur(16px);
-      opacity: .88;
+      background: rgba(255, 255, 255, .24);
+      filter: blur(18px);
+      opacity: .78;
       pointer-events: none;
     }
 
@@ -452,29 +452,25 @@ SUPPORT_APP_HTML = """<!doctype html>
       width: 220px;
       height: 150px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .34);
-      filter: blur(18px);
+      background: rgba(255, 255, 255, .18);
+      filter: blur(20px);
       pointer-events: none;
     }
 
     .lifehack-card[data-style="0"] {
-      --lifehack-gradient: linear-gradient(135deg, rgba(255, 126, 149, .26), rgba(255, 197, 111, .2), rgba(255, 255, 255, .62));
-      --lifehack-blob: linear-gradient(90deg, #ff5c8a, #ffb36d, #ffffff);
+      --lifehack-gradient: linear-gradient(135deg, #ff4f8b 0%, #ff8a5c 48%, #ffd166 100%);
     }
 
     .lifehack-card[data-style="1"] {
-      --lifehack-gradient: linear-gradient(135deg, rgba(112, 154, 255, .26), rgba(157, 112, 255, .2), rgba(255, 255, 255, .64));
-      --lifehack-blob: linear-gradient(90deg, #6b8cff, #8e5cff, #ffffff);
+      --lifehack-gradient: linear-gradient(135deg, #5f7cff 0%, #8759f2 55%, #c06cff 100%);
     }
 
     .lifehack-card[data-style="2"] {
-      --lifehack-gradient: linear-gradient(135deg, rgba(76, 196, 230, .24), rgba(79, 232, 179, .2), rgba(255, 255, 255, .64));
-      --lifehack-blob: linear-gradient(90deg, #37c7e6, #3eeab5, #ffffff);
+      --lifehack-gradient: linear-gradient(135deg, #24b9d8 0%, #22d6a8 54%, #7fdc68 100%);
     }
 
     .lifehack-card[data-style="3"] {
-      --lifehack-gradient: linear-gradient(135deg, rgba(255, 220, 124, .28), rgba(255, 146, 126, .18), rgba(255, 255, 255, .64));
-      --lifehack-blob: linear-gradient(90deg, #ffe06f, #ff876f, #ffffff);
+      --lifehack-gradient: linear-gradient(135deg, #ffbf4f 0%, #ff6f91 48%, #9b5de5 100%);
     }
 
     .lifehack-card > * {
@@ -507,39 +503,39 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-self: start;
       min-height: 36px;
       padding: 8px 12px;
-      border: 1px solid rgba(87, 112, 136, .18);
+      border: 1px solid rgba(255, 255, 255, .44);
       border-radius: 8px;
-      background: rgba(255, 255, 255, .76);
-      color: #2d3440;
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
       font-weight: 800;
       cursor: pointer;
+      backdrop-filter: blur(10px);
     }
 
     .insight-card {
       min-height: 154px;
+      color: #fff;
       background:
-        linear-gradient(135deg, rgba(255, 255, 255, .9), var(--insight-soft)),
-        radial-gradient(circle at 92% 12%, var(--insight-dot), transparent 42%);
+        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .2), transparent 42%),
+        var(--insight-gradient);
+      border-color: rgba(255, 255, 255, .22);
+      box-shadow: 0 18px 42px rgba(76, 92, 130, .16);
     }
 
     .insight-card[data-tone="growth"] {
-      --insight-soft: rgba(202, 215, 255, .34);
-      --insight-dot: rgba(122, 147, 255, .28);
+      --insight-gradient: linear-gradient(135deg, #5168e8 0%, #7f65f1 52%, #a96ff4 100%);
     }
 
     .insight-card[data-tone="attention"] {
-      --insight-soft: rgba(220, 208, 255, .35);
-      --insight-dot: rgba(142, 119, 232, .24);
+      --insight-gradient: linear-gradient(135deg, #e4568d 0%, #cc5db8 50%, #8b61dc 100%);
     }
 
     .insight-card[data-tone="resource"] {
-      --insight-soft: rgba(214, 224, 255, .34);
-      --insight-dot: rgba(96, 139, 229, .22);
+      --insight-gradient: linear-gradient(135deg, #17b6b2 0%, #2cc98e 54%, #69d46f 100%);
     }
 
     .insight-card[data-tone="calm"] {
-      --insight-soft: rgba(229, 224, 255, .34);
-      --insight-dot: rgba(171, 151, 235, .2);
+      --insight-gradient: linear-gradient(135deg, #3c91d7 0%, #5a79e8 55%, #7b63dc 100%);
     }
 
     .data-card small {
@@ -561,6 +557,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       color: var(--muted);
       line-height: 1.48;
       font-size: 14px;
+    }
+
+    .lifehack-card h3,
+    .lifehack-card p,
+    .insight-card h3,
+    .insight-card p {
+      color: #fff;
+      text-shadow: 0 1px 12px rgba(38, 48, 70, .18);
     }
 
     .card-actions {
@@ -1106,9 +1110,9 @@ SUPPORT_APP_HTML = """<!doctype html>
           { kind: "бережная заметка", title: "Сон как маркер", text: "Если несколько ночей подряд сон резко ухудшается, это важно обсудить со специалистом." },
         ],
         insights: [
-          { tone: "growth", title: "После паузы легче говорить точнее", text: "Когда появляется несколько минут между эмоцией и ответом, разговор меньше уходит в защиту." },
-          { tone: "resource", title: "Границы не равны конфликту", text: "Честная просьба иногда снижает напряжение быстрее, чем попытка выдержать молча." },
-          { tone: "attention", title: "Сон быстро показывает перегруз", text: "Если сон ломается несколько ночей подряд, это стоит вынести в отдельную тему разговора." },
+          { tone: "growth", title: "После паузы точнее слова", text: "Вы заметили, что несколько минут между эмоцией и ответом помогают говорить меньше из защиты." },
+          { tone: "resource", title: "Границы стали спокойнее", text: "Вы стали чаще видеть, что честная просьба не обязательно превращается в конфликт." },
+          { tone: "attention", title: "Сон связан с перегрузом", text: "Стало видно, что после нескольких напряженных дней сон первым показывает нехватку сил." },
         ],
       };
     }
