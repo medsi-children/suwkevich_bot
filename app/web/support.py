@@ -450,13 +450,13 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-card::before {
       content: "";
       position: absolute;
-      inset: -34px -56px auto auto;
-      width: 72%;
-      height: 138px;
+      inset: -26px -24px auto auto;
+      width: 54%;
+      height: 112px;
       border-radius: 999px;
       background: rgba(255, 255, 255, .24);
-      filter: blur(18px);
-      opacity: .78;
+      filter: blur(20px);
+      opacity: .54;
       pointer-events: none;
     }
 
@@ -464,11 +464,11 @@ SUPPORT_APP_HTML = """<!doctype html>
       content: "";
       position: absolute;
       inset: auto auto -70px -76px;
-      width: 220px;
-      height: 150px;
+      width: 180px;
+      height: 124px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .18);
-      filter: blur(20px);
+      background: rgba(255, 255, 255, .14);
+      filter: blur(18px);
       pointer-events: none;
     }
 
@@ -556,15 +556,17 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-hint {
       position: absolute;
       left: 50%;
-      top: calc(50% + 34px);
+      top: calc(50% + 30px);
       transform: translateX(-50%) translateY(6px);
       display: block;
-      width: max-content;
-      max-width: 120px;
-      font-size: 12px;
-      line-height: 1.2;
+      width: 92px;
+      max-width: 92px;
+      font-size: 10px;
+      line-height: 1.1;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .04em;
+      text-align: center;
+      text-wrap: balance;
       opacity: 0;
       animation: lifehackHintLoop 5.4s ease-in-out infinite;
     }
@@ -632,8 +634,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       min-height: 146px;
       color: #fff;
       background:
-        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .2), transparent 42%),
-        var(--insight-gradient);
+        radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .18), transparent 42%),
+        linear-gradient(135deg, var(--insight-soft) 0%, var(--insight-tone) 100%);
       border-color: rgba(255, 255, 255, .22);
       border-radius: 16px;
       box-shadow: 0 18px 42px rgba(76, 92, 130, .16);
@@ -657,20 +659,24 @@ SUPPORT_APP_HTML = """<!doctype html>
       box-shadow: 0 22px 48px rgba(76, 92, 130, .2);
     }
 
-    .insight-card[data-tone="growth"] {
-      --insight-gradient: linear-gradient(135deg, #5168e8 0%, #7f65f1 52%, #a96ff4 100%);
-    }
-
-    .insight-card[data-tone="attention"] {
-      --insight-gradient: linear-gradient(135deg, #e4568d 0%, #cc5db8 50%, #8b61dc 100%);
-    }
-
-    .insight-card[data-tone="resource"] {
-      --insight-gradient: linear-gradient(135deg, #17b6b2 0%, #2cc98e 54%, #69d46f 100%);
-    }
-
-    .insight-card[data-tone="calm"] {
-      --insight-gradient: linear-gradient(135deg, #3c91d7 0%, #5a79e8 55%, #7b63dc 100%);
+    .insight-card .insight-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      max-width: 100%;
+      min-height: 26px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .16);
+      border: 1px solid rgba(255, 255, 255, .26);
+      color: rgba(255, 255, 255, .92);
+      font-size: 11px;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      backdrop-filter: blur(10px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
     }
 
     .data-card small {
@@ -1071,14 +1077,52 @@ SUPPORT_APP_HTML = """<!doctype html>
         el.innerHTML = `<div class="empty-state"><strong>Наблюдений пока нет</strong><span>Здесь появятся важные осознания и динамика из разговоров.</span></div>`;
         return;
       }
-      el.innerHTML = cards.map((card) => `
-        <article class="data-card insight-card" data-tone="${escapeHtml(card.tone || "calm")}">
+      const insightThemes = {
+        agency: { label: "Субъектность", soft: "#8fd6c8", tone: "#5bb8a9" },
+        clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
+        support: { label: "Опора", soft: "#ffd6a6", tone: "#f3ad61" },
+        safety: { label: "Безопасность", soft: "#f5b8c8", tone: "#df7f9a" },
+        boundaries: { label: "Границы", soft: "#c9b7ff", tone: "#987de8" },
+        self_compassion: { label: "Самосострадание", soft: "#b8e9aa", tone: "#79be68" },
+        body_contact: { label: "Контакт с собой", soft: "#b7e6ff", tone: "#67badc" },
+        resource: { label: "Ресурс", soft: "#ffe69e", tone: "#e7bc45" },
+      };
+      const inferInsightTheme = (card) => {
+        const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
+        const checks = [
+          ["body_contact", ["сон", "тело", "дых", "напряж", "состояни", "чувств"]],
+          ["resource", ["сил", "энерг", "ресурс", "отдых", "перегруз", "устал"]],
+          ["boundaries", ["границ", "просьб", "отказ", "не обяз", "сказать нет"]],
+          ["self_compassion", ["береж", "мягч", "не руга", "к себе", "самосост"]],
+          ["support", ["опор", "поддерж", "рядом", "человек", "разговор"]],
+          ["safety", ["риск", "опас", "осторож", "криз", "ломается"]],
+          ["agency", ["шаг", "выбор", "решил", "действ", "ответ", "сказать"]],
+          ["clarity", ["ясн", "понят", "видно", "заметили", "осозн", "сформулир"]],
+        ];
+        for (const [key, words] of checks) {
+          if (words.some((word) => text.includes(word))) return key;
+        }
+        const fallback = {
+          growth: "agency",
+          attention: "safety",
+          resource: "resource",
+          calm: "clarity",
+        };
+        return fallback[card.tone || "calm"] || "clarity";
+      };
+      el.innerHTML = cards.map((card) => {
+        const themeKey = inferInsightTheme(card);
+        const theme = insightThemes[themeKey] || insightThemes.clarity;
+        return `
+        <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
           <div>
+            <small class="insight-meta">${escapeHtml(theme.label)}</small>
             <h3>${escapeHtml(card.title || "Наблюдение")}</h3>
             <p>${escapeHtml(card.text || "")}</p>
           </div>
         </article>
-      `).join("");
+      `;
+      }).join("");
     }
     function renderMetrics(metrics) {
       const grid = document.getElementById("metricsGrid");

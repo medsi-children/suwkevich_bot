@@ -83,6 +83,33 @@ def test_lifehacks_reject_technical_roleplay() -> None:
     assert support_profile._build_lifehacks(user, latest_update=None) == []
 
 
+def test_lifehacks_reject_neural_sounding_scripts() -> None:
+    user = _user()
+    support_profile.cache_support_profile_items(
+        user,
+        lifehacks=[
+            {
+                "title": "Пауза",
+                "text": "Скажи себе: «Я слышу, ты сейчас громко».",
+                "action": "Запиши это в заметки.",
+            },
+            {
+                "title": "Голос",
+                "text": "Когда включается внутренний голос, повтори фразу.",
+                "action": "Открой приложение и сохрани её.",
+            },
+            {
+                "title": "Мантра",
+                "text": "Используй аффирмацию для нейтральной формулировки.",
+                "action": "Повтори это громко.",
+            },
+        ],
+        insights=[],
+    )
+
+    assert support_profile._build_lifehacks(user, latest_update=None) == []
+
+
 def test_insights_ignore_event_history_when_no_cache_or_insight_memories() -> None:
     insights = support_profile._build_insights(
         user=_user(),
