@@ -168,7 +168,6 @@ SUPPORT_APP_HTML = """<!doctype html>
     .section-shell,
     .metric-card,
     .data-card,
-    .activity-panel,
     .empty-state {
       border: 1px solid var(--line);
       border-radius: var(--surface-radius);
@@ -1097,48 +1096,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       background: rgba(143, 214, 200, .2);
     }
 
-    .activity-panel {
-      padding: 16px;
-      min-height: 232px;
-      display: grid;
-      gap: 18px;
-    }
-
-    .activity-copy {
-      margin: -6px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .activity-bars {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 8px;
-      min-height: 150px;
-      align-items: end;
-    }
-
-    .day {
-      display: grid;
-      gap: 7px;
-      align-items: end;
-      min-width: 0;
-      color: var(--muted);
-      font-size: 11px;
-      text-align: center;
-    }
-
-    .day i {
-      display: block;
-      min-height: 8px;
-      height: max(8px, calc(var(--height) * 1.25px));
-      border-radius: 8px 8px 3px 3px;
-      background: linear-gradient(180deg, var(--sky), var(--mint));
-      border: 1px solid rgba(255, 255, 255, .76);
-      box-shadow: 0 10px 22px rgba(96, 120, 146, .1);
-    }
-
     .support-layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1156,7 +1113,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .inline-empty {
-      padding: 2px 2px 0;
+      padding: 2px 18px 0;
       color: #738092;
       font-size: 13px;
       line-height: 1.45;
@@ -1182,8 +1139,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     .loading .hero-copy,
     .loading .radar-panel,
     .loading .metric-card,
-    .loading .data-card,
-    .loading .activity-panel {
+    .loading .data-card {
       position: relative;
       overflow: hidden;
     }
@@ -1191,8 +1147,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     .loading .hero-copy::after,
     .loading .radar-panel::after,
     .loading .metric-card::after,
-    .loading .data-card::after,
-    .loading .activity-panel::after {
+    .loading .data-card::after {
       content: "";
       position: absolute;
       inset: 0;
@@ -1303,11 +1258,6 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     <section class="panel active" id="panel-personality">
       <div class="metrics-grid" id="metricsGrid"></div>
-      <div class="activity-panel">
-        <h2 class="panel-title">Ритм последних дней <span class="badge">7 дней</span></h2>
-        <p class="activity-copy">Небольшой след вашей активности: не оценка, а просто ритм того, как часто вы возвращались к разговору.</p>
-        <div class="activity-bars" id="activityBars"></div>
-      </div>
     </section>
 
     <section class="panel" id="panel-diary">
