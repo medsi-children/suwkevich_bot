@@ -40,6 +40,7 @@ def test_metrics_fill_only_dimensions_with_evidence() -> None:
     by_key = {metric["key"]: metric for metric in metrics}
 
     assert isinstance(by_key["agency"]["value"], int)
+    assert by_key["agency"]["detail"]
     assert by_key["sensitivity"]["value"] is None
     assert by_key["sensitivity"]["empty"] is True
 
@@ -150,5 +151,38 @@ def test_insights_accept_user_realizations() -> None:
             "title": "Меньше автоматизма",
             "text": "Вы заметили, что чаще отделяете свою реакцию от ожиданий других людей.",
             "tone": "growth",
+            "theme": None,
         }
     ]
+
+
+def test_manual_diary_items_are_merged_into_insights() -> None:
+    user = _user()
+    support_profile.upsert_manual_diary_item(
+        user,
+        item_id=None,
+        title="Свое осознание",
+        text="Я стал раньше замечать, когда перегружаюсь.",
+        theme="sensitivity",
+    )
+
+    insights = support_profile._build_insights(user=user, memories=[], latest_update=None)
+
+    assert insights[0]["manual"] is True
+    assert insights[0]["theme"] == "sensitivity"
+
+
+def test_manual_diary_item_can_be_deleted() -> None:
+    user = _user()
+    item = support_profile.upsert_manual_diary_item(
+        user,
+        item_id=None,
+        title="Свое осознание",
+        text="Я стал раньше замечать, когда перегружаюсь.",
+        theme="sensitivity",
+    )
+
+    deleted = support_profile.delete_manual_diary_item(user, item["id"])
+
+    assert deleted is True
+    assert support_profile.get_manual_diary_items(user) == []

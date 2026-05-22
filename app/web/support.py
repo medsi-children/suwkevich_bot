@@ -333,10 +333,10 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .metric-card {
-      min-height: 162px;
+      min-height: 206px;
       padding: 14px;
       display: grid;
-      gap: 12px;
+      gap: 10px;
       align-content: space-between;
     }
 
@@ -389,6 +389,15 @@ SUPPORT_APP_HTML = """<!doctype html>
       line-height: 1.45;
     }
 
+    .metric-hint {
+      font-weight: 650;
+      color: #50606f;
+    }
+
+    .metric-detail {
+      color: var(--muted);
+    }
+
     .bar {
       height: 7px;
       border-radius: 999px;
@@ -420,6 +429,84 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 12px;
     }
 
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mini-action {
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      color: #556575;
+      font-size: 24px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 10px 28px rgba(96, 120, 146, .1);
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .mini-action:hover {
+      transform: translateY(-1px);
+      border-color: rgba(111, 159, 237, .36);
+      background: #fff;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(255, 255, 255, .78);
+      box-shadow: 0 14px 34px rgba(96, 120, 146, .1);
+    }
+
+    .composer-input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(87, 112, 136, .14);
+      border-radius: 999px;
+      background: rgba(248, 251, 255, .96);
+      color: var(--text);
+      padding: 0 16px;
+      font: inherit;
+      outline: none;
+    }
+
+    .composer-input:focus {
+      border-color: rgba(111, 159, 237, .4);
+      box-shadow: 0 0 0 4px rgba(111, 159, 237, .1);
+    }
+
+    .composer-button {
+      min-width: 106px;
+      min-height: 48px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(111, 159, 237, .26);
+      background: linear-gradient(135deg, rgba(143, 214, 200, .94), rgba(169, 200, 255, .94));
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .composer-status {
+      min-height: 20px;
+      padding: 0 4px;
+      color: #667483;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .data-card {
       min-height: 184px;
       padding: 16px;
@@ -427,6 +514,172 @@ SUPPORT_APP_HTML = """<!doctype html>
       flex-direction: column;
       gap: 14px;
       justify-content: space-between;
+    }
+
+    .insight-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .insight-action {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .28);
+      background: rgba(255, 255, 255, .14);
+      color: rgba(255, 255, 255, .96);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .insight-action:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, .22);
+      border-color: rgba(255, 255, 255, .42);
+    }
+
+    .insight-action svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(26, 33, 42, .22);
+      backdrop-filter: blur(10px);
+      z-index: 30;
+    }
+
+    .dialog-backdrop.open {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(560px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 20px 60px rgba(96, 120, 146, .22);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .dialog-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .dialog-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .dialog-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(255, 255, 255, .84);
+      color: #647382;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .dialog-field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .dialog-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #536272;
+    }
+
+    .dialog-input,
+    .dialog-textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(248, 251, 255, .92);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      outline: none;
+    }
+
+    .dialog-input:focus,
+    .dialog-textarea:focus {
+      border-color: rgba(111, 159, 237, .45);
+      box-shadow: 0 0 0 4px rgba(111, 159, 237, .12);
+    }
+
+    .dialog-textarea {
+      min-height: 124px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(96, 120, 146, .16);
+      transition: transform .18s ease, border-color .18s ease;
+    }
+
+    .swatch.active {
+      border-color: rgba(32, 40, 51, .36);
+      transform: scale(1.06);
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .dialog-button {
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(255, 255, 255, .88);
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .dialog-button.primary {
+      border-color: rgba(111, 159, 237, .26);
+      background: linear-gradient(135deg, rgba(143, 214, 200, .94), rgba(169, 200, 255, .94));
     }
 
     .lifehack-card {
@@ -889,10 +1142,15 @@ SUPPORT_APP_HTML = """<!doctype html>
     <nav class="tabs" aria-label="Разделы профиля">
       <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
       <button class="tab active" type="button" data-tab="personality">Личность</button>
-      <button class="tab" type="button" data-tab="insights">Инсайты</button>
+      <button class="tab" type="button" data-tab="diary">Дневник</button>
     </nav>
 
     <section class="panel" id="panel-lifehacks">
+      <div class="composer">
+        <input class="composer-input" id="lifehackPrompt" placeholder="Новый лайфхак" />
+        <button class="composer-button" id="generateLifehackButton" type="button">Создать</button>
+      </div>
+      <div class="composer-status" id="lifehackStatus"></div>
       <div class="cards" id="lifehackCards"></div>
     </section>
 
@@ -904,16 +1162,51 @@ SUPPORT_APP_HTML = """<!doctype html>
       </div>
     </section>
 
-    <section class="panel" id="panel-insights">
+    <section class="panel" id="panel-diary">
+      <div class="panel-head">
+        <h2 class="panel-title">Дневник осознаний</h2>
+        <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
+      </div>
       <div class="cards" id="insightCards"></div>
     </section>
 
     <div class="status" id="status"></div>
   </main>
 
+  <div class="dialog-backdrop" id="diaryDialog">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="diaryDialogTitle">
+      <div class="dialog-top">
+        <h3 class="dialog-title" id="diaryDialogTitle">Осознание</h3>
+        <button class="dialog-close" id="closeDiaryDialog" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="diaryTitle">Заголовок</label>
+        <input class="dialog-input" id="diaryTitle" maxlength="78" />
+      </div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="diaryText">Текст</label>
+        <textarea class="dialog-textarea" id="diaryText" maxlength="240"></textarea>
+      </div>
+      <div class="dialog-field">
+        <span class="dialog-label">Цвет</span>
+        <div class="swatches" id="diarySwatches"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="dialog-button" id="cancelDiaryButton" type="button">Отмена</button>
+        <button class="dialog-button primary" id="saveDiaryButton" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const root = document.querySelector(".app");
     const statusEl = document.getElementById("status");
+    const diaryDialog = document.getElementById("diaryDialog");
+    const diaryTitleInput = document.getElementById("diaryTitle");
+    const diaryTextInput = document.getElementById("diaryText");
+    const diarySwatches = document.getElementById("diarySwatches");
+    const lifehackStatus = document.getElementById("lifehackStatus");
+    const lifehackPromptInput = document.getElementById("lifehackPrompt");
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) {
       tg.ready();
@@ -932,6 +1225,16 @@ SUPPORT_APP_HTML = """<!doctype html>
     const demoMode = params.get("demo") === "1";
     const localTelegramId = Number(params.get("telegram_id") || 0);
     const telegramId = Number(tgUser.id || localTelegramId || 0);
+    const diaryThemes = {
+      agency: { label: "Субъектность", soft: "#8fd6c8", tone: "#5bb8a9" },
+      empathy: { label: "Эмпатия", soft: "#ffd6a6", tone: "#f3ad61" },
+      boundaries: { label: "Границы", soft: "#c9b7ff", tone: "#987de8" },
+      sensitivity: { label: "Чувствительность", soft: "#b7e6ff", tone: "#67badc" },
+      clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
+      rationality: { label: "Рациональность", soft: "#f5b8c8", tone: "#df7f9a" },
+    };
+    let currentProfileData = null;
+    let currentDiaryDraft = { item_id: null, theme: "clarity" };
     const metricLabels = [
       "Субъектность",
       "Эмпатия",
@@ -961,6 +1264,15 @@ SUPPORT_APP_HTML = """<!doctype html>
         lifehack_cards: [],
         insights: [],
         disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
+      };
+    }
+    function buildSupportPayload() {
+      return {
+        telegram_id: telegramId,
+        init_data: tg ? tg.initData : params.get("init_data") || "",
+        username: tgUser.username || params.get("username") || null,
+        first_name: tgUser.first_name || params.get("first_name") || null,
+        language_code: tgUser.language_code || params.get("language_code") || null,
       };
     }
     function setText(id, value) {
@@ -1081,22 +1393,40 @@ SUPPORT_APP_HTML = """<!doctype html>
         });
       });
     }
+
+    async function generateLifehack() {
+      if (demoMode || !telegramId) return;
+      const prompt = lifehackPromptInput.value.trim();
+      if (!prompt) {
+        lifehackStatus.textContent = "Напишите, какой лайфхак вам сейчас нужен.";
+        return;
+      }
+      lifehackStatus.textContent = "Генерируем лайфхак...";
+      const response = await fetch("/api/v1/support/lifehacks/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...buildSupportPayload(),
+          prompt,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${response.status}`);
+      }
+      lifehackPromptInput.value = "";
+      lifehackStatus.textContent = "";
+      renderProfile(await response.json());
+    }
     function renderInsights(cards) {
       const el = document.getElementById("insightCards");
       if (!el) return;
       if (!cards || !cards.length) {
-        el.innerHTML = `<div class="empty-state"><strong>Наблюдений пока нет</strong><span>Здесь появятся важные осознания и динамика из разговоров.</span></div>`;
+        el.innerHTML = `<div class="empty-state"><strong>Осознаний пока нет</strong><span>Здесь будут появляться ваши важные наблюдения о себе — и автоматические, и добавленные вручную.</span></div>`;
         return;
       }
-      const insightThemes = {
-        agency: { label: "Субъектность", soft: "#8fd6c8", tone: "#5bb8a9" },
-        empathy: { label: "Эмпатия", soft: "#ffd6a6", tone: "#f3ad61" },
-        boundaries: { label: "Границы", soft: "#c9b7ff", tone: "#987de8" },
-        sensitivity: { label: "Чувствительность", soft: "#b7e6ff", tone: "#67badc" },
-        clarity: { label: "Ясность", soft: "#a9c8ff", tone: "#6f9fed" },
-        rationality: { label: "Рациональность", soft: "#f5b8c8", tone: "#df7f9a" },
-      };
       const inferInsightTheme = (card) => {
+        if (card.theme && diaryThemes[card.theme]) return card.theme;
         const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
         const checks = [
           ["sensitivity", ["сон", "тело", "дых", "напряж", "состояни", "тревог", "устал", "чувств"]],
@@ -1117,19 +1447,43 @@ SUPPORT_APP_HTML = """<!doctype html>
         };
         return fallback[card.tone || "calm"] || "clarity";
       };
-      el.innerHTML = cards.map((card) => {
+      el.innerHTML = cards.map((card, index) => {
         const themeKey = inferInsightTheme(card);
-        const theme = insightThemes[themeKey] || insightThemes.clarity;
+        const theme = diaryThemes[themeKey] || diaryThemes.clarity;
         return `
-        <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
+        <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
           <div>
             <small class="insight-meta">${escapeHtml(theme.label)}</small>
-            <h3>${escapeHtml(card.title || "Наблюдение")}</h3>
+            <h3>${escapeHtml(card.title || "Осознание")}</h3>
             <p>${escapeHtml(card.text || "")}</p>
+            <div class="insight-actions">
+              <button class="insight-action" type="button" data-edit-diary="${escapeHtml(card.id || "")}" aria-label="Редактировать осознание">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+              ${card.manual ? `
+              <button class="insight-action" type="button" data-delete-diary="${escapeHtml(card.id || "")}" aria-label="Удалить осознание">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>` : ""}
+            </div>
           </div>
         </article>
       `;
       }).join("");
+      el.querySelectorAll("[data-edit-diary]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const index = Number(button.closest(".insight-card")?.dataset.diaryIndex || -1);
+          openDiaryEditor(cards[index] || null);
+        });
+      });
+      el.querySelectorAll("[data-delete-diary]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const id = button.dataset.deleteDiary || "";
+          if (!id) return;
+          await deleteDiaryEntry(id);
+        });
+      });
     }
     function renderMetrics(metrics) {
       const grid = document.getElementById("metricsGrid");
@@ -1143,13 +1497,15 @@ SUPPORT_APP_HTML = """<!doctype html>
         const soft = isEmpty ? "#eef2f6" : (metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff");
         const tone = isEmpty ? "#aeb8c4" : (metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed");
         const hint = isEmpty ? (metric.hint || "Информации о вас пока мало") : metric.hint;
+        const detail = isEmpty ? "" : String(metric.detail || "");
         return `
           <article class="metric-card${isEmpty ? " empty" : ""}" style="--value: ${value}; --metric-soft: ${soft}; --metric-tone: ${tone};">
             <div class="metric-top">
               <h3 class="metric-label">${escapeHtml(metric.label)}</h3>
               <div class="metric-value">${isEmpty ? "--" : Math.round(value)}</div>
             </div>
-            <p>${escapeHtml(hint)}</p>
+            <p class="metric-hint">${escapeHtml(hint)}</p>
+            ${detail ? `<p class="metric-detail">${escapeHtml(detail)}</p>` : ""}
             <div class="bar" aria-hidden="true"><span></span></div>
           </article>
         `;
@@ -1255,6 +1611,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       });
     }
     function renderProfile(data) {
+      currentProfileData = data;
       const firstName = data.user && data.user.first_name ? data.user.first_name : "вы";
       const metrics = data.metrics || [];
       const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === undefined));
@@ -1270,6 +1627,87 @@ SUPPORT_APP_HTML = """<!doctype html>
       root.classList.remove("loading");
       statusEl.textContent = "";
     }
+
+    function renderDiarySwatches(selectedTheme) {
+      diarySwatches.innerHTML = Object.entries(diaryThemes).map(([key, theme]) => `
+        <button
+          class="swatch${selectedTheme === key ? " active" : ""}"
+          type="button"
+          data-swatch-theme="${escapeHtml(key)}"
+          title="${escapeHtml(theme.label)}"
+          style="background: linear-gradient(135deg, ${theme.soft}, ${theme.tone});"
+        ></button>
+      `).join("");
+      diarySwatches.querySelectorAll("[data-swatch-theme]").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentDiaryDraft.theme = button.dataset.swatchTheme || "clarity";
+          renderDiarySwatches(currentDiaryDraft.theme);
+        });
+      });
+    }
+
+    function openDiaryEditor(card) {
+      currentDiaryDraft = {
+        item_id: card && card.manual ? (card.id || null) : null,
+        theme: card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity",
+      };
+      diaryTitleInput.value = card && card.title ? card.title : "";
+      diaryTextInput.value = card && card.text ? card.text : "";
+      document.getElementById("diaryDialogTitle").textContent = card ? "Редактировать осознание" : "Новое осознание";
+      renderDiarySwatches(currentDiaryDraft.theme);
+      diaryDialog.classList.add("open");
+    }
+
+    function closeDiaryEditor() {
+      diaryDialog.classList.remove("open");
+    }
+
+    async function saveDiaryEntry() {
+      if (demoMode || !telegramId) return;
+      const title = diaryTitleInput.value.trim();
+      const text = diaryTextInput.value.trim();
+      if (!title || !text) {
+        statusEl.textContent = "Заполните заголовок и текст осознания.";
+        return;
+      }
+      statusEl.textContent = "Сохраняю осознание…";
+      const payload = {
+        ...buildSupportPayload(),
+        item_id: currentDiaryDraft.item_id,
+        title,
+        text,
+        theme: currentDiaryDraft.theme,
+      };
+      const response = await fetch("/api/v1/support/diary/upsert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${response.status}`);
+      }
+      closeDiaryEditor();
+      renderProfile(await response.json());
+    }
+
+    async function deleteDiaryEntry(itemId) {
+      if (demoMode || !telegramId || !itemId) return;
+      statusEl.textContent = "Удаляю осознание…";
+      const response = await fetch("/api/v1/support/diary/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...buildSupportPayload(),
+          item_id: itemId,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${response.status}`);
+      }
+      renderProfile(await response.json());
+    }
     function demoProfile() {
       return {
         user: {
@@ -1284,12 +1722,12 @@ SUPPORT_APP_HTML = """<!doctype html>
         },
         disclaimer: "Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.",
         metrics: [
-          { label: "Субъектность", value: 68, hint: "Насколько вы чувствуете, что влияете на свою жизнь, принимаете решения сами и не живете в позиции вечной уступки или подчинения чужой воле.", tone: ["#8fd6c8", "#5bb8a9"] },
-          { label: "Эмпатия", value: 63, hint: "Насколько вы замечаете чувства других людей и понимаете, как ваши слова и поступки на них влияют.", tone: ["#ffd6a6", "#f3ad61"] },
-          { label: "Границы", value: 52, hint: "Насколько вы чувствуете свои пределы, умеете обозначать их другим, говорить «нет» и замечать момент, когда на вас начинают заходить слишком далеко.", tone: ["#c9b7ff", "#987de8"] },
-          { label: "Чувствительность", value: 70, hint: "Насколько вы замечаете сигналы своего тела и эмоций: усталость, напряжение, тревогу, перегруз, спокойствие.", tone: ["#b7e6ff", "#67badc"] },
-          { label: "Ясность", value: 61, hint: "Насколько вы способны честно видеть свою роль в ситуации, признавать ошибки и отделять факты от обиды или фантазий.", tone: ["#a9c8ff", "#6f9fed"] },
-          { label: "Рациональность", value: 56, hint: "Насколько для вас важны проверка, доказательства и факты, а не вера на слово, магическое объяснение или чужая уверенность.", tone: ["#f5b8c8", "#df7f9a"] },
+          { label: "Субъектность", value: 68, hint: "Насколько вы чувствуете, что влияете на свою жизнь, принимаете решения сами и не живете в позиции вечной уступки или подчинения чужой воле.", detail: "Сейчас вы чаще сами задаете курс: решения, выбор и чувство личного авторства в жизни у вас уже заметно выражены.", tone: ["#8fd6c8", "#5bb8a9"] },
+          { label: "Эмпатия", value: 63, hint: "Насколько вы замечаете чувства других людей и понимаете, как ваши слова и поступки на них влияют.", detail: "Эмпатия у вас рабочая: вы обычно замечаете состояние других людей, хотя в перегрузе можете упрощать их переживания.", tone: ["#ffd6a6", "#f3ad61"] },
+          { label: "Границы", value: 52, hint: "Насколько вы чувствуете свои пределы, умеете обозначать их другим, говорить «нет» и замечать момент, когда на вас начинают заходить слишком далеко.", detail: "Границы у вас в рабочем состоянии: в понятных ситуациях вы умеете говорить «нет», но в чувствительных темах это может шататься.", tone: ["#c9b7ff", "#987de8"] },
+          { label: "Чувствительность", value: 70, hint: "Насколько вы замечаете сигналы своего тела и эмоций: усталость, напряжение, тревогу, перегруз, спокойствие.", detail: "Вы хорошо чувствуете свое тело и эмоции, поэтому раньше замечаете перегруз, напряжение и смену состояния.", tone: ["#b7e6ff", "#67badc"] },
+          { label: "Ясность", value: 61, hint: "Насколько вы способны честно видеть свою роль в ситуации, признавать ошибки и отделять факты от обиды или фантазий.", detail: "Способность разбираться в происходящем уже есть, хотя в эмоционально заряженных темах вас еще может уносить в субъективность.", tone: ["#a9c8ff", "#6f9fed"] },
+          { label: "Рациональность", value: 56, hint: "Насколько для вас важны проверка, доказательства и факты, а не вера на слово, магическое объяснение или чужая уверенность.", detail: "Рациональная опора у вас в целом есть: вы обычно смотрите на факты, хотя в эмоциональных темах логика не всегда удерживает позицию.", tone: ["#f5b8c8", "#df7f9a"] },
         ],
         activity: [
           { label: "15.05", count: 1, value: 28 },
@@ -1310,9 +1748,9 @@ SUPPORT_APP_HTML = """<!doctype html>
           { kind: "бережная заметка", title: "Сон как маркер", text: "Если несколько ночей подряд сон резко ухудшается, это важно обсудить со специалистом." },
         ],
         insights: [
-          { tone: "growth", title: "После паузы точнее слова", text: "Вы заметили, что несколько минут между эмоцией и ответом помогают говорить меньше из защиты." },
-          { tone: "resource", title: "Границы стали спокойнее", text: "Вы стали чаще видеть, что честная просьба не обязательно превращается в конфликт." },
-          { tone: "attention", title: "Сон связан с перегрузом", text: "Стало видно, что после нескольких напряженных дней сон первым показывает нехватку сил." },
+          { id: "demo-1", tone: "growth", theme: "agency", title: "После паузы точнее слова", text: "Вы заметили, что несколько минут между эмоцией и ответом помогают говорить меньше из защиты.", manual: false },
+          { id: "demo-2", tone: "resource", theme: "boundaries", title: "Границы стали спокойнее", text: "Вы стали чаще видеть, что честная просьба не обязательно превращается в конфликт.", manual: true },
+          { id: "demo-3", tone: "attention", theme: "sensitivity", title: "Сон связан с перегрузом", text: "Стало видно, что после нескольких напряженных дней сон первым показывает нехватку сил.", manual: false },
         ],
       };
     }
@@ -1330,13 +1768,7 @@ SUPPORT_APP_HTML = """<!doctype html>
         statusEl.textContent = "Для локальной проверки можно открыть /app/support?telegram_id=123.";
         return;
       }
-      const payload = {
-        telegram_id: telegramId,
-        init_data: tg ? tg.initData : params.get("init_data") || "",
-        username: tgUser.username || params.get("username") || null,
-        first_name: tgUser.first_name || params.get("first_name") || null,
-        language_code: tgUser.language_code || params.get("language_code") || null,
-      };
+      const payload = buildSupportPayload();
       renderProfile(placeholderProfile(payload.first_name));
       statusEl.textContent = "Обновляю профиль…";
       try {
@@ -1364,6 +1796,35 @@ SUPPORT_APP_HTML = """<!doctype html>
         tab.classList.add("active");
         document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
       });
+    });
+    document.getElementById("addDiaryButton").addEventListener("click", () => openDiaryEditor(null));
+    document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
+    document.getElementById("cancelDiaryButton").addEventListener("click", closeDiaryEditor);
+    document.getElementById("generateLifehackButton").addEventListener("click", async () => {
+      try {
+        await generateLifehack();
+      } catch (error) {
+        lifehackStatus.textContent = String(error.message || error);
+      }
+    });
+    lifehackPromptInput.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      try {
+        await generateLifehack();
+      } catch (error) {
+        lifehackStatus.textContent = String(error.message || error);
+      }
+    });
+    document.getElementById("saveDiaryButton").addEventListener("click", async () => {
+      try {
+        await saveDiaryEntry();
+      } catch (error) {
+        statusEl.textContent = String(error.message || error);
+      }
+    });
+    diaryDialog.addEventListener("click", (event) => {
+      if (event.target === diaryDialog) closeDiaryEditor();
     });
     window.addEventListener("resize", () => {
       const metrics = window.__supportMetrics || [];

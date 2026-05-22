@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,10 +14,13 @@ from app.models.user import User
 
 RECENT_MESSAGE_LIMIT = 120
 LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
+MANUAL_LIFEHACK_KEY = "_support_manual_lifehacks"
 INSIGHT_CACHE_KEY = "_support_insights_cache"
+MANUAL_DIARY_KEY = "_support_manual_diary"
 SUPPORT_PROFILE_CACHE_VERSION = 2
 LOW_CONTEXT_HINT = "Информации о вас пока мало"
 LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
+DIARY_THEMES = {"agency", "empathy", "boundaries", "sensitivity", "clarity", "rationality"}
 
 DIMENSIONS = (
     {
@@ -76,6 +80,171 @@ DIMENSIONS = (
         "tones": ("#f5b8c8", "#df7f9a"),
     },
 )
+
+METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
+    "agency": [
+        (
+            20,
+            "Сейчас у вас часто возникает ощущение, что жизнь задают "
+            "обстоятельства или другие люди, а своего влияния мало.",
+        ),
+        (
+            40,
+            "Контроль над жизнью временами ускользает: вы можете понимать, "
+            "чего хотите, но не всегда доводите это до решения и действия.",
+        ),
+        (
+            60,
+            "Базовое чувство влияния на свою жизнь уже есть, но в сложных "
+            "местах вы все еще можете откатываться в уступку и сомнение.",
+        ),
+        (
+            80,
+            "Сейчас вы чаще сами задаете курс: решения, выбор и чувство "
+            "личного авторства в жизни у вас уже заметно выражены.",
+        ),
+        (
+            100,
+            "У вас сейчас сильное чувство авторства своей жизни: вы скорее "
+            "влияете на происходящее, чем плывете по чужому сценарию.",
+        ),
+    ],
+    "empathy": [
+        (
+            20,
+            "Чувства других людей пока считываются с трудом, и из-за этого "
+            "можно не сразу замечать, как ваши слова или тон на них действуют.",
+        ),
+        (
+            40,
+            "Вы временами улавливаете эмоции других, но не всегда "
+            "удерживаете их в поле внимания, особенно если сами напряжены.",
+        ),
+        (
+            60,
+            "Эмпатия у вас рабочая: вы обычно замечаете состояние других людей, "
+            "хотя в перегрузе можете упрощать их переживания.",
+        ),
+        (
+            80,
+            "Вы хорошо считываете эмоции и контекст других людей, "
+            "и это помогает вам быть точнее в общении.",
+        ),
+        (
+            100,
+            "У вас очень сильная чувствительность к переживаниям других: "
+            "вы тонко улавливаете эмоции и нюансы отношений.",
+        ),
+    ],
+    "boundaries": [
+        (
+            20,
+            "Свои пределы пока обозначаются слабо: есть риск долго терпеть, "
+            "соглашаться лишний раз и поздно замечать давление.",
+        ),
+        (
+            40,
+            "Вы уже чувствуете, когда что-то не подходит, но не всегда "
+            "вовремя обозначаете это другим или отстаиваете до конца.",
+        ),
+        (
+            60,
+            "Границы у вас в рабочем состоянии: в понятных ситуациях "
+            "вы умеете говорить «нет», но в чувствительных темах это может шататься.",
+        ),
+        (
+            80,
+            "Вы в целом хорошо чувствуете свои пределы и умеете спокойно "
+            "обозначать их другим без лишних оправданий.",
+        ),
+        (
+            100,
+            "У вас сейчас очень хорошее понимание своих границ: вы вовремя "
+            "замечаете давление и уверенно обозначаете, что вам подходит, а что нет.",
+        ),
+    ],
+    "sensitivity": [
+        (
+            20,
+            "Сигналы тела и эмоций пока замечаются поздно: усталость, тревога "
+            "или перегруз могут накапливаться раньше, чем вы это осознаете.",
+        ),
+        (
+            40,
+            "Вы иногда считываете свое состояние, но часть важных сигналов "
+            "тела и эмоций все еще проскальзывает мимо.",
+        ),
+        (
+            60,
+            "Контакт со своим состоянием уже есть: вы обычно замечаете "
+            "усталость, тревогу или напряжение, хотя не всегда сразу.",
+        ),
+        (
+            80,
+            "Вы хорошо чувствуете свое тело и эмоции, поэтому раньше "
+            "замечаете перегруз, напряжение и смену состояния.",
+        ),
+        (
+            100,
+            "У вас сейчас очень тонкий контакт с собой: вы быстро замечаете, "
+            "что происходит с телом, эмоциями и уровнем внутреннего напряжения.",
+        ),
+    ],
+    "clarity": [
+        (
+            20,
+            "Сейчас в этой зоне много тумана: трудно отделять факты от обиды, "
+            "фантазий или автоматических выводов.",
+        ),
+        (
+            40,
+            "Ясность временами появляется, но в сложных ситуациях вам все еще "
+            "нелегко объективно увидеть свою роль и мотивы других.",
+        ),
+        (
+            60,
+            "Способность разбираться в происходящем уже есть, хотя в "
+            "эмоционально заряженных темах вас еще может уносить в субъективность.",
+        ),
+        (
+            80,
+            "Вы довольно ясно видите картину: умеете замечать свою роль "
+            "в ситуации и не так легко путаете факты с эмоциями.",
+        ),
+        (
+            100,
+            "Сейчас у вас очень сильная ясность: вы хорошо отличаете факты "
+            "от интерпретаций и способны честно смотреть на себя и других.",
+        ),
+    ],
+    "rationality": [
+        (
+            20,
+            "Сейчас вы скорее опираетесь на впечатление, веру или интуитивное "
+            "объяснение, чем на проверку фактов и доказательств.",
+        ),
+        (
+            40,
+            "Стремление к фактам у вас есть, но в уязвимых темах вы все еще "
+            "можете легко принимать объяснение без достаточной проверки.",
+        ),
+        (
+            60,
+            "Рациональная опора у вас в целом есть: вы обычно смотрите на факты, "
+            "хотя в эмоциональных темах логика не всегда удерживает позицию.",
+        ),
+        (
+            80,
+            "Вы чаще ориентируетесь на реальность, проверку и доказуемость, "
+            "а не на красивое, но неподтвержденное объяснение.",
+        ),
+        (
+            100,
+            "Сейчас вы очень сильно держитесь за факты, логику и проверяемость "
+            "и редко верите во что-то без достаточных оснований.",
+        ),
+    ],
+}
 
 NEGATIVE_RESOURCE_WORDS = (
     "устал",
@@ -242,10 +411,23 @@ def _placeholder_metric(dimension: dict[str, Any], index: int) -> dict[str, Any]
         "label": dimension["label"],
         "value": None,
         "hint": LOW_CONTEXT_HINT,
+        "detail": None,
         "tone": LOW_CONTEXT_TONE,
         "order": index,
         "empty": True,
     }
+
+
+def _metric_detail(key: str, value: int) -> str:
+    for upper_bound, text in METRIC_BANDS.get(key, []):
+        if value <= upper_bound:
+            return text
+    return METRIC_BANDS.get(key, [("", "")])[-1][1] if METRIC_BANDS.get(key) else ""
+
+
+def _normalize_diary_theme(value: Any) -> str | None:
+    theme = str(value or "").strip().lower()
+    return theme if theme in DIARY_THEMES else None
 
 
 def _latest_dt(items: list[Any]) -> datetime | None:
@@ -403,6 +585,7 @@ def _build_metrics(
                 "label": dimension["label"],
                 "value": scores[key],
                 "hint": dimension["hint"],
+                "detail": _metric_detail(key, scores[key]),
                 "tone": dimension["tones"],
                 "order": index,
             }
@@ -550,8 +733,34 @@ def _clean_insights(items: Any) -> list[dict[str, str]]:
         if tone not in allowed_tones:
             tone = "calm"
         if title and text:
-            insights.append({"title": title, "text": text, "tone": tone})
+            theme = _normalize_diary_theme(item.get("theme"))
+            insights.append({"title": title, "text": text, "tone": tone, "theme": theme})
     return insights
+
+
+def _clean_manual_diary_items(items: Any) -> list[dict[str, str]]:
+    if not isinstance(items, list):
+        return []
+    cleaned: list[dict[str, str]] = []
+    for item in items[:24]:
+        if not isinstance(item, dict):
+            continue
+        item_id = _clip(item.get("id"), limit=80)
+        title = _clip(item.get("title"), limit=78)
+        text = _clip(item.get("text") or item.get("description"), limit=240)
+        theme = _normalize_diary_theme(item.get("theme")) or "clarity"
+        if not item_id or not title or not text:
+            continue
+        cleaned.append(
+            {
+                "id": item_id,
+                "title": title,
+                "text": text,
+                "theme": theme,
+                "manual": True,
+            }
+        )
+    return cleaned
 
 
 def cache_support_profile_items(
@@ -583,12 +792,89 @@ def cache_support_profile_items(
     user.support_preferences = updated_preferences
 
 
+def get_manual_lifehacks(user: User) -> list[dict[str, str]]:
+    raw = (user.support_preferences or {}).get(MANUAL_LIFEHACK_KEY)
+    if not isinstance(raw, list):
+        return []
+    return _clean_lifehacks(raw)
+
+
+def append_manual_lifehack(user: User, item: dict[str, Any]) -> dict[str, str] | None:
+    cleaned = _clean_lifehacks([item])
+    if not cleaned:
+        return None
+    lifehack = cleaned[0]
+    items = [lifehack, *get_manual_lifehacks(user)]
+    preferences = user.support_preferences or {}
+    user.support_preferences = {
+        **preferences,
+        MANUAL_LIFEHACK_KEY: items[:8],
+    }
+    return lifehack
+
+
+def get_manual_diary_items(user: User) -> list[dict[str, str]]:
+    raw = (user.support_preferences or {}).get(MANUAL_DIARY_KEY)
+    if not isinstance(raw, list):
+        return []
+    return _clean_manual_diary_items(raw)
+
+
+def upsert_manual_diary_item(
+    user: User,
+    *,
+    item_id: str | None,
+    title: str,
+    text: str,
+    theme: str | None,
+) -> dict[str, str]:
+    items = get_manual_diary_items(user)
+    cleaned_item = {
+        "id": item_id or str(uuid4()),
+        "title": _clip(title, limit=78),
+        "text": _clip(text, limit=240),
+        "theme": _normalize_diary_theme(theme) or "clarity",
+        "manual": True,
+    }
+    updated: list[dict[str, str]] = []
+    replaced = False
+    for existing in items:
+        if existing["id"] == cleaned_item["id"]:
+            updated.append(cleaned_item)
+            replaced = True
+        else:
+            updated.append(existing)
+    if not replaced:
+        updated.insert(0, cleaned_item)
+    preferences = user.support_preferences or {}
+    user.support_preferences = {
+        **preferences,
+        MANUAL_DIARY_KEY: updated[:24],
+    }
+    return cleaned_item
+
+
+def delete_manual_diary_item(user: User, item_id: str) -> bool:
+    items = get_manual_diary_items(user)
+    updated = [item for item in items if item.get("id") != item_id]
+    if len(updated) == len(items):
+        return False
+    preferences = user.support_preferences or {}
+    user.support_preferences = {
+        **preferences,
+        MANUAL_DIARY_KEY: updated,
+    }
+    return True
+
+
 def _build_lifehacks(user: User, latest_update: datetime | None) -> list[dict[str, str]]:
+    manual_lifehacks = get_manual_lifehacks(user)
     cache = (user.support_preferences or {}).get(LIFEHACK_CACHE_KEY)
     if not _cache_is_fresh(cache, latest_update):
-        return []
+        return manual_lifehacks
     cached_cards = _clean_lifehacks(cache.get("items") if isinstance(cache, dict) else None)
-    return cached_cards if len(cached_cards) == 3 else []
+    generated = cached_cards if len(cached_cards) == 3 else []
+    return [*manual_lifehacks, *generated][:11]
 
 
 def _insight_tone(text: str) -> str:
@@ -608,11 +894,16 @@ def _build_insights(
     memories: list[UserMemory],
     latest_update: datetime | None,
 ) -> list[dict[str, str]]:
+    manual_items = get_manual_diary_items(user)
     cache = (user.support_preferences or {}).get(INSIGHT_CACHE_KEY)
     if _cache_is_fresh(cache, latest_update):
         cached_insights = _clean_insights(cache.get("items") if isinstance(cache, dict) else None)
         if cached_insights:
-            return cached_insights
+            generated = [
+                {**item, "manual": False}
+                for item in cached_insights
+            ]
+            return [*manual_items, *generated][:10]
 
     insights: list[dict[str, str]] = []
     for memory in _memory_items(memories, "insight")[:5]:
@@ -624,7 +915,8 @@ def _build_insights(
                 "tone": _insight_tone(f"{memory.title} {text}"),
             }
         )
-    return _clean_insights(insights)
+    generated = [{**item, "manual": False} for item in _clean_insights(insights)]
+    return [*manual_items, *generated][:10]
 
 
 def _build_activity(messages: list[Message]) -> list[dict[str, Any]]:

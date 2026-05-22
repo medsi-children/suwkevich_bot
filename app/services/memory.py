@@ -15,7 +15,7 @@ from app.models.message import Message
 from app.models.session import ConversationSession
 from app.models.user import User
 from app.services.llm import extract_json_object, openrouter_chat
-from app.services.support_profile import cache_support_profile_items
+from app.services.support_profile import append_manual_lifehack, cache_support_profile_items
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,20 @@ STYLE_KEYS = {
     "medical_language",
     "questions",
 }
+PROFILE_REFRESH_HINTS = (
+    "обнови профиль",
+    "обнови описание профиля",
+    "скорректируй описание профиля",
+    "исправь описание профиля",
+    "перепиши описание профиля",
+    "подготовь лайфхаки",
+    "обнови лайфхаки",
+    "сделай лайфхаки",
+    "подготовь инсайты",
+    "обнови инсайты",
+    "обнови осознания",
+    "подготовь осознания",
+)
 STOPWORDS = {
     "это",
     "как",
@@ -274,6 +288,136 @@ def _merge_support_preferences(user: User, preferences: dict[str, Any]) -> None:
             clean[key] = text
     if clean:
         user.support_preferences = {**(user.support_preferences or {}), **clean}
+
+
+def _detect_profile_refresh_sections(text: str) -> set[str]:
+    lower = (text or "").lower()
+    sections: set[str] = set()
+    if "лайфхак" in lower:
+        sections.add("lifehacks")
+    if any(word in lower for word in ("инсайт", "осознани", "дневник")):
+        sections.add("insights")
+    if "описани" in lower and "профил" in lower:
+        sections.add("profile_summary")
+    if not sections and any(phrase in lower for phrase in PROFILE_REFRESH_HINTS):
+        sections = {"profile_summary", "lifehacks", "insights"}
+    return sections
+
+
+async def _refresh_profile_from_request(
+    db: AsyncSession,
+    *,
+    user: User,
+    session: ConversationSession,
+    request_text: str,
+) -> str | None:
+    sections = _detect_profile_refresh_sections(request_text)
+    if not sections or not settings.openrouter_api_key:
+        return None
+
+    bundle = await get_memory_bundle(db, user, query_text=request_text)
+    memory_context = format_memory_context(user, bundle)
+    messages_result = await db.execute(
+        select(Message)
+        .where(Message.session_id == session.id)
+        .order_by(Message.created_at.desc())
+        .limit(10)
+    )
+    recent_messages = list(reversed(messages_result.scalars().all()))
+    recent_dialogue = "\n".join(
+        f"{message.role}: {message.content}"
+        for message in recent_messages
+        if message.role in {"user", "assistant"}
+    )
+
+    prompt = (
+        "Ты обновляешь содержимое mini-app по прямой просьбе пользователя.\n"
+        "Верни только JSON без markdown:\n"
+        "{\n"
+        '  "reply": "что коротко сказать пользователю",\n'
+        '  "profile_summary": "новое описание пользователя или null",\n'
+        '  "miniapp_lifehacks": [\n'
+        '    {"title": "до 5 слов", "text": "короткий лайфхак", "action": "один шаг"}\n'
+        "  ],\n"
+        '  "miniapp_insights": [\n'
+        '    {"title": "до 6 слов", "text": "осознание пользователя", '
+        '"tone": "growth|attention|resource|calm", '
+        '"theme": "agency|empathy|boundaries|sensitivity|clarity|rationality"}\n'
+        "  ]\n"
+        "}\n\n"
+        f"Обновлять нужно только эти части: {sorted(sections)}.\n"
+        "Если часть не запрошена, верни для нее null или пустой массив. "
+        "Если пользователь недоволен описанием профиля, не спорь с ним, "
+        "а спокойно скорректируй формулировку. "
+        "Лайфхаки должны быть короткими, человеческими и персональными. "
+        "Осознания — это только наблюдения о пользователе, без советов.\n\n"
+        f"Текущее описание профиля: {user.profile_summary or 'пока пусто'}\n"
+        f"Текущий контекст памяти:\n{memory_context or 'пока мало данных'}\n\n"
+        f"Недавний диалог:\n{recent_dialogue or 'пока пусто'}\n\n"
+        f"Новая просьба пользователя:\n{request_text}"
+    )
+
+    try:
+        raw = await openrouter_chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.35,
+            max_tokens=1200,
+        )
+        data = extract_json_object(raw)
+    except Exception:
+        logger.exception("Failed to refresh support profile from user request")
+        return "Кажется, что-то пошло не так. Попробуйте написать мне чуть позже 🙏"
+
+    if "profile_summary" in sections:
+        profile_summary = data.get("profile_summary")
+        if isinstance(profile_summary, str) and profile_summary.strip():
+            user.profile_summary = profile_summary.strip()[:4000]
+
+    cache_support_profile_items(
+        user,
+        lifehacks=data.get("miniapp_lifehacks") if "lifehacks" in sections else [],
+        insights=data.get("miniapp_insights") if "insights" in sections else [],
+    )
+    await db.flush()
+    reply = _clean_text(data.get("reply"), limit=300)
+    return reply or "Готово. Я обновил это в вашем профиле."
+
+
+async def generate_lifehack_for_profile(
+    db: AsyncSession,
+    *,
+    user: User,
+    prompt_text: str,
+) -> dict[str, str] | None:
+    if not settings.openrouter_api_key:
+        return None
+    bundle = await get_memory_bundle(db, user, query_text=prompt_text)
+    memory_context = format_memory_context(user, bundle)
+    prompt = (
+        "Ты создаешь один персональный лайфхак для mini-app поддерживающего бота.\n"
+        "Верни только JSON без markdown:\n"
+        '{ "title": "до 5 слов", "text": "короткий человеческий совет", '
+        '"action": "один конкретный шаг" }\n\n'
+        "Лайфхак должен быть живым, естественным, без канцелярита, без кривых "
+        "психологических формул и без технических метафор. Никаких приложений, IDE, "
+        "файлов, таймеров, аффирмаций или странных фраз в кавычках. "
+        "Максимум 2 короткие фразы в text и 1 короткая фраза в action.\n\n"
+        f"Контекст пользователя:\n{memory_context or 'пока мало данных'}\n\n"
+        f"Запрос пользователя:\n{prompt_text}"
+    )
+    try:
+        raw = await openrouter_chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.45,
+            max_tokens=500,
+        )
+        data = extract_json_object(raw)
+    except Exception:
+        logger.exception("Failed to generate lifehack for support profile")
+        return None
+    if not isinstance(data, dict):
+        return None
+    return append_manual_lifehack(user, data)
 
 
 async def consolidate_user_memory(db: AsyncSession, user: User) -> None:
@@ -585,6 +729,15 @@ async def apply_memory_control(
             if changed:
                 return "Хорошо, убрал это из активной памяти."
         return "Я не нашел такого факта в активной памяти, но дальше не буду на этом настаивать."
+
+    profile_refresh_reply = await _refresh_profile_from_request(
+        db,
+        user=user,
+        session=session,
+        request_text=clean,
+    )
+    if profile_refresh_reply:
+        return profile_refresh_reply
 
     if style_updates:
         _merge_support_preferences(user, style_updates)
