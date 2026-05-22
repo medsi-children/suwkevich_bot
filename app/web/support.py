@@ -487,22 +487,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       text-align: center;
     }
 
-    .lifehack-title {
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-82px);
-      margin: 0;
-      transition: top .32s ease, transform .32s ease, opacity .24s ease;
-    }
-
     .lifehack-detail {
       position: absolute;
       left: 10px;
       right: 10px;
-      top: 72px;
-      bottom: 8px;
+      top: 16px;
+      bottom: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -517,11 +507,6 @@ SUPPORT_APP_HTML = """<!doctype html>
         visibility .34s ease;
     }
 
-    .lifehack-card.open .lifehack-title {
-      top: 10px;
-      transform: translateY(0) scale(.94);
-    }
-
     .lifehack-card.open .lifehack-detail {
       opacity: 1;
       visibility: visible;
@@ -533,13 +518,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      min-width: 148px;
-      min-height: 36px;
-      padding: 8px 12px;
-      border: 1px solid rgba(255, 255, 255, .44);
+      min-width: 220px;
+      min-height: 64px;
+      padding: 16px 28px;
+      border: 2px solid rgba(255, 255, 255, .42);
       border-radius: 8px;
       background: rgba(255, 255, 255, .18);
       color: #fff;
+      font-size: 22px;
       font-weight: 800;
       cursor: pointer;
       backdrop-filter: blur(10px);
@@ -935,8 +921,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       return `
         <article class="data-card lifehack-card" data-style="${styleIndex}">
           <div class="lifehack-head">
-            <h3 class="lifehack-title">${title}</h3>
-            <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false">Посмотреть</button>
+            <button class="reveal-button" type="button" data-lifehack="${index}" aria-expanded="false" aria-label="Посмотреть: ${title}">Посмотреть</button>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
               ${nextStep ? `<p>${nextStep}</p>` : ""}
