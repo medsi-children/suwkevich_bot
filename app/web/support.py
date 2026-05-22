@@ -24,6 +24,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       --text: #202833;
       --muted: #6d7886;
       --soft: #eef5f8;
+      --surface-radius: 18px;
+      --section-radius: 20px;
+      --accent-radius: 22px;
       --mint: #8fd6c8;
       --sky: #a9c8ff;
       --peach: #ffd6a6;
@@ -31,6 +34,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       --lavender: #c9b7ff;
       --green: #b8e9aa;
       --shadow: 0 18px 48px rgba(96, 120, 146, .14);
+      --shadow-soft: 0 14px 34px rgba(96, 120, 146, .1);
+      --shadow-color: 0 18px 42px rgba(76, 92, 130, .18);
       font-family: Inter, "Avenir Next", "Helvetica Neue", system-ui, -apple-system, sans-serif;
     }
 
@@ -154,12 +159,13 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .hero-copy,
     .radar-panel,
+    .section-shell,
     .metric-card,
     .data-card,
     .activity-panel,
     .empty-state {
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--surface-radius);
       background: var(--surface);
       box-shadow: var(--shadow);
       backdrop-filter: blur(18px);
@@ -167,11 +173,11 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .hero-copy {
       padding: clamp(20px, 4vw, 34px);
-      min-height: 324px;
+      min-height: 250px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 28px;
+      justify-content: flex-start;
+      gap: 18px;
     }
 
     .kicker {
@@ -236,7 +242,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .radar-panel {
-      min-height: 324px;
+      min-height: 250px;
       padding: 18px;
       display: grid;
       grid-template-rows: auto minmax(230px, 1fr) auto;
@@ -294,16 +300,17 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 8px;
       padding: 4px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 16px;
       background: rgba(255, 255, 255, .68);
       margin: 14px 0;
       backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
     }
 
     .tab {
       min-height: 42px;
       border: 0;
-      border-radius: 6px;
+      border-radius: 12px;
       background: transparent;
       color: var(--muted);
       font-weight: 760;
@@ -323,21 +330,61 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .panel.active {
       display: grid;
-      gap: 14px;
+      gap: 16px;
+    }
+
+    .section-shell {
+      padding: 18px 18px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .section-kicker {
+      margin: 0 0 8px;
+      color: #6a95c6;
+      font-size: 11px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 800;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: clamp(20px, 2vw, 24px);
+      line-height: 1.1;
+      letter-spacing: 0;
+      font-weight: 800;
+      color: #243140;
+    }
+
+    .section-copy {
+      margin: 8px 0 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
     .metric-card {
-      min-height: 206px;
-      padding: 14px;
+      min-height: 214px;
+      padding: 16px;
       display: grid;
-      gap: 10px;
-      align-content: space-between;
+      gap: 12px;
+      align-content: start;
     }
 
     .metric-card.empty {
@@ -349,13 +396,14 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .metric-top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
 
     .metric-label {
       margin: 0;
+      font-size: 17px;
       font-weight: 800;
       line-height: 1.2;
     }
@@ -390,12 +438,16 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .metric-hint {
-      font-weight: 650;
-      color: #50606f;
+      font-size: 12px;
+      line-height: 1.42;
+      color: #6c7a88;
     }
 
     .metric-detail {
-      color: var(--muted);
+      color: #435263;
+      font-size: 14px;
+      line-height: 1.48;
+      font-weight: 650;
     }
 
     .bar {
@@ -403,6 +455,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       border-radius: 999px;
       background: rgba(87, 112, 136, .12);
       overflow: hidden;
+      margin-top: auto;
     }
 
     .bar span {
@@ -425,7 +478,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 12px;
     }
 
@@ -462,11 +515,11 @@ SUPPORT_APP_HTML = """<!doctype html>
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
-      padding: 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(87, 112, 136, .16);
-      background: rgba(255, 255, 255, .78);
-      box-shadow: 0 14px 34px rgba(96, 120, 146, .1);
+      padding: 0;
+      border-radius: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .composer-input {
@@ -474,7 +527,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       min-height: 48px;
       border: 1px solid rgba(87, 112, 136, .14);
       border-radius: 999px;
-      background: rgba(248, 251, 255, .96);
+      background: rgba(248, 251, 255, .98);
       color: var(--text);
       padding: 0 16px;
       font: inherit;
@@ -497,11 +550,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       font: inherit;
       font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 10px 28px rgba(111, 159, 237, .18);
     }
 
     .composer-status {
       min-height: 20px;
-      padding: 0 4px;
+      padding: 2px 4px 0;
       color: #667483;
       font-size: 13px;
       line-height: 1.45;
@@ -685,13 +739,13 @@ SUPPORT_APP_HTML = """<!doctype html>
     .lifehack-card {
       position: relative;
       overflow: hidden;
-      min-height: 208px;
+      min-height: 192px;
       cursor: pointer;
       color: #fff;
       background: var(--lifehack-gradient);
       border-color: rgba(255, 255, 255, .24);
-      border-radius: 16px;
-      box-shadow: 0 18px 42px rgba(76, 92, 130, .18);
+      border-radius: var(--accent-radius);
+      box-shadow: var(--shadow-color);
       justify-content: center;
       transition: transform .24s ease, box-shadow .24s ease;
     }
@@ -770,7 +824,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .lifehack-head {
       position: relative;
-      min-height: 172px;
+      min-height: 156px;
       display: block;
       text-align: center;
     }
@@ -834,12 +888,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       position: absolute;
       left: 18px;
       right: 18px;
-      top: 16px;
-      bottom: 16px;
+      top: 18px;
+      bottom: 18px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
       opacity: 0;
       visibility: hidden;
       overflow: hidden;
@@ -928,8 +982,8 @@ SUPPORT_APP_HTML = """<!doctype html>
         radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .18), transparent 42%),
         linear-gradient(135deg, var(--insight-soft) 0%, var(--insight-tone) 100%);
       border-color: rgba(255, 255, 255, .22);
-      border-radius: 16px;
-      box-shadow: 0 18px 42px rgba(76, 92, 130, .16);
+      border-radius: var(--accent-radius);
+      box-shadow: var(--shadow-color);
       transition: transform .24s ease, box-shadow .24s ease;
     }
 
@@ -968,6 +1022,28 @@ SUPPORT_APP_HTML = """<!doctype html>
       letter-spacing: .08em;
       backdrop-filter: blur(10px);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+    }
+
+    .insight-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .insight-source {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(26, 35, 49, .14);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: rgba(255, 255, 255, .92);
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: .03em;
+      backdrop-filter: blur(10px);
     }
 
     .data-card small {
@@ -1033,6 +1109,13 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 18px;
     }
 
+    .activity-copy {
+      margin: -6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .activity-bars {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1074,6 +1157,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-content: center;
       gap: 8px;
       color: var(--muted);
+      border-radius: var(--surface-radius);
     }
 
     .empty-state strong {
@@ -1144,6 +1228,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       .radar-panel {
         min-height: 300px;
       }
+      .section-shell {
+        padding: 16px;
+      }
+      .section-head {
+        gap: 12px;
+      }
     }
   </style>
 </head>
@@ -1178,9 +1268,18 @@ SUPPORT_APP_HTML = """<!doctype html>
     </nav>
 
     <section class="panel" id="panel-lifehacks">
-      <div class="composer">
-        <input class="composer-input" id="lifehackPrompt" placeholder="Новый лайфхак" />
-        <button class="composer-button" id="generateLifehackButton" type="button">Создать</button>
+      <div class="section-shell">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Поддержка по запросу</p>
+            <h2 class="section-title">Лайфхаки</h2>
+            <p class="section-copy">Попросите короткий лайфхак под конкретную ситуацию или сохраните то, что пригодится позже.</p>
+          </div>
+        </div>
+        <div class="composer">
+          <input class="composer-input" id="lifehackPrompt" placeholder="Что вам сейчас пригодилось бы?" />
+          <button class="composer-button" id="generateLifehackButton" type="button">Создать</button>
+        </div>
       </div>
       <div class="composer-status" id="lifehackStatus"></div>
       <div class="cards" id="lifehackCards"></div>
@@ -1190,14 +1289,21 @@ SUPPORT_APP_HTML = """<!doctype html>
       <div class="metrics-grid" id="metricsGrid"></div>
       <div class="activity-panel">
         <h2 class="panel-title">Ритм последних дней <span class="badge">7 дней</span></h2>
+        <p class="activity-copy">Небольшой след вашей активности: не оценка, а просто ритм того, как часто вы возвращались к разговору.</p>
         <div class="activity-bars" id="activityBars"></div>
       </div>
     </section>
 
     <section class="panel" id="panel-diary">
-      <div class="panel-head">
-        <h2 class="panel-title">Дневник осознаний</h2>
-        <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
+      <div class="section-shell">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Личное пространство</p>
+            <h2 class="section-title">Дневник</h2>
+            <p class="section-copy">Здесь собираются важные осознания: те, что заметил бот, и те, которые вы хотите зафиксировать сами.</p>
+          </div>
+          <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
+        </div>
       </div>
       <div class="cards" id="insightCards"></div>
     </section>
@@ -1517,10 +1623,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       el.innerHTML = cards.map((card, index) => {
         const themeKey = inferInsightTheme(card);
         const theme = diaryThemes[themeKey] || diaryThemes.clarity;
+        const sourceLabel = card.manual ? "Ваше" : "Замечено ботом";
         return `
         <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
           <div>
-            <small class="insight-meta">${escapeHtml(theme.label)}</small>
+            <div class="insight-badges">
+              <small class="insight-meta">${escapeHtml(theme.label)}</small>
+              <small class="insight-source">${escapeHtml(sourceLabel)}</small>
+            </div>
             <h3>${escapeHtml(card.title || "Осознание")}</h3>
             <p>${escapeHtml(card.text || "")}</p>
             <div class="insight-actions">
@@ -1571,8 +1681,8 @@ SUPPORT_APP_HTML = """<!doctype html>
               <h3 class="metric-label">${escapeHtml(metric.label)}</h3>
               <div class="metric-value">${isEmpty ? "--" : Math.round(value)}</div>
             </div>
-            <p class="metric-hint">${escapeHtml(hint)}</p>
             ${detail ? `<p class="metric-detail">${escapeHtml(detail)}</p>` : ""}
+            <p class="metric-hint">${escapeHtml(hint)}</p>
             <div class="bar" aria-hidden="true"><span></span></div>
           </article>
         `;
