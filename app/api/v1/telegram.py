@@ -26,10 +26,7 @@ from app.services.users import get_or_create_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 DbSession = Annotated[AsyncSession, Depends(get_db)]
-LOADING_MESSAGE_TEXT = (
-    "<code>Ваш ответ анализируется...</code>\n"
-    "<code>Сушкевич Бот формирует ответ.</code>"
-)
+LOADING_MESSAGE_TEXT = "<code>Ваш ответ анализируется...</code>"
 
 
 def _extract_text_from_update(update: dict[str, Any]) -> str:
