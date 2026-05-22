@@ -38,5 +38,4 @@ def test_loading_message_uses_supported_variant() -> None:
         "<code>Анализируем...</code>",
         "<code>Одну минутку...</code>",
         "<code>Генерируем ответ...</code>",
-        "<code>Собираем ответ...</code>",
     }

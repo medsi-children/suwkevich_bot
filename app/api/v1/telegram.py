@@ -30,7 +30,6 @@ LOADING_MESSAGE_VARIANTS = (
     "<code>Анализируем...</code>",
     "<code>Одну минутку...</code>",
     "<code>Генерируем ответ...</code>",
-    "<code>Собираем ответ...</code>",
 )
 
 
@@ -176,7 +175,7 @@ async def process_direct_telegram_update(update: dict[str, Any]) -> None:
                     await delete_message(chat_id, loading_message_id)
                 await send_message(
                     chat_id,
-                    "Сейчас не получилось ответить. Попробуйте написать еще раз чуть позже.",
+                    "Кажется, что-то пошло не так. Попробуйте написать мне чуть позже 🙏",
                 )
 
 
