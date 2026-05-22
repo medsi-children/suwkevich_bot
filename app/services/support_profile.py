@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -15,6 +16,7 @@ from app.models.user import User
 RECENT_MESSAGE_LIMIT = 120
 LIFEHACK_CACHE_KEY = "_support_lifehacks_cache"
 MANUAL_LIFEHACK_KEY = "_support_manual_lifehacks"
+LIFEHACK_FEEDBACK_KEY = "_support_lifehack_feedback"
 INSIGHT_CACHE_KEY = "_support_insights_cache"
 MANUAL_DIARY_KEY = "_support_manual_diary"
 SUPPORT_PROFILE_CACHE_VERSION = 2
@@ -430,6 +432,21 @@ def _normalize_diary_theme(value: Any) -> str | None:
     return theme if theme in DIARY_THEMES else None
 
 
+def _lifehack_id(item: dict[str, Any]) -> str:
+    explicit = _clip(item.get("id"), limit=80)
+    if explicit:
+        return explicit
+    base = "|".join(
+        [
+            str(item.get("title") or "").strip(),
+            str(item.get("text") or item.get("description") or "").strip(),
+            str(item.get("action") or item.get("next_step") or "").strip(),
+        ]
+    )
+    digest = hashlib.sha1(base.encode("utf-8")).hexdigest()[:16]
+    return f"lh-{digest}"
+
+
 def _latest_dt(items: list[Any]) -> datetime | None:
     moments = [
         value
@@ -693,7 +710,7 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
     if not isinstance(items, list):
         return []
     cards: list[dict[str, str]] = []
-    for item in items[:3]:
+    for item in items[:12]:
         if not isinstance(item, dict):
             continue
         title = _clip(item.get("title"), limit=64)
@@ -704,6 +721,7 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
             continue
         if title and text:
             card: dict[str, str] = {
+                "id": _lifehack_id(item),
                 "title": title,
                 "text": text,
                 "next_step": action,
@@ -799,6 +817,34 @@ def get_manual_lifehacks(user: User) -> list[dict[str, str]]:
     return _clean_lifehacks(raw)
 
 
+def get_lifehack_feedback(user: User) -> dict[str, str]:
+    raw = (user.support_preferences or {}).get(LIFEHACK_FEEDBACK_KEY)
+    if not isinstance(raw, dict):
+        return {}
+    clean: dict[str, str] = {}
+    for key, value in raw.items():
+        key_text = _clip(key, limit=80)
+        value_text = str(value or "").strip().lower()
+        if key_text and value_text in {"helped", "not_helped"}:
+            clean[key_text] = value_text
+    return clean
+
+
+def set_lifehack_feedback(user: User, item_id: str, value: str) -> bool:
+    item_key = _clip(item_id, limit=80)
+    normalized = str(value or "").strip().lower()
+    if not item_key or normalized not in {"helped", "not_helped"}:
+        return False
+    feedback = get_lifehack_feedback(user)
+    feedback[item_key] = normalized
+    preferences = user.support_preferences or {}
+    user.support_preferences = {
+        **preferences,
+        LIFEHACK_FEEDBACK_KEY: feedback,
+    }
+    return True
+
+
 def append_manual_lifehack(user: User, item: dict[str, Any]) -> dict[str, str] | None:
     cleaned = _clean_lifehacks([item])
     if not cleaned:
@@ -869,12 +915,16 @@ def delete_manual_diary_item(user: User, item_id: str) -> bool:
 
 def _build_lifehacks(user: User, latest_update: datetime | None) -> list[dict[str, str]]:
     manual_lifehacks = get_manual_lifehacks(user)
+    feedback = get_lifehack_feedback(user)
     cache = (user.support_preferences or {}).get(LIFEHACK_CACHE_KEY)
     if not _cache_is_fresh(cache, latest_update):
-        return manual_lifehacks
+        return [{**item, "feedback": feedback.get(item["id"])} for item in manual_lifehacks]
     cached_cards = _clean_lifehacks(cache.get("items") if isinstance(cache, dict) else None)
     generated = cached_cards if len(cached_cards) == 3 else []
-    return [*manual_lifehacks, *generated][:11]
+    return [
+        {**item, "feedback": feedback.get(item["id"])}
+        for item in [*manual_lifehacks, *generated][:11]
+    ]
 
 
 def _insight_tone(text: str) -> str:

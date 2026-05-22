@@ -12,6 +12,7 @@ from app.services.memory import generate_lifehack_for_profile
 from app.services.support_profile import (
     build_support_profile,
     delete_manual_diary_item,
+    set_lifehack_feedback,
     upsert_manual_diary_item,
 )
 from app.services.telegram_auth import TelegramWebAppAuthError, verify_telegram_webapp_user
@@ -42,6 +43,11 @@ class SupportDiaryDeleteRequest(SupportProfileRequest):
 
 class SupportLifehackGenerateRequest(SupportProfileRequest):
     prompt: str = Field(min_length=1, max_length=220)
+
+
+class SupportLifehackFeedbackRequest(SupportProfileRequest):
+    item_id: str = Field(min_length=1, max_length=80)
+    feedback: str = Field(pattern="^(helped|not_helped)$")
 
 
 @router.post("/me")
@@ -150,6 +156,32 @@ async def generate_support_lifehack(
     )
     if item is None:
         raise HTTPException(status_code=503, detail="Не получилось подготовить лайфхак")
+    profile = await build_support_profile(db, user)
+    await db.commit()
+    return profile
+
+
+@router.post("/lifehacks/feedback")
+async def save_lifehack_feedback(
+    payload: SupportLifehackFeedbackRequest,
+    db: DbSession,
+) -> dict[str, Any]:
+    try:
+        verify_telegram_webapp_user(payload.init_data, payload.telegram_id)
+    except TelegramWebAppAuthError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    user = await get_or_create_user(
+        db,
+        UserCreate(
+            telegram_id=payload.telegram_id,
+            username=payload.username,
+            first_name=payload.first_name,
+            language_code=payload.language_code,
+        ),
+    )
+    if not set_lifehack_feedback(user, payload.item_id, payload.feedback):
+        raise HTTPException(status_code=400, detail="Некорректная оценка лайфхака")
     profile = await build_support_profile(db, user)
     await db.commit()
     return profile

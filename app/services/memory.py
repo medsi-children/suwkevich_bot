@@ -15,7 +15,12 @@ from app.models.message import Message
 from app.models.session import ConversationSession
 from app.models.user import User
 from app.services.llm import extract_json_object, openrouter_chat
-from app.services.support_profile import append_manual_lifehack, cache_support_profile_items
+from app.services.support_profile import (
+    append_manual_lifehack,
+    cache_support_profile_items,
+    get_lifehack_feedback,
+    get_manual_lifehacks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -393,6 +398,15 @@ async def generate_lifehack_for_profile(
         return None
     bundle = await get_memory_bundle(db, user, query_text=prompt_text)
     memory_context = format_memory_context(user, bundle)
+    feedback = get_lifehack_feedback(user)
+    prior_lifehacks = get_manual_lifehacks(user)
+    feedback_lines = []
+    for item in prior_lifehacks[:5]:
+        mark = feedback.get(item["id"])
+        if mark == "helped":
+            feedback_lines.append(f"- Помогло: {item['title']} — {item['text']}")
+        elif mark == "not_helped":
+            feedback_lines.append(f"- Не помогло: {item['title']} — {item['text']}")
     prompt = (
         "Ты создаешь один персональный лайфхак для mini-app поддерживающего бота.\n"
         "Верни только JSON без markdown:\n"
@@ -403,6 +417,8 @@ async def generate_lifehack_for_profile(
         "файлов, таймеров, аффирмаций или странных фраз в кавычках. "
         "Максимум 2 короткие фразы в text и 1 короткая фраза в action.\n\n"
         f"Контекст пользователя:\n{memory_context or 'пока мало данных'}\n\n"
+        "Что уже пробовали и как это сработало:\n"
+        f"{chr(10).join(feedback_lines) or 'пока без оценок'}\n\n"
         f"Запрос пользователя:\n{prompt_text}"
     )
     try:

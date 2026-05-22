@@ -856,6 +856,38 @@ SUPPORT_APP_HTML = """<!doctype html>
       transform: translateY(0) scale(1);
     }
 
+    .lifehack-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .lifehack-feedback {
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .24);
+      background: rgba(255, 255, 255, .12);
+      color: rgba(255, 255, 255, .96);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .lifehack-feedback:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, .18);
+      border-color: rgba(255, 255, 255, .36);
+    }
+
+    .lifehack-feedback.active {
+      background: rgba(255, 255, 255, .24);
+      border-color: rgba(255, 255, 255, .48);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+    }
+
     .lifehack-card.open .lifehack-gesture {
       opacity: 0;
       visibility: hidden;
@@ -1346,9 +1378,11 @@ SUPPORT_APP_HTML = """<!doctype html>
       const title = escapeHtml(card.title || "Лайфхак");
       const text = escapeHtml(card.text || "");
       const nextStep = escapeHtml(card.next_step || "");
+      const itemId = escapeHtml(card.id || "");
+      const feedback = String(card.feedback || "");
       const styleIndex = index % 4;
       return `
-        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" tabindex="0" role="button" aria-expanded="false" aria-label="Открыть лайфхак: ${title}">
+        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" data-lifehack-id="${itemId}" tabindex="0" role="button" aria-expanded="false" aria-label="Открыть лайфхак: ${title}">
           <div class="lifehack-flash" aria-hidden="true"></div>
           <div class="lifehack-head">
             <div class="lifehack-gesture" aria-hidden="true">
@@ -1361,6 +1395,11 @@ SUPPORT_APP_HTML = """<!doctype html>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
               ${nextStep ? `<p>${nextStep}</p>` : ""}
+              ${itemId ? `
+              <div class="lifehack-actions">
+                <button class="lifehack-feedback${feedback === "helped" ? " active" : ""}" type="button" data-lifehack-feedback="helped">Помог</button>
+                <button class="lifehack-feedback${feedback === "not_helped" ? " active" : ""}" type="button" data-lifehack-feedback="not_helped">Не помог</button>
+              </div>` : ""}
             </div>
           </div>
         </article>
@@ -1390,6 +1429,34 @@ SUPPORT_APP_HTML = """<!doctype html>
             event.preventDefault();
             openLifehack(card);
           }
+        });
+        card.querySelectorAll("[data-lifehack-feedback]").forEach((button) => {
+          button.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            const itemId = card.dataset.lifehackId || "";
+            const feedback = button.dataset.lifehackFeedback || "";
+            if (!itemId || !feedback || demoMode || !telegramId) return;
+            lifehackStatus.textContent = "Сохраняю оценку…";
+            try {
+              const response = await fetch("/api/v1/support/lifehacks/feedback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  ...buildSupportPayload(),
+                  item_id: itemId,
+                  feedback,
+                }),
+              });
+              if (!response.ok) {
+                const detail = await response.json().catch(() => ({}));
+                throw new Error(detail.detail || `HTTP ${response.status}`);
+              }
+              lifehackStatus.textContent = "";
+              renderProfile(await response.json());
+            } catch (error) {
+              lifehackStatus.textContent = String(error.message || error);
+            }
+          });
         });
       });
     }
@@ -1653,7 +1720,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       };
       diaryTitleInput.value = card && card.title ? card.title : "";
       diaryTextInput.value = card && card.text ? card.text : "";
-      document.getElementById("diaryDialogTitle").textContent = card ? "Редактировать осознание" : "Новое осознание";
+      document.getElementById("diaryDialogTitle").textContent = card && card.manual ? "Редактировать осознание" : "Новое осознание";
       renderDiarySwatches(currentDiaryDraft.theme);
       diaryDialog.classList.add("open");
     }
