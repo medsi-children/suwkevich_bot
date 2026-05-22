@@ -27,7 +27,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 LOADING_MESSAGE_TEXT = (
-    "<pre>Ваш ответ анализируется...\nСушкевич Бот формирует ответ.</pre>"
+    "<code>Ваш ответ анализируется...</code>\n"
+    "<code>Сушкевич Бот формирует ответ.</code>"
 )
 
 
