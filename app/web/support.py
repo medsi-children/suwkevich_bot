@@ -541,8 +541,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .composer-status {
-      min-height: 44px;
-      padding: 4px 18px 0;
+      min-height: 0;
+      padding: 0 18px;
       color: #667483;
       font-size: 13px;
       line-height: 1.45;
@@ -550,6 +550,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-items: center;
       justify-content: center;
       text-align: center;
+      transition: min-height .24s ease, padding .24s ease;
+    }
+
+    .composer-status.active {
+      min-height: 44px;
+      padding-top: 4px;
     }
 
     .status-blob {
@@ -772,9 +778,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       cursor: pointer;
       color: #fff;
       background: var(--lifehack-gradient);
-      border-color: rgba(255, 255, 255, .24);
+      border: 0;
       border-radius: var(--accent-radius);
-      box-shadow: var(--shadow-color);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, .3),
+        var(--shadow-color);
+      background-clip: padding-box;
       justify-content: center;
       transition: transform .24s ease, box-shadow .24s ease;
     }
@@ -815,19 +824,19 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .lifehack-card[data-style="0"] {
-      --lifehack-gradient: linear-gradient(135deg, #ff4f8b 0%, #ff8a5c 48%, #ffd166 100%);
+      --lifehack-gradient: linear-gradient(135deg, #8fd6c8 0%, #86d2e8 50%, #a9c8ff 100%);
     }
 
     .lifehack-card[data-style="1"] {
-      --lifehack-gradient: linear-gradient(135deg, #5f7cff 0%, #8759f2 55%, #c06cff 100%);
+      --lifehack-gradient: linear-gradient(135deg, #ffd6a6 0%, #f5b8c8 52%, #c9b7ff 100%);
     }
 
     .lifehack-card[data-style="2"] {
-      --lifehack-gradient: linear-gradient(135deg, #24b9d8 0%, #22d6a8 54%, #7fdc68 100%);
+      --lifehack-gradient: linear-gradient(135deg, #b7e6ff 0%, #8fd6c8 52%, #a8e986 100%);
     }
 
     .lifehack-card[data-style="3"] {
-      --lifehack-gradient: linear-gradient(135deg, #ffbf4f 0%, #ff6f91 48%, #9b5de5 100%);
+      --lifehack-gradient: linear-gradient(135deg, #c9b7ff 0%, #a9c8ff 52%, #b7e6ff 100%);
     }
 
     .lifehack-card > * {
@@ -1490,6 +1499,7 @@ SUPPORT_APP_HTML = """<!doctype html>
   function showLifehackStatus(text) {
     if (!lifehackStatus) return;
     window.clearTimeout(lifehackStatusTimer);
+    lifehackStatus.classList.add("active");
     lifehackStatus.innerHTML = `<span class="status-blob">${escapeHtml(text)}</span>`;
   }
   function hideLifehackStatus() {
@@ -1498,11 +1508,13 @@ SUPPORT_APP_HTML = """<!doctype html>
     const blob = lifehackStatus.querySelector(".status-blob");
     if (!blob) {
       lifehackStatus.textContent = "";
+      lifehackStatus.classList.remove("active");
       return;
     }
     blob.classList.add("fading");
     lifehackStatusTimer = window.setTimeout(() => {
       lifehackStatus.textContent = "";
+      lifehackStatus.classList.remove("active");
     }, 360);
   }
   function flashLifehackStatus(text) {
