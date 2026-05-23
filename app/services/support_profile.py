@@ -23,6 +23,25 @@ SUPPORT_PROFILE_CACHE_VERSION = 2
 LOW_CONTEXT_HINT = "Информации о вас пока мало"
 LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
 DIARY_THEMES = {"agency", "empathy", "boundaries", "sensitivity", "clarity", "rationality"}
+DIARY_COLOR_THEMES = {
+    "mint",
+    "peach",
+    "violet",
+    "sky",
+    "blue",
+    "rose",
+    "coral",
+    "lemon",
+    "green",
+}
+DIARY_THEME_COLORS = {
+    "agency": "mint",
+    "empathy": "peach",
+    "boundaries": "violet",
+    "sensitivity": "sky",
+    "clarity": "blue",
+    "rationality": "rose",
+}
 
 DIMENSIONS = (
     {
@@ -436,6 +455,11 @@ def _normalize_diary_theme(value: Any) -> str | None:
     return theme if theme in DIARY_THEMES else None
 
 
+def _normalize_diary_color_theme(value: Any) -> str | None:
+    theme = str(value or "").strip().lower()
+    return theme if theme in DIARY_COLOR_THEMES else None
+
+
 def _lifehack_id(item: dict[str, Any]) -> str:
     explicit = _clip(item.get("id"), limit=80)
     if explicit:
@@ -718,8 +742,8 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
         if not isinstance(item, dict):
             continue
         title = _clip(item.get("title"), limit=64)
-        text = _clip(item.get("text") or item.get("description"), limit=145)
-        action = _clip(item.get("action") or item.get("next_step"), limit=110)
+        text = _clip(item.get("text") or item.get("description"), limit=190)
+        action = _clip(item.get("action") or item.get("next_step"), limit=130)
         combined = f"{title} {text} {action}".lower()
         if any(word in combined for word in LIFEHACK_FORBIDDEN_WORDS):
             continue
@@ -771,6 +795,11 @@ def _clean_manual_diary_items(items: Any) -> list[dict[str, str]]:
         title = _clip(item.get("title"), limit=78)
         text = _clip(item.get("text") or item.get("description"), limit=240)
         theme = _normalize_diary_theme(item.get("theme")) or "clarity"
+        color_theme = (
+            _normalize_diary_color_theme(item.get("color_theme"))
+            or DIARY_THEME_COLORS.get(theme)
+            or "blue"
+        )
         if not item_id or not title or not text:
             continue
         cleaned.append(
@@ -779,6 +808,7 @@ def _clean_manual_diary_items(items: Any) -> list[dict[str, str]]:
                 "title": title,
                 "text": text,
                 "theme": theme,
+                "color_theme": color_theme,
                 "manual": True,
             }
         )
@@ -877,6 +907,7 @@ def upsert_manual_diary_item(
     title: str,
     text: str,
     theme: str | None,
+    color_theme: str | None = None,
 ) -> dict[str, str]:
     items = get_manual_diary_items(user)
     cleaned_item = {
@@ -884,6 +915,9 @@ def upsert_manual_diary_item(
         "title": _clip(title, limit=78),
         "text": _clip(text, limit=240),
         "theme": _normalize_diary_theme(theme) or "clarity",
+        "color_theme": _normalize_diary_color_theme(color_theme)
+        or DIARY_THEME_COLORS.get(_normalize_diary_theme(theme) or "clarity")
+        or "blue",
         "manual": True,
     }
     updated: list[dict[str, str]] = []

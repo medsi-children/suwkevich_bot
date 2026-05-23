@@ -541,11 +541,33 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .composer-status {
-      min-height: 20px;
-      padding: 2px 4px 0;
+      min-height: 44px;
+      padding: 4px 18px 0;
       color: #667483;
       font-size: 13px;
       line-height: 1.45;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .status-blob {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(120, 214, 201, .92), rgba(122, 191, 245, .92), rgba(158, 144, 241, .92));
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(111, 159, 237, .2);
+      animation: statusBlobIn .28s ease both, statusBlobFloat 2.8s ease-in-out infinite;
+    }
+
+    .status-blob.fading {
+      animation: statusBlobOut .34s ease forwards;
     }
 
     .data-card {
@@ -656,7 +678,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .dialog-input,
-    .dialog-textarea {
+    .dialog-textarea,
+    .dialog-select {
       width: 100%;
       border-radius: 14px;
       border: 1px solid rgba(87, 112, 136, .16);
@@ -668,7 +691,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .dialog-input:focus,
-    .dialog-textarea:focus {
+    .dialog-textarea:focus,
+    .dialog-select:focus {
       border-color: rgba(111, 159, 237, .45);
       box-shadow: 0 0 0 4px rgba(111, 159, 237, .12);
     }
@@ -677,6 +701,15 @@ SUPPORT_APP_HTML = """<!doctype html>
       min-height: 124px;
       resize: vertical;
       line-height: 1.5;
+    }
+
+    .dialog-select {
+      min-height: 48px;
+      appearance: none;
+      background:
+        linear-gradient(45deg, transparent 50%, #71808f 50%) calc(100% - 22px) 50% / 7px 7px no-repeat,
+        linear-gradient(135deg, rgba(248, 251, 255, .96), rgba(239, 245, 253, .96));
+      cursor: pointer;
     }
 
     .swatches {
@@ -728,6 +761,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     .dialog-button.primary {
       border-color: rgba(111, 159, 237, .26);
       background: linear-gradient(135deg, rgba(143, 214, 200, .94), rgba(169, 200, 255, .94));
+      color: #fff;
+      text-shadow: 0 1px 10px rgba(54, 75, 108, .18);
     }
 
     .lifehack-card {
@@ -904,38 +939,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       transform: translateY(0) scale(1);
     }
 
-    .lifehack-actions {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .lifehack-feedback {
-      min-height: 34px;
-      padding: 0 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, .24);
-      background: rgba(255, 255, 255, .12);
-      color: rgba(255, 255, 255, .96);
-      font: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      transition: transform .18s ease, background .18s ease, border-color .18s ease;
-    }
-
-    .lifehack-feedback:hover {
-      transform: translateY(-1px);
-      background: rgba(255, 255, 255, .18);
-      border-color: rgba(255, 255, 255, .36);
-    }
-
-    .lifehack-feedback.active {
-      background: rgba(255, 255, 255, .24);
-      border-color: rgba(255, 255, 255, .48);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
-    }
-
     .lifehack-card.open .lifehack-gesture {
       opacity: 0;
       visibility: hidden;
@@ -964,6 +967,37 @@ SUPPORT_APP_HTML = """<!doctype html>
       100% {
         opacity: 0;
         transform: translateX(-50%) translateY(-4px);
+      }
+    }
+
+    @keyframes statusBlobIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes statusBlobFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-2px);
+      }
+    }
+
+    @keyframes statusBlobOut {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-6px) scale(.98);
       }
     }
 
@@ -1294,6 +1328,10 @@ SUPPORT_APP_HTML = """<!doctype html>
         <span class="dialog-label">Цвет</span>
         <div class="swatches" id="diarySwatches"></div>
       </div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="diaryTheme">Категория</label>
+        <select class="dialog-select" id="diaryTheme"></select>
+      </div>
       <div class="dialog-actions">
         <button class="dialog-button" id="cancelDiaryButton" type="button">Отмена</button>
         <button class="dialog-button primary" id="saveDiaryButton" type="button">Сохранить</button>
@@ -1328,6 +1366,7 @@ SUPPORT_APP_HTML = """<!doctype html>
   const diaryTitleInput = document.getElementById("diaryTitle");
   const diaryTextInput = document.getElementById("diaryText");
   const diarySwatches = document.getElementById("diarySwatches");
+  const diaryThemeSelect = document.getElementById("diaryTheme");
   const lifehackStatus = document.getElementById("lifehackStatus");
   const lifehackPromptInput = document.getElementById("lifehackPrompt");
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
@@ -1351,8 +1390,27 @@ SUPPORT_APP_HTML = """<!doctype html>
     clarity: { label: "\u042F\u0441\u043D\u043E\u0441\u0442\u044C", soft: "#a9c8ff", tone: "#6f9fed" },
     rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" }
   };
+  const diaryColors = {
+    mint: { label: "\u041C\u044F\u0442\u043D\u044B\u0439", soft: "#8fd6c8", tone: "#5bb8a9" },
+    peach: { label: "\u041F\u0435\u0440\u0441\u0438\u043A\u043E\u0432\u044B\u0439", soft: "#ffd6a6", tone: "#f3ad61" },
+    violet: { label: "\u0424\u0438\u043E\u043B\u0435\u0442\u043E\u0432\u044B\u0439", soft: "#c9b7ff", tone: "#987de8" },
+    sky: { label: "\u0413\u043E\u043B\u0443\u0431\u043E\u0439", soft: "#b7e6ff", tone: "#67badc" },
+    blue: { label: "\u0421\u0438\u043D\u0438\u0439", soft: "#a9c8ff", tone: "#6f9fed" },
+    rose: { label: "\u0420\u043E\u0437\u043E\u0432\u044B\u0439", soft: "#f5b8c8", tone: "#df7f9a" },
+    coral: { label: "\u041A\u043E\u0440\u0430\u043B\u043B\u043E\u0432\u044B\u0439", soft: "#ff9c8b", tone: "#ff6f91" },
+    lemon: { label: "\u041B\u0438\u043C\u043E\u043D\u043D\u044B\u0439", soft: "#ffe58f", tone: "#f2bd55" },
+    green: { label: "\u0417\u0435\u043B\u0435\u043D\u044B\u0439", soft: "#a8e986", tone: "#66c66c" }
+  };
+  const diaryThemeColors = {
+    agency: "mint",
+    empathy: "peach",
+    boundaries: "violet",
+    sensitivity: "sky",
+    clarity: "blue",
+    rationality: "rose"
+  };
   let currentProfileData = null;
-  let currentDiaryDraft = { item_id: null, theme: "clarity" };
+  let currentDiaryDraft = { item_id: null, theme: "clarity", color_theme: "blue" };
   const metricLabels = [
     "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C",
     "\u042D\u043C\u043F\u0430\u0442\u0438\u044F",
@@ -1408,11 +1466,9 @@ SUPPORT_APP_HTML = """<!doctype html>
     const title = escapeHtml(card.title || "\u041B\u0430\u0439\u0444\u0445\u0430\u043A");
     const text = escapeHtml(card.text || "");
     const nextStep = escapeHtml(card.next_step || "");
-    const itemId = escapeHtml(card.id || "");
-    const feedback = String(card.feedback || "");
     const styleIndex = index % 4;
     return `
-        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" data-lifehack-id="${itemId}" tabindex="0" role="button" aria-expanded="false" aria-label="\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043B\u0430\u0439\u0444\u0445\u0430\u043A: ${title}">
+        <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" tabindex="0" role="button" aria-expanded="false" aria-label="\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043B\u0430\u0439\u0444\u0445\u0430\u043A: ${title}">
           <div class="lifehack-flash" aria-hidden="true"></div>
           <div class="lifehack-head">
             <div class="lifehack-gesture" aria-hidden="true">
@@ -1425,15 +1481,33 @@ SUPPORT_APP_HTML = """<!doctype html>
             <div class="lifehack-detail">
               ${text ? `<p>${text}</p>` : ""}
               ${nextStep ? `<p>${nextStep}</p>` : ""}
-              ${itemId ? `
-              <div class="lifehack-actions">
-                <button class="lifehack-feedback${feedback === "helped" ? " active" : ""}" type="button" data-lifehack-feedback="helped">\u041F\u043E\u043C\u043E\u0433</button>
-                <button class="lifehack-feedback${feedback === "not_helped" ? " active" : ""}" type="button" data-lifehack-feedback="not_helped">\u041D\u0435 \u043F\u043E\u043C\u043E\u0433</button>
-              </div>` : ""}
             </div>
           </div>
         </article>
       `;
+  }
+  let lifehackStatusTimer = null;
+  function showLifehackStatus(text) {
+    if (!lifehackStatus) return;
+    window.clearTimeout(lifehackStatusTimer);
+    lifehackStatus.innerHTML = `<span class="status-blob">${escapeHtml(text)}</span>`;
+  }
+  function hideLifehackStatus() {
+    if (!lifehackStatus) return;
+    window.clearTimeout(lifehackStatusTimer);
+    const blob = lifehackStatus.querySelector(".status-blob");
+    if (!blob) {
+      lifehackStatus.textContent = "";
+      return;
+    }
+    blob.classList.add("fading");
+    lifehackStatusTimer = window.setTimeout(() => {
+      lifehackStatus.textContent = "";
+    }, 360);
+  }
+  function flashLifehackStatus(text) {
+    showLifehackStatus(text);
+    lifehackStatusTimer = window.setTimeout(hideLifehackStatus, 2300);
   }
   function renderLifehacks(cards) {
     const el = document.getElementById("lifehackCards");
@@ -1460,43 +1534,16 @@ SUPPORT_APP_HTML = """<!doctype html>
           openLifehack(card);
         }
       });
-      card.querySelectorAll("[data-lifehack-feedback]").forEach((button) => {
-        button.addEventListener("click", async (event) => {
-          event.stopPropagation();
-          const itemId = card.dataset.lifehackId || "";
-          const feedback = button.dataset.lifehackFeedback || "";
-          if (!itemId || !feedback || demoMode || !telegramId) return;
-          lifehackStatus.textContent = "\u0421\u043E\u0445\u0440\u0430\u043D\u044F\u044E \u043E\u0446\u0435\u043D\u043A\u0443\u2026";
-          try {
-            const response = await fetch("/api/v1/support/lifehacks/feedback", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(__spreadProps(__spreadValues({}, buildSupportPayload()), {
-                item_id: itemId,
-                feedback
-              }))
-            });
-            if (!response.ok) {
-              const detail = await response.json().catch(() => ({}));
-              throw new Error(detail.detail || `HTTP ${response.status}`);
-            }
-            lifehackStatus.textContent = "";
-            renderProfile(await response.json());
-          } catch (error) {
-            lifehackStatus.textContent = String(error.message || error);
-          }
-        });
-      });
     });
   }
   async function generateLifehack() {
     if (demoMode || !telegramId) return;
     const prompt = lifehackPromptInput.value.trim();
     if (!prompt) {
-      lifehackStatus.textContent = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043A\u0430\u043A\u043E\u0439 \u043B\u0430\u0439\u0444\u0445\u0430\u043A \u0432\u0430\u043C \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u0443\u0436\u0435\u043D.";
+      flashLifehackStatus("\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441");
       return;
     }
-    lifehackStatus.textContent = "\u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u043C \u043B\u0430\u0439\u0444\u0445\u0430\u043A...";
+    showLifehackStatus("\u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u043C \u043B\u0430\u0439\u0444\u0445\u0430\u043A...");
     const response = await fetch("/api/v1/support/lifehacks/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1509,7 +1556,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       throw new Error(detail.detail || `HTTP ${response.status}`);
     }
     lifehackPromptInput.value = "";
-    lifehackStatus.textContent = "";
+    hideLifehackStatus();
     renderProfile(await response.json());
   }
   function renderInsights(cards) {
@@ -1546,9 +1593,11 @@ SUPPORT_APP_HTML = """<!doctype html>
     el.innerHTML = cards.map((card, index) => {
       const themeKey = inferInsightTheme(card);
       const theme = diaryThemes[themeKey] || diaryThemes.clarity;
+      const colorKey = card.color_theme && diaryColors[card.color_theme] ? card.color_theme : themeKey;
+      const color = diaryColors[colorKey] || theme;
       const sourceLabel = card.manual ? "\u0412\u0430\u0448\u0435" : "\u0417\u0430\u043C\u0435\u0447\u0435\u043D\u043E \u0431\u043E\u0442\u043E\u043C";
       return `
-        <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${theme.soft}; --insight-tone: ${theme.tone};">
+        <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${color.soft}; --insight-tone: ${color.tone};">
           <div>
             <div class="insight-badges">
               <small class="insight-meta">${escapeHtml(theme.label)}</small>
@@ -1712,35 +1761,47 @@ SUPPORT_APP_HTML = """<!doctype html>
     root.classList.remove("loading");
     statusEl.textContent = "";
   }
-  function renderDiarySwatches(selectedTheme) {
-    diarySwatches.innerHTML = Object.keys(diaryThemes).map((key) => {
-      const theme = diaryThemes[key];
+  function renderDiarySwatches(selectedColor) {
+    diarySwatches.innerHTML = Object.keys(diaryColors).map((key) => {
+      const color = diaryColors[key];
       return `
         <button
-          class="swatch${selectedTheme === key ? " active" : ""}"
+          class="swatch${selectedColor === key ? " active" : ""}"
           type="button"
-          data-swatch-theme="${escapeHtml(key)}"
-          title="${escapeHtml(theme.label)}"
-          style="background: linear-gradient(135deg, ${theme.soft}, ${theme.tone});"
+          data-swatch-color="${escapeHtml(key)}"
+          title="${escapeHtml(color.label)}"
+          style="background: linear-gradient(135deg, ${color.soft}, ${color.tone});"
         ></button>
       `;
     }).join("");
-    diarySwatches.querySelectorAll("[data-swatch-theme]").forEach((button) => {
+    diarySwatches.querySelectorAll("[data-swatch-color]").forEach((button) => {
       button.addEventListener("click", () => {
-        currentDiaryDraft.theme = button.dataset.swatchTheme || "clarity";
-        renderDiarySwatches(currentDiaryDraft.theme);
+        currentDiaryDraft.color_theme = button.dataset.swatchColor || "blue";
+        renderDiarySwatches(currentDiaryDraft.color_theme);
       });
     });
   }
+  function renderDiaryCategories(selectedTheme) {
+    if (!diaryThemeSelect) return;
+    diaryThemeSelect.innerHTML = Object.keys(diaryThemes).map((key) => {
+      const theme = diaryThemes[key];
+      return `<option value="${escapeHtml(key)}">${escapeHtml(theme.label)}</option>`;
+    }).join("");
+    diaryThemeSelect.value = selectedTheme && diaryThemes[selectedTheme] ? selectedTheme : "clarity";
+  }
   function openDiaryEditor(card) {
+    const theme = card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity";
+    const colorTheme = card && card.color_theme && diaryColors[card.color_theme] ? card.color_theme : diaryThemeColors[theme] || "blue";
     currentDiaryDraft = {
       item_id: card && card.manual ? card.id || null : null,
-      theme: card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity"
+      theme,
+      color_theme: diaryColors[colorTheme] ? colorTheme : "blue"
     };
     diaryTitleInput.value = card && card.title ? card.title : "";
     diaryTextInput.value = card && card.text ? card.text : "";
     document.getElementById("diaryDialogTitle").textContent = card && card.manual ? "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435" : "\u041D\u043E\u0432\u043E\u0435 \u043E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435";
-    renderDiarySwatches(currentDiaryDraft.theme);
+    renderDiarySwatches(currentDiaryDraft.color_theme);
+    renderDiaryCategories(currentDiaryDraft.theme);
     diaryDialog.classList.add("open");
   }
   function closeDiaryEditor() {
@@ -1759,7 +1820,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       item_id: currentDiaryDraft.item_id,
       title,
       text,
-      theme: currentDiaryDraft.theme
+      theme: currentDiaryDraft.theme,
+      color_theme: currentDiaryDraft.color_theme
     });
     const response = await fetch("/api/v1/support/diary/upsert", {
       method: "POST",
@@ -1881,11 +1943,14 @@ SUPPORT_APP_HTML = """<!doctype html>
   document.getElementById("addDiaryButton").addEventListener("click", () => openDiaryEditor(null));
   document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
   document.getElementById("cancelDiaryButton").addEventListener("click", closeDiaryEditor);
+  diaryThemeSelect.addEventListener("change", () => {
+    currentDiaryDraft.theme = diaryThemeSelect.value && diaryThemes[diaryThemeSelect.value] ? diaryThemeSelect.value : "clarity";
+  });
   document.getElementById("generateLifehackButton").addEventListener("click", async () => {
     try {
       await generateLifehack();
     } catch (error) {
-      lifehackStatus.textContent = String(error.message || error);
+      flashLifehackStatus(String(error.message || error));
     }
   });
   lifehackPromptInput.addEventListener("keydown", async (event) => {
@@ -1894,7 +1959,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     try {
       await generateLifehack();
     } catch (error) {
-      lifehackStatus.textContent = String(error.message || error);
+      flashLifehackStatus(String(error.message || error));
     }
   });
   document.getElementById("saveDiaryButton").addEventListener("click", async () => {

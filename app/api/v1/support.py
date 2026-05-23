@@ -35,6 +35,7 @@ class SupportDiaryUpsertRequest(SupportProfileRequest):
     title: str = Field(min_length=1, max_length=78)
     text: str = Field(min_length=1, max_length=240)
     theme: str | None = None
+    color_theme: str | None = None
 
 
 class SupportDiaryDeleteRequest(SupportProfileRequest):
@@ -99,6 +100,7 @@ async def upsert_support_diary_item(
         title=payload.title,
         text=payload.text,
         theme=payload.theme,
+        color_theme=payload.color_theme,
     )
     profile = await build_support_profile(db, user)
     await db.commit()
