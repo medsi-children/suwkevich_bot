@@ -5,6 +5,7 @@ from app.services.dialogue import (
     ensure_risk_contact,
     reply_token_budget,
     should_use_detailed_reply,
+    start_reply,
 )
 
 
@@ -49,3 +50,10 @@ def test_detailed_reply_detection_for_structured_answers() -> None:
 def test_reply_token_budget_depends_on_request_shape() -> None:
     assert reply_token_budget("Мне тревожно и одиноко") == 800
     assert reply_token_budget("Помоги составить тест по этим метрикам") == 2200
+
+
+def test_start_reply_trims_user_name_spacing() -> None:
+    reply = start_reply("  Денис ")
+
+    assert "Здравствуйте, Денис. Я Сушкевич Бот." in reply
+    assert "Здравствуйте,   Денис" not in reply

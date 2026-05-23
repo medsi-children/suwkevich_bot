@@ -205,7 +205,8 @@ async def get_recent_dialogue(
 
 
 def start_reply(first_name: str | None = None) -> str:
-    name = f", {first_name}" if first_name else ""
+    clean_name = " ".join((first_name or "").split()).strip()
+    name = f", {clean_name}" if clean_name else ""
     return (
         f"Здравствуйте{name}. Я Сушкевич Бот.\n\n"
         "Я здесь, чтобы в бережной и доверительной обстановке помочь вам разобраться в том, "
