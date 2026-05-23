@@ -784,7 +784,7 @@ def _clean_insights(items: Any) -> list[dict[str, str]]:
     return insights
 
 
-def _clean_manual_diary_items(items: Any) -> list[dict[str, str]]:
+def _clean_manual_diary_items(items: Any) -> list[dict[str, Any]]:
     if not isinstance(items, list):
         return []
     cleaned: list[dict[str, str]] = []
@@ -794,10 +794,10 @@ def _clean_manual_diary_items(items: Any) -> list[dict[str, str]]:
         item_id = _clip(item.get("id"), limit=80)
         title = _clip(item.get("title"), limit=78)
         text = _clip(item.get("text") or item.get("description"), limit=240)
-        theme = _normalize_diary_theme(item.get("theme")) or "clarity"
+        theme = _normalize_diary_theme(item.get("theme"))
         color_theme = (
             _normalize_diary_color_theme(item.get("color_theme"))
-            or DIARY_THEME_COLORS.get(theme)
+            or DIARY_THEME_COLORS.get(theme or "")
             or "blue"
         )
         if not item_id or not title or not text:
@@ -893,7 +893,7 @@ def append_manual_lifehack(user: User, item: dict[str, Any]) -> dict[str, str] |
     return lifehack
 
 
-def get_manual_diary_items(user: User) -> list[dict[str, str]]:
+def get_manual_diary_items(user: User) -> list[dict[str, Any]]:
     raw = (user.support_preferences or {}).get(MANUAL_DIARY_KEY)
     if not isinstance(raw, list):
         return []
@@ -908,19 +908,19 @@ def upsert_manual_diary_item(
     text: str,
     theme: str | None,
     color_theme: str | None = None,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     items = get_manual_diary_items(user)
     cleaned_item = {
         "id": item_id or str(uuid4()),
         "title": _clip(title, limit=78),
         "text": _clip(text, limit=240),
-        "theme": _normalize_diary_theme(theme) or "clarity",
+        "theme": _normalize_diary_theme(theme),
         "color_theme": _normalize_diary_color_theme(color_theme)
-        or DIARY_THEME_COLORS.get(_normalize_diary_theme(theme) or "clarity")
+        or DIARY_THEME_COLORS.get(_normalize_diary_theme(theme) or "")
         or "blue",
         "manual": True,
     }
-    updated: list[dict[str, str]] = []
+    updated: list[dict[str, Any]] = []
     replaced = False
     for existing in items:
         if existing["id"] == cleaned_item["id"]:

@@ -1607,13 +1607,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       const theme = diaryThemes[themeKey] || diaryThemes.clarity;
       const colorKey = card.color_theme && diaryColors[card.color_theme] ? card.color_theme : themeKey;
       const color = diaryColors[colorKey] || theme;
-      const sourceLabel = card.manual ? "\u0412\u0430\u0448\u0435" : "\u0417\u0430\u043C\u0435\u0447\u0435\u043D\u043E \u0431\u043E\u0442\u043E\u043C";
+      const displayTheme = card.theme && diaryThemes[card.theme] ? diaryThemes[card.theme] : null;
       return `
         <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${color.soft}; --insight-tone: ${color.tone};">
           <div>
             <div class="insight-badges">
-              <small class="insight-meta">${escapeHtml(theme.label)}</small>
-              <small class="insight-source">${escapeHtml(sourceLabel)}</small>
+              ${displayTheme ? `<small class="insight-meta">${escapeHtml(displayTheme.label)}</small>` : ""}
             </div>
             <h3>${escapeHtml(card.title || "\u041E\u0441\u043E\u0437\u043D\u0430\u043D\u0438\u0435")}</h3>
             <p>${escapeHtml(card.text || "")}</p>
@@ -1795,15 +1794,15 @@ SUPPORT_APP_HTML = """<!doctype html>
   }
   function renderDiaryCategories(selectedTheme) {
     if (!diaryThemeSelect) return;
-    diaryThemeSelect.innerHTML = Object.keys(diaryThemes).map((key) => {
+    diaryThemeSelect.innerHTML = [`<option value="">\u041D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u043E</option>`].concat(Object.keys(diaryThemes).map((key) => {
       const theme = diaryThemes[key];
       return `<option value="${escapeHtml(key)}">${escapeHtml(theme.label)}</option>`;
-    }).join("");
-    diaryThemeSelect.value = selectedTheme && diaryThemes[selectedTheme] ? selectedTheme : "clarity";
+    })).join("");
+    diaryThemeSelect.value = selectedTheme && diaryThemes[selectedTheme] ? selectedTheme : "";
   }
   function openDiaryEditor(card) {
-    const theme = card && card.theme && diaryThemes[card.theme] ? card.theme : "clarity";
-    const colorTheme = card && card.color_theme && diaryColors[card.color_theme] ? card.color_theme : diaryThemeColors[theme] || "blue";
+    const theme = card && card.theme && diaryThemes[card.theme] ? card.theme : "";
+    const colorTheme = card && card.color_theme && diaryColors[card.color_theme] ? card.color_theme : theme && diaryThemeColors[theme] ? diaryThemeColors[theme] : "blue";
     currentDiaryDraft = {
       item_id: card && card.manual ? card.id || null : null,
       theme,
@@ -1832,7 +1831,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       item_id: currentDiaryDraft.item_id,
       title,
       text,
-      theme: currentDiaryDraft.theme,
+      theme: currentDiaryDraft.theme || null,
       color_theme: currentDiaryDraft.color_theme
     });
     const response = await fetch("/api/v1/support/diary/upsert", {
@@ -1956,7 +1955,7 @@ SUPPORT_APP_HTML = """<!doctype html>
   document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
   document.getElementById("cancelDiaryButton").addEventListener("click", closeDiaryEditor);
   diaryThemeSelect.addEventListener("change", () => {
-    currentDiaryDraft.theme = diaryThemeSelect.value && diaryThemes[diaryThemeSelect.value] ? diaryThemeSelect.value : "clarity";
+    currentDiaryDraft.theme = diaryThemeSelect.value && diaryThemes[diaryThemeSelect.value] ? diaryThemeSelect.value : "";
   });
   document.getElementById("generateLifehackButton").addEventListener("click", async () => {
     try {
