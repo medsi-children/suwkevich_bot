@@ -263,8 +263,8 @@ def should_use_detailed_reply(text: str) -> bool:
 
 def reply_token_budget(text: str) -> int:
     if should_use_detailed_reply(text):
-        return 1600
-    return 520
+        return 2200
+    return 800
 
 
 async def handle_user_text(
@@ -302,6 +302,7 @@ async def handle_user_text(
             messages,
             temperature=0.55,
             max_tokens=reply_token_budget(clean),
+            continue_on_length=True,
         )
     except LlmUnavailableError as exc:
         logger.warning(

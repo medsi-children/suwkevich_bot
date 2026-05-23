@@ -53,3 +53,67 @@ async def test_openrouter_chat_uses_normalized_key_and_reports_http_error(monkey
 
     assert captured_headers["Authorization"] == "Bearer sk-test"
     assert captured_headers["X-Title"] == "Sushkevich Bot"
+
+
+@pytest.mark.asyncio
+async def test_openrouter_chat_continues_when_model_hits_length_limit(monkeypatch) -> None:
+    requests: list[dict] = []
+
+    class FakeResponse:
+        def __init__(self, payload: dict) -> None:
+            self._payload = payload
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return self._payload
+
+    class FakeClient:
+        def __init__(self, *, timeout: int, http2: bool | None = None) -> None:
+            self.timeout = timeout
+            self.http2 = http2
+
+        async def post(
+            self,
+            url: str,
+            *,
+            headers: dict[str, str],
+            json: dict,
+        ) -> FakeResponse:
+            requests.append(json)
+            if len(requests) == 1:
+                return FakeResponse(
+                    {
+                        "choices": [
+                            {
+                                "message": {"content": "Первый фрагмент ответа"},
+                                "finish_reason": "length",
+                            }
+                        ]
+                    }
+                )
+            return FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {"content": "второй фрагмент без повтора."},
+                            "finish_reason": "stop",
+                        }
+                    ]
+                }
+            )
+
+    llm._OPENROUTER_CLIENT = None
+    monkeypatch.setattr(llm.settings, "openrouter_api_key", "sk-test")
+    monkeypatch.setattr(llm.httpx, "AsyncClient", FakeClient)
+
+    reply = await llm.openrouter_chat(
+        [{"role": "user", "content": "Привет"}],
+        continue_on_length=True,
+        max_continuations=1,
+    )
+
+    assert reply == "Первый фрагмент ответа\n\nвторой фрагмент без повтора."
+    assert len(requests) == 2
+    assert requests[1]["messages"][-1]["content"] == llm.CONTINUATION_PROMPT

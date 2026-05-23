@@ -11,6 +11,10 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 _OPENROUTER_CLIENT: httpx.AsyncClient | None = None
+CONTINUATION_PROMPT = (
+    "Продолжи с того места, где остановился. Не начинай заново, "
+    "не повторяй уже сказанное и закончи мысль целиком."
+)
 
 
 class LlmUnavailableError(RuntimeError):
@@ -60,6 +64,8 @@ async def openrouter_chat(
     *,
     temperature: float = 0.45,
     max_tokens: int = 900,
+    continue_on_length: bool = False,
+    max_continuations: int = 2,
 ) -> str:
     api_key = _normalize_openrouter_api_key(settings.openrouter_api_key)
     if not api_key:
@@ -74,61 +80,92 @@ async def openrouter_chat(
     if referer:
         headers["HTTP-Referer"] = referer
 
-    payload = {
-        "model": settings.openrouter_model,
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
+    attempt_messages = list(messages)
+    raw_parts: list[str] = []
+    finish_reason = None
 
-    try:
-        global _OPENROUTER_CLIENT
-        if _OPENROUTER_CLIENT is None:
-            _OPENROUTER_CLIENT = _create_openrouter_client()
-        response = await _OPENROUTER_CLIENT.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-        )
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        body = exc.response.text[:1200]
-        logger.warning(
-            "OpenRouter returned HTTP %s for model %s: %s",
-            exc.response.status_code,
-            settings.openrouter_model,
-            body,
-        )
-        raise LlmUnavailableError(
-            f"OpenRouter HTTP {exc.response.status_code}: {body[:300]}"
-        ) from exc
-    except httpx.RequestError as exc:
-        logger.warning("OpenRouter request failed for model %s: %s", settings.openrouter_model, exc)
-        raise LlmUnavailableError(f"OpenRouter request failed: {exc}") from exc
-    except UnicodeError as exc:
-        logger.warning(
-            "OpenRouter header encoding failed for model %s: %s",
-            settings.openrouter_model,
-            exc,
-        )
-        raise LlmUnavailableError(f"OpenRouter header encoding failed: {exc}") from exc
+    for attempt in range(max_continuations + 1):
+        payload = {
+            "model": settings.openrouter_model,
+            "messages": attempt_messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
 
-    try:
-        data = response.json()
-    except ValueError as exc:
-        logger.warning("OpenRouter returned invalid JSON for model %s", settings.openrouter_model)
-        raise LlmUnavailableError("OpenRouter returned invalid JSON") from exc
+        try:
+            global _OPENROUTER_CLIENT
+            if _OPENROUTER_CLIENT is None:
+                _OPENROUTER_CLIENT = _create_openrouter_client()
+            response = await _OPENROUTER_CLIENT.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            body = exc.response.text[:1200]
+            logger.warning(
+                "OpenRouter returned HTTP %s for model %s: %s",
+                exc.response.status_code,
+                settings.openrouter_model,
+                body,
+            )
+            raise LlmUnavailableError(
+                f"OpenRouter HTTP {exc.response.status_code}: {body[:300]}"
+            ) from exc
+        except httpx.RequestError as exc:
+            logger.warning(
+                "OpenRouter request failed for model %s: %s",
+                settings.openrouter_model,
+                exc,
+            )
+            raise LlmUnavailableError(f"OpenRouter request failed: {exc}") from exc
+        except UnicodeError as exc:
+            logger.warning(
+                "OpenRouter header encoding failed for model %s: %s",
+                settings.openrouter_model,
+                exc,
+            )
+            raise LlmUnavailableError(f"OpenRouter header encoding failed: {exc}") from exc
 
-    try:
-        content = data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        logger.warning("OpenRouter response has unexpected shape: %s", data)
-        raise LlmUnavailableError("OpenRouter response has unexpected shape") from exc
+        try:
+            data = response.json()
+        except ValueError as exc:
+            logger.warning(
+                "OpenRouter returned invalid JSON for model %s",
+                settings.openrouter_model,
+            )
+            raise LlmUnavailableError("OpenRouter returned invalid JSON") from exc
 
-    cleaned = clean_generated_text(str(content))
+        try:
+            choice = data["choices"][0]
+            content = choice["message"]["content"]
+            finish_reason = choice.get("finish_reason")
+        except (KeyError, IndexError, TypeError) as exc:
+            logger.warning("OpenRouter response has unexpected shape: %s", data)
+            raise LlmUnavailableError("OpenRouter response has unexpected shape") from exc
+
+        raw_part = str(content or "").strip()
+        if raw_part:
+            raw_parts.append(raw_part)
+        if not continue_on_length or finish_reason != "length" or attempt >= max_continuations:
+            break
+
+        attempt_messages = [
+            *messages,
+            {"role": "assistant", "content": "\n\n".join(raw_parts)},
+            {"role": "user", "content": CONTINUATION_PROMPT},
+        ]
+
+    cleaned = clean_generated_text("\n\n".join(part for part in raw_parts if part))
     if not cleaned:
         logger.warning("OpenRouter returned empty content for model %s", settings.openrouter_model)
         raise LlmUnavailableError("OpenRouter returned empty content")
+    if continue_on_length and finish_reason == "length":
+        logger.warning(
+            "OpenRouter response for model %s still ended with length after continuations",
+            settings.openrouter_model,
+        )
     return cleaned
 
 

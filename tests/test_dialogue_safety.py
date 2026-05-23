@@ -47,5 +47,5 @@ def test_detailed_reply_detection_for_structured_answers() -> None:
 
 
 def test_reply_token_budget_depends_on_request_shape() -> None:
-    assert reply_token_budget("Мне тревожно и одиноко") == 520
-    assert reply_token_budget("Помоги составить тест по этим метрикам") == 1600
+    assert reply_token_budget("Мне тревожно и одиноко") == 800
+    assert reply_token_budget("Помоги составить тест по этим метрикам") == 2200
