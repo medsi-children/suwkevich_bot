@@ -50,6 +50,7 @@
 ## Клиническая база
 
 - Основной файл: `app/knowledge/clinical_orientation.md`.
+- Нормативный слой клинреков: `app/knowledge/clinical_guidelines_minzdrav.md`.
 - Резервный placeholder: `app/knowledge/psychiatry_literature_digest.md`.
 - Доменные карточки: `app/knowledge/disorders/*.md`.
 - Retrieval: `app/services/clinical_knowledge.py`.
@@ -58,6 +59,10 @@
 `clinical_orientation.md` не надо ужимать. Это большой расширенный ориентир, который
 код режет по Markdown-разделам, кэширует по mtime и подставляет в LLM только релевантные
 фрагменты.
+
+`clinical_guidelines_minzdrav.md` — это не файл “для ответа пользователю названиями
+рекомендаций”, а нормативный слой безопасности и маршрутизации. Его задача — усиливать
+красные флаги, уровни срочности и клинические развилки, а не превращать бота в диагнозатор.
 
 `diagnostic_domains.py` не должен быть диагнозатором. Маркеры нужны только для выбора
 релевантных знаний и фокуса уточняющих вопросов. Не делать логику вида “слово X значит
