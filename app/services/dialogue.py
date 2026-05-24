@@ -314,11 +314,14 @@ def clean_person_name(value: str | None) -> str:
 
 def is_acceptable_user_name(value: str | None) -> bool:
     clean = clean_person_name(value)
-    if len(clean) < 2 or len(clean) > 64:
+    if len(clean) < 2 or len(clean) > 40:
         return False
     if "\n" in clean or "\r" in clean:
         return False
-    return True
+    if not re.fullmatch(r"[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\- ]{1,39}", clean):
+        return False
+    parts = [part for part in re.split(r"[\s\-]+", clean) if part]
+    return 1 <= len(parts) <= 3
 
 
 
