@@ -22,7 +22,20 @@ MANUAL_DIARY_KEY = "_support_manual_diary"
 SUPPORT_PROFILE_CACHE_VERSION = 2
 LOW_CONTEXT_HINT = "Информации о вас пока мало"
 LOW_CONTEXT_TONE = ("#eef2f6", "#aeb8c4")
-DIARY_THEMES = {"agency", "empathy", "boundaries", "sensitivity", "clarity", "rationality"}
+DIARY_THEMES = {
+    "agency",
+    "emotional_intelligence",
+    "boundaries",
+    "self_contact",
+    "criticality",
+    "rationality",
+    "self_regulation",
+}
+DIARY_THEME_ALIASES = {
+    "empathy": "emotional_intelligence",
+    "sensitivity": "self_contact",
+    "clarity": "criticality",
+}
 DIARY_COLOR_THEMES = {
     "mint",
     "peach",
@@ -36,11 +49,12 @@ DIARY_COLOR_THEMES = {
 }
 DIARY_THEME_COLORS = {
     "agency": "mint",
-    "empathy": "peach",
+    "emotional_intelligence": "peach",
     "boundaries": "violet",
-    "sensitivity": "sky",
-    "clarity": "blue",
+    "self_contact": "sky",
+    "criticality": "blue",
     "rationality": "rose",
+    "self_regulation": "coral",
 }
 
 DIMENSIONS = (
@@ -55,11 +69,11 @@ DIMENSIONS = (
         "tones": ("#8fd6c8", "#5bb8a9"),
     },
     {
-        "key": "empathy",
-        "label": "Эмпатия",
+        "key": "emotional_intelligence",
+        "label": "Эмоциональный интеллект",
         "hint": (
-            "Насколько вы замечаете чувства других людей "
-            "и понимаете, как ваши слова и поступки на них влияют."
+            "Насколько вы распознаете свои эмоции, замечаете состояние других "
+            "и понимаете, как переживания влияют на слова и поступки."
         ),
         "tones": ("#ffd6a6", "#f3ad61"),
     },
@@ -74,20 +88,20 @@ DIMENSIONS = (
         "tones": ("#c9b7ff", "#987de8"),
     },
     {
-        "key": "sensitivity",
-        "label": "Чувствительность",
+        "key": "self_contact",
+        "label": "Контакт с собой",
         "hint": (
-            "Насколько вы замечаете сигналы своего тела и эмоций: "
-            "усталость, напряжение, тревогу, перегруз, спокойствие."
+            "Насколько вы замечаете сигналы тела и эмоций: усталость, "
+            "напряжение, тревогу, перегруз, потребности и спокойствие."
         ),
         "tones": ("#b7e6ff", "#67badc"),
     },
     {
-        "key": "clarity",
-        "label": "Ясность",
+        "key": "criticality",
+        "label": "Критичность",
         "hint": (
-            "Насколько вы способны честно видеть свою роль в ситуации, "
-            "признавать ошибки и отделять факты от обиды или фантазий."
+            "Насколько вы можете проверять свои выводы, сомневаться в "
+            "автоматических интерпретациях и отделять факт от ощущения."
         ),
         "tones": ("#a9c8ff", "#6f9fed"),
     },
@@ -99,6 +113,15 @@ DIMENSIONS = (
             "а не вера на слово, магическое объяснение или чужая уверенность."
         ),
         "tones": ("#f5b8c8", "#df7f9a"),
+    },
+    {
+        "key": "self_regulation",
+        "label": "Саморегуляция",
+        "hint": (
+            "Насколько вы замечаете рост напряжения, делаете паузу и выбираете "
+            "безопасные способы вернуться к устойчивости."
+        ),
+        "tones": ("#ff9c8b", "#ff6f91"),
     },
 )
 
@@ -133,32 +156,31 @@ METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
             "влияете на происходящее сами, чем живете по чужому сценарию.",
         ),
     ],
-    "empathy": [
+    "emotional_intelligence": [
         (
             20,
-            "Чувства других людей пока считываются с трудом, и из-за этого "
-            "можно не сразу замечать, что они переживают и как ваши слова "
-            "или тон на них действуют.",
+            "Эмоции пока трудно распознавать и называть: из-за этого можно поздно "
+            "замечать, что происходит внутри вас или в контакте с другими.",
         ),
         (
             40,
-            "Вы временами улавливаете эмоции других людей, но не всегда "
-            "удерживаете их в поле внимания, особенно если сами напряжены.",
+            "Вы временами улавливаете свои и чужие эмоции, но в напряжении они "
+            "могут быстро превращаться в импульс, защиту или недопонимание.",
         ),
         (
             60,
-            "Вы обычно замечаете состояние других людей и в целом понимаете, "
-            "что они чувствуют, хотя в перегрузе можете упрощать их переживания.",
+            "Вы обычно замечаете эмоциональный контекст и можете назвать, что "
+            "происходит, хотя в перегрузе часть нюансов все еще теряется.",
         ),
         (
             80,
-            "Вы хорошо считываете эмоции и контекст других людей, поэтому "
-            "обычно точнее понимаете, что с ними происходит, и мягче строите общение.",
+            "Вы хорошо различаете свои реакции и состояние других людей, поэтому "
+            "чаще строите контакт точнее и мягче.",
         ),
         (
             100,
-            "У вас очень сильная чувствительность к переживаниям других: "
-            "вы тонко улавливаете эмоции, нюансы отношений и реакцию людей на ваши слова.",
+            "У вас очень тонкое понимание эмоциональных нюансов: вы быстро "
+            "замечаете переживания, контекст и влияние слов на контакт.",
         ),
     ],
     "boundaries": [
@@ -188,7 +210,7 @@ METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
             "замечаете давление и уверенно обозначаете, что вам подходит, а что нет.",
         ),
     ],
-    "sensitivity": [
+    "self_contact": [
         (
             20,
             "Сигналы тела и эмоций пока замечаются поздно: усталость, тревога "
@@ -215,31 +237,31 @@ METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
             "что происходит с телом, эмоциями и уровнем внутреннего напряжения.",
         ),
     ],
-    "clarity": [
+    "criticality": [
         (
             20,
-            "Сейчас в этой зоне много тумана: трудно отделять факты от обиды, "
-            "фантазий, автоматических выводов и признавать свою часть происходящего.",
+            "Сейчас трудно проверять автоматические выводы: ощущения, обиды "
+            "или тревожные предположения могут быстро восприниматься как факт.",
         ),
         (
             40,
-            "Ясность временами появляется, но в сложных ситуациях вам все еще "
-            "нелегко объективно увидеть свою роль, ошибки и мотивы других людей.",
+            "Критичность временами появляется, но в заряженных ситуациях пока "
+            "нелегко сомневаться в первой интерпретации и сверяться с фактами.",
         ),
         (
             60,
-            "Вы уже умеете разбираться в происходящем и отделять факты от эмоций, "
-            "хотя в заряженных темах вас еще может уносить в субъективность.",
+            "Вы уже умеете отделять факты от эмоций и проверять свои выводы, "
+            "хотя в чувствительных темах вас еще может уносить в субъективность.",
         ),
         (
             80,
-            "Вы довольно ясно видите картину: умеете замечать свою роль "
-            "в ситуации, признавать ошибки и не так легко путаете факты с эмоциями.",
+            "Вы довольно хорошо проверяете реальность: можете заметить свою роль, "
+            "усомниться в интерпретации и не так легко путать факт с ощущением.",
         ),
         (
             100,
-            "Сейчас у вас очень сильная ясность: вы хорошо отличаете факты "
-            "от интерпретаций и способны честно смотреть на себя и других.",
+            "Сейчас у вас сильная критичность: вы хорошо отличаете факты от "
+            "интерпретаций и способны честно проверять себя и ситуацию.",
         ),
     ],
     "rationality": [
@@ -269,6 +291,33 @@ METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
             "и редко верите во что-то без достаточных оснований.",
         ),
     ],
+    "self_regulation": [
+        (
+            20,
+            "Когда напряжение растет, пока трудно остановиться и выбрать безопасный "
+            "способ пережить пик без импульсивных действий.",
+        ),
+        (
+            40,
+            "Вы иногда можете сделать паузу и снизить накал, но в сильном аффекте "
+            "старые реакции все еще быстро берут верх.",
+        ),
+        (
+            60,
+            "У вас уже есть рабочие способы выдерживать перегруз и возвращаться к "
+            "опорам, хотя в тяжелые моменты они требуют усилия.",
+        ),
+        (
+            80,
+            "Вы чаще замечаете разгон состояния заранее и умеете выбирать действия, "
+            "которые снижают риск срыва, конфликта или самоповреждения.",
+        ),
+        (
+            100,
+            "У вас сейчас сильная саморегуляция: даже при напряжении вы быстро "
+            "возвращаетесь к опорам, паузе и безопасному следующему шагу.",
+        ),
+    ],
 }
 
 NEGATIVE_RESOURCE_WORDS = (
@@ -293,15 +342,54 @@ BODY_STATE_WORDS = (
     "сердц",
     "напряж",
     "устал",
-    "чувств",
-    "эмоц",
+    "состояни",
+    "перегруз",
+    "потребн",
+    "голод",
+    "аппетит",
+    "боль",
 )
 
 AGENCY_WORDS = ("хочу", "могу", "решил", "решила", "выбира", "границ", "план", "шаг")
 BOUNDARY_WORDS = ("границ", "не хочу", "не готов", "нельзя", "мне важно", "отказ")
-EMPATHY_WORDS = ("чувств", "пережива", "обид", "поддерж", "другому", "ему", "ей", "людям")
-CLARITY_WORDS = ("ошиб", "призн", "объектив", "по факту", "ясно", "понима", "моя роль")
+EMOTIONAL_INTELLIGENCE_WORDS = (
+    "эмоц",
+    "чувств",
+    "пережива",
+    "обид",
+    "поддерж",
+    "другому",
+    "людям",
+    "злюсь",
+    "стыд",
+)
+CRITICALITY_WORDS = (
+    "ошиб",
+    "призн",
+    "объектив",
+    "по факту",
+    "ясно",
+    "понима",
+    "моя роль",
+    "провер",
+    "сомнева",
+    "интерпретац",
+)
 RATIONALITY_WORDS = ("доказ", "факт", "провер", "реальн", "логич", "правда", "аргумент")
+SELF_REGULATION_WORDS = (
+    "пауза",
+    "останов",
+    "справ",
+    "выдерж",
+    "успоко",
+    "регулир",
+    "дыш",
+    "снизить",
+    "не сорваться",
+    "безопасн",
+    "режим",
+    "опор",
+)
 MAGICAL_THINKING_WORDS = (
     "эзотер",
     "астрол",
@@ -469,6 +557,7 @@ def _metric_detail(key: str, value: int) -> str:
 
 def _normalize_diary_theme(value: Any) -> str | None:
     theme = str(value or "").strip().lower()
+    theme = DIARY_THEME_ALIASES.get(theme, theme)
     return theme if theme in DIARY_THEMES else None
 
 
@@ -575,26 +664,36 @@ def _build_metrics(
     body_mentions = sum(
         1 for message in messages if _contains_any(message.content, BODY_STATE_WORDS)
     )
-    empathy_hits = sum(1 for word in EMPATHY_WORDS if word in lower_text)
-    clarity_hits = sum(1 for word in CLARITY_WORDS if word in lower_text)
+    emotional_intelligence_hits = sum(
+        1 for word in EMOTIONAL_INTELLIGENCE_WORDS if word in lower_text
+    )
+    criticality_hits = sum(1 for word in CRITICALITY_WORDS if word in lower_text)
     rationality_hits = sum(1 for word in RATIONALITY_WORDS if word in lower_text)
+    self_regulation_hits = sum(1 for word in SELF_REGULATION_WORDS if word in lower_text)
     magical_hits = sum(1 for word in MAGICAL_THINKING_WORDS if word in lower_text)
 
     boundary_facts = _fact_items(facts, "boundary")
     preference_facts = _fact_items(facts, "preference")
+    coping_facts = _fact_items(facts, "coping")
     insight_memories = _memory_items(memories, "insight")
     goal_memories = _memory_items(memories, "goal")
     preference_memories = _memory_items(memories, "preference")
+    support_strategy_memories = _memory_items(memories, "support_strategy")
 
     evidence = {
         "agency": bool(boundary_facts or preference_facts or goal_memories)
         or _contains_any(recent_text, AGENCY_WORDS),
-        "empathy": bool(people or insight_memories or empathy_hits),
+        "emotional_intelligence": bool(
+            people or insight_memories or emotional_intelligence_hits
+        ),
         "boundaries": bool(boundary_facts or preference_memories)
         or _contains_any(recent_text, BOUNDARY_WORDS),
-        "sensitivity": bool(body_mentions),
-        "clarity": bool(user.profile_summary or topics or insight_memories or clarity_hits),
+        "self_contact": bool(body_mentions),
+        "criticality": bool(
+            user.profile_summary or topics or insight_memories or criticality_hits
+        ),
         "rationality": bool(rationality_hits or magical_hits),
+        "self_regulation": bool(coping_facts or support_strategy_memories or self_regulation_hits),
     }
 
     scores = {
@@ -604,11 +703,11 @@ def _build_metrics(
             min(14, len([*goal_memories, *insight_memories]) * 3),
             8 if _contains_any(recent_text, AGENCY_WORDS) else 0,
         ),
-        "empathy": _value_from_counts(
+        "emotional_intelligence": _value_from_counts(
             42,
             min(18, len(people) * 4),
             min(16, len(insight_memories) * 4),
-            min(12, empathy_hits * 3),
+            min(12, emotional_intelligence_hits * 3),
         ),
         "boundaries": _value_from_counts(
             38,
@@ -616,22 +715,29 @@ def _build_metrics(
             min(12, len(preference_memories) * 3),
             6 if _contains_any(recent_text, BOUNDARY_WORDS) else 0,
         ),
-        "sensitivity": _value_from_counts(
+        "self_contact": _value_from_counts(
             40,
             min(30, body_mentions * 3),
             -min(10, negative_hits * 2),
         ),
-        "clarity": _value_from_counts(
+        "criticality": _value_from_counts(
             42,
             10 if user.profile_summary else 0,
             min(20, len(topics) * 4),
             min(16, len(insight_memories) * 4),
-            min(10, clarity_hits * 2),
+            min(10, criticality_hits * 2),
         ),
         "rationality": _value_from_counts(
             54,
             min(18, rationality_hits * 4),
             -min(24, magical_hits * 6),
+        ),
+        "self_regulation": _value_from_counts(
+            38,
+            min(18, len(coping_facts) * 5),
+            min(18, len(support_strategy_memories) * 5),
+            min(16, self_regulation_hits * 3),
+            -min(10, negative_hits),
         ),
     }
 

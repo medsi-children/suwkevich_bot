@@ -80,5 +80,14 @@ def test_reply_token_budget_depends_on_request_shape() -> None:
 def test_start_reply_trims_user_name_spacing() -> None:
     reply = start_reply("  Денис ")
 
-    assert "Здравствуйте, Денис. Я Сушкевич Бот." in reply
-    assert "Здравствуйте,   Денис" not in reply
+    assert "Доброго дня, Денис. Я Сушкевич Бот." in reply
+    assert "Доброго дня,   Денис" not in reply
+
+
+def test_start_reply_separates_navigation_and_diary_support() -> None:
+    reply = start_reply()
+
+    assert "психиатрической навигацией" in reply
+    assert "дополнительная психологическая" in reply
+    assert "карта вашей личности" in reply
+    assert len(reply) < 1200

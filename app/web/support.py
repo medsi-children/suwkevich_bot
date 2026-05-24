@@ -400,25 +400,24 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .metric-value {
-      width: 54px;
-      height: 54px;
-      display: grid;
-      place-items: center;
-      flex: 0 0 54px;
+      min-width: 44px;
+      min-height: 34px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
       border-radius: 999px;
-      color: var(--text);
-      font-size: 16px;
+      color: #4f5f70;
+      font-size: 13px;
       font-weight: 820;
-      background:
-        radial-gradient(circle at center, #fff 0 58%, transparent 59%),
-        conic-gradient(var(--metric-tone) calc(var(--value) * 1%), rgba(87, 112, 136, .12) 0);
+      background: linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(247, 250, 255, .88));
+      border: 1px solid rgba(87, 112, 136, .12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
     }
 
     .metric-card.empty .metric-value {
       color: #8b96a3;
-      background:
-        radial-gradient(circle at center, #fff 0 58%, transparent 59%),
-        conic-gradient(#b5bfca 0%, rgba(128, 143, 158, .16) 0);
     }
 
     .metric-card p {
@@ -435,24 +434,60 @@ SUPPORT_APP_HTML = """<!doctype html>
       font-weight: 430;
     }
 
-    .bar {
-      height: 7px;
-      border-radius: 999px;
-      background: rgba(87, 112, 136, .12);
-      overflow: hidden;
+    .metric-dots {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
       margin-top: auto;
+      padding: 3px 1px 0;
     }
 
-    .bar span {
+    .metric-dot {
       display: block;
-      width: calc(var(--value) * 1%);
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--metric-soft), var(--metric-tone));
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(87, 112, 136, .14);
+      box-shadow: inset 0 1px 1px rgba(87, 112, 136, .08);
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
     }
 
-    .metric-card.empty .bar span {
-      width: 0;
+    .metric-dot:nth-child(2),
+    .metric-dot:nth-child(9) {
+      width: 9px;
+      height: 9px;
+    }
+
+    .metric-dot:nth-child(3),
+    .metric-dot:nth-child(8) {
+      width: 10px;
+      height: 10px;
+    }
+
+    .metric-dot:nth-child(4),
+    .metric-dot:nth-child(7) {
+      width: 11px;
+      height: 11px;
+    }
+
+    .metric-dot:nth-child(5),
+    .metric-dot:nth-child(6) {
+      width: 13px;
+      height: 13px;
+    }
+
+    .metric-dot.filled {
+      background: linear-gradient(135deg, var(--metric-soft), var(--metric-tone));
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, .32),
+        0 7px 15px rgba(96, 120, 146, .16);
+    }
+
+    .metric-card.empty .metric-dot {
+      background: rgba(128, 143, 158, .14);
+      box-shadow: none;
     }
 
     .two-column {
@@ -1410,13 +1445,20 @@ SUPPORT_APP_HTML = """<!doctype html>
   const demoMode = params.get("demo") === "1";
   const localTelegramId = Number(params.get("telegram_id") || 0);
   const telegramId = Number(tgUser.id || localTelegramId || 0);
+  const diaryThemeAliases = {
+    empathy: "emotional_intelligence",
+    sensitivity: "self_contact",
+    clarity: "criticality"
+  };
+  const normalizeDiaryTheme = (value) => diaryThemeAliases[value] || value;
   const diaryThemes = {
     agency: { label: "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C", soft: "#8fd6c8", tone: "#5bb8a9" },
-    empathy: { label: "\u042D\u043C\u043F\u0430\u0442\u0438\u044F", soft: "#ffd6a6", tone: "#f3ad61" },
+    emotional_intelligence: { label: "\u042D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442", soft: "#ffd6a6", tone: "#f3ad61" },
     boundaries: { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", soft: "#c9b7ff", tone: "#987de8" },
-    sensitivity: { label: "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#b7e6ff", tone: "#67badc" },
-    clarity: { label: "\u042F\u0441\u043D\u043E\u0441\u0442\u044C", soft: "#a9c8ff", tone: "#6f9fed" },
-    rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" }
+    self_contact: { label: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439", soft: "#b7e6ff", tone: "#67badc" },
+    criticality: { label: "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C", soft: "#a9c8ff", tone: "#6f9fed" },
+    rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" },
+    self_regulation: { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", soft: "#ff9c8b", tone: "#ff6f91" }
   };
   const diaryColors = {
     mint: { label: "\u041C\u044F\u0442\u043D\u044B\u0439", soft: "#8fd6c8", tone: "#5bb8a9" },
@@ -1431,21 +1473,23 @@ SUPPORT_APP_HTML = """<!doctype html>
   };
   const diaryThemeColors = {
     agency: "mint",
-    empathy: "peach",
+    emotional_intelligence: "peach",
     boundaries: "violet",
-    sensitivity: "sky",
-    clarity: "blue",
-    rationality: "rose"
+    self_contact: "sky",
+    criticality: "blue",
+    rationality: "rose",
+    self_regulation: "coral"
   };
   let currentProfileData = null;
-  let currentDiaryDraft = { item_id: null, theme: "clarity", color_theme: "blue" };
+  let currentDiaryDraft = { item_id: null, theme: "criticality", color_theme: "blue" };
   const metricLabels = [
     "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C",
-    "\u042D\u043C\u043F\u0430\u0442\u0438\u044F",
+    "\u042D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442",
     "\u0413\u0440\u0430\u043D\u0438\u0446\u044B",
-    "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C",
-    "\u042F\u0441\u043D\u043E\u0441\u0442\u044C",
-    "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C"
+    "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439",
+    "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C",
+    "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C",
+    "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F"
   ];
   function emptyMetrics() {
     return metricLabels.map((label, order) => ({
@@ -1598,15 +1642,17 @@ SUPPORT_APP_HTML = """<!doctype html>
       return;
     }
     const inferInsightTheme = (card) => {
-      if (card.theme && diaryThemes[card.theme]) return card.theme;
+      const normalizedTheme = normalizeDiaryTheme(card.theme || "");
+      if (normalizedTheme && diaryThemes[normalizedTheme]) return normalizedTheme;
       const text = `${card.title || ""} ${card.text || ""}`.toLowerCase();
       const checks = [
-        ["sensitivity", ["\u0441\u043E\u043D", "\u0442\u0435\u043B\u043E", "\u0434\u044B\u0445", "\u043D\u0430\u043F\u0440\u044F\u0436", "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438", "\u0442\u0440\u0435\u0432\u043E\u0433", "\u0443\u0441\u0442\u0430\u043B", "\u0447\u0443\u0432\u0441\u0442\u0432"]],
-        ["empathy", ["\u0434\u0440\u0443\u0433\u0438\u0445", "\u0434\u0440\u0443\u0433\u043E\u043C\u0443", "\u0435\u043C\u0443", "\u0435\u0439", "\u043B\u044E\u0434\u044F\u043C", "\u043E\u0431\u0438\u0434", "\u043F\u043E\u0434\u0434\u0435\u0440\u0436", "\u0447\u0443\u0432\u0441\u0442\u0432\u0430 \u0434\u0440\u0443\u0433\u0438\u0445"]],
+        ["self_contact", ["\u0441\u043E\u043D", "\u0442\u0435\u043B\u043E", "\u0434\u044B\u0445", "\u043D\u0430\u043F\u0440\u044F\u0436", "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438", "\u0442\u0440\u0435\u0432\u043E\u0433", "\u0443\u0441\u0442\u0430\u043B", "\u0447\u0443\u0432\u0441\u0442\u0432"]],
+        ["emotional_intelligence", ["\u044D\u043C\u043E\u0446", "\u0434\u0440\u0443\u0433\u0438\u0445", "\u0434\u0440\u0443\u0433\u043E\u043C\u0443", "\u0435\u043C\u0443", "\u0435\u0439", "\u043B\u044E\u0434\u044F\u043C", "\u043E\u0431\u0438\u0434", "\u043F\u043E\u0434\u0434\u0435\u0440\u0436", "\u0441\u0442\u044B\u0434"]],
         ["boundaries", ["\u0433\u0440\u0430\u043D\u0438\u0446", "\u043F\u0440\u043E\u0441\u044C\u0431", "\u043E\u0442\u043A\u0430\u0437", "\u043D\u0435 \u043E\u0431\u044F\u0437", "\u0441\u043A\u0430\u0437\u0430\u0442\u044C \u043D\u0435\u0442"]],
         ["agency", ["\u0448\u0430\u0433", "\u0432\u044B\u0431\u043E\u0440", "\u0440\u0435\u0448\u0438\u043B", "\u0434\u0435\u0439\u0441\u0442\u0432", "\u043E\u0442\u0432\u0435\u0442", "\u0441\u043A\u0430\u0437\u0430\u0442\u044C"]],
-        ["clarity", ["\u044F\u0441\u043D", "\u043F\u043E\u043D\u044F\u0442", "\u0432\u0438\u0434\u043D\u043E", "\u0437\u0430\u043C\u0435\u0442\u0438\u043B\u0438", "\u043E\u0441\u043E\u0437\u043D", "\u0441\u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440", "\u043E\u0448\u0438\u0431", "\u043C\u043E\u044F \u0440\u043E\u043B\u044C"]],
-        ["rationality", ["\u0444\u0430\u043A\u0442", "\u0434\u043E\u043A\u0430\u0437", "\u0440\u0435\u0430\u043B\u044C\u043D", "\u043F\u0440\u043E\u0432\u0435\u0440", "\u043B\u043E\u0433\u0438\u0447", "\u043F\u0440\u0430\u0432\u0434\u0430", "\u0431\u0435\u0437 \u0434\u043E\u043A\u0430\u0437"]]
+        ["criticality", ["\u043A\u0440\u0438\u0442\u0438\u0447", "\u0441\u043E\u043C\u043D\u0435\u0432", "\u0438\u043D\u0442\u0435\u0440\u043F\u0440\u0435\u0442", "\u044F\u0441\u043D", "\u043F\u043E\u043D\u044F\u0442", "\u0432\u0438\u0434\u043D\u043E", "\u0437\u0430\u043C\u0435\u0442\u0438\u043B\u0438", "\u043E\u0441\u043E\u0437\u043D", "\u043E\u0448\u0438\u0431", "\u043C\u043E\u044F \u0440\u043E\u043B\u044C"]],
+        ["rationality", ["\u0444\u0430\u043A\u0442", "\u0434\u043E\u043A\u0430\u0437", "\u0440\u0435\u0430\u043B\u044C\u043D", "\u043F\u0440\u043E\u0432\u0435\u0440", "\u043B\u043E\u0433\u0438\u0447", "\u043F\u0440\u0430\u0432\u0434\u0430", "\u0431\u0435\u0437 \u0434\u043E\u043A\u0430\u0437"]],
+        ["self_regulation", ["\u043F\u0430\u0443\u0437", "\u0432\u044B\u0434\u0435\u0440\u0436", "\u0441\u043F\u0440\u0430\u0432", "\u043E\u043F\u043E\u0440", "\u0443\u0441\u043F\u043E\u043A", "\u043D\u0435 \u0441\u043E\u0440\u0432", "\u0431\u0435\u0437\u043E\u043F\u0430\u0441"]]
       ];
       for (const entry of checks) {
         const key = entry[0];
@@ -1615,18 +1661,19 @@ SUPPORT_APP_HTML = """<!doctype html>
       }
       const fallback = {
         growth: "agency",
-        attention: "sensitivity",
-        resource: "empathy",
-        calm: "clarity"
+        attention: "self_contact",
+        resource: "self_regulation",
+        calm: "criticality"
       };
-      return fallback[card.tone || "calm"] || "clarity";
+      return fallback[card.tone || "calm"] || "criticality";
     };
     el.innerHTML = cards.map((card, index) => {
       const themeKey = inferInsightTheme(card);
-      const theme = diaryThemes[themeKey] || diaryThemes.clarity;
+      const theme = diaryThemes[themeKey] || diaryThemes.criticality;
       const colorKey = card.color_theme && diaryColors[card.color_theme] ? card.color_theme : themeKey;
       const color = diaryColors[colorKey] || theme;
-      const displayTheme = card.theme && diaryThemes[card.theme] ? diaryThemes[card.theme] : null;
+      const displayThemeKey = normalizeDiaryTheme(card.theme || "");
+      const displayTheme = displayThemeKey && diaryThemes[displayThemeKey] ? diaryThemes[displayThemeKey] : null;
       return `
         <article class="data-card insight-card" data-theme="${escapeHtml(themeKey)}" data-diary-index="${index}" style="--insight-soft: ${color.soft}; --insight-tone: ${color.tone};">
           <div>
@@ -1674,17 +1721,19 @@ SUPPORT_APP_HTML = """<!doctype html>
     grid.innerHTML = metrics.map((metric) => {
       const isEmpty = metric.empty || metric.value === null || metric.value === void 0;
       const value = isEmpty ? 0 : Math.max(0, Math.min(100, Number(metric.value || 0)));
+      const level = isEmpty ? 0 : Math.max(1, Math.min(10, Math.ceil(value / 10)));
       const soft = isEmpty ? "#eef2f6" : metric.tone && metric.tone[0] ? metric.tone[0] : "#a9c8ff";
       const tone = isEmpty ? "#aeb8c4" : metric.tone && metric.tone[1] ? metric.tone[1] : "#6f9fed";
       const detail = isEmpty ? String(metric.hint || "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E") : String(metric.detail || "");
+      const dots = Array.from({ length: 10 }, (_, index) => `<span class="metric-dot${index < level ? " filled" : ""}"></span>`).join("");
       return `
-          <article class="metric-card${isEmpty ? " empty" : ""}" style="--value: ${value}; --metric-soft: ${soft}; --metric-tone: ${tone};">
+          <article class="metric-card${isEmpty ? " empty" : ""}" style="--metric-soft: ${soft}; --metric-tone: ${tone};">
             <div class="metric-top">
               <h3 class="metric-label">${escapeHtml(metric.label)}</h3>
-              <div class="metric-value">${isEmpty ? "--" : Math.round(value)}</div>
+              <div class="metric-value">${isEmpty ? "--" : `${level}/10`}</div>
             </div>
             ${detail ? `<p class="metric-detail">${escapeHtml(detail)}</p>` : ""}
-            <div class="bar" aria-hidden="true"><span></span></div>
+            <div class="metric-dots" aria-label="${isEmpty ? "\u041D\u0435\u0442 \u043E\u0446\u0435\u043D\u043A\u0438" : `\u0423\u0440\u043E\u0432\u0435\u043D\u044C ${level} \u0438\u0437 10`}">${dots}</div>
           </article>
         `;
     }).join("");
@@ -1820,7 +1869,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     diaryThemeSelect.value = selectedTheme && diaryThemes[selectedTheme] ? selectedTheme : "";
   }
   function openDiaryEditor(card) {
-    const theme = card && card.theme && diaryThemes[card.theme] ? card.theme : "";
+    const normalizedCardTheme = normalizeDiaryTheme(card && card.theme ? card.theme : "");
+    const theme = normalizedCardTheme && diaryThemes[normalizedCardTheme] ? normalizedCardTheme : "";
     const colorTheme = card && card.color_theme && diaryColors[card.color_theme] ? card.color_theme : theme && diaryThemeColors[theme] ? diaryThemeColors[theme] : "blue";
     currentDiaryDraft = {
       item_id: card && card.manual ? card.id || null : null,
@@ -1896,11 +1946,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       disclaimer: "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438.",
       metrics: [
         { label: "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C", value: 68, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u044B \u0447\u0430\u0449\u0435 \u0441\u0430\u043C\u0438 \u0437\u0430\u0434\u0430\u0435\u0442\u0435 \u043A\u0443\u0440\u0441 \u0441\u0432\u043E\u0435\u0439 \u0436\u0438\u0437\u043D\u0438 \u0438 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0435\u0442\u0435 \u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0441\u0430\u043C\u0438, \u043D\u0435 \u0436\u0438\u0432\u0435\u0442\u0435 \u0432 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 \u0432\u0435\u0447\u043D\u043E\u0439 \u0443\u0441\u0442\u0443\u043F\u043A\u0438 \u0438\u043B\u0438 \u043F\u043E\u0434\u0447\u0438\u043D\u0435\u043D\u0438\u044F \u0447\u0443\u0436\u043E\u0439 \u0432\u043E\u043B\u0435.", tone: ["#8fd6c8", "#5bb8a9"] },
-        { label: "\u042D\u043C\u043F\u0430\u0442\u0438\u044F", value: 63, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u043E\u0431\u044B\u0447\u043D\u043E \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u0440\u0443\u0433\u0438\u0445 \u043B\u044E\u0434\u0435\u0439 \u0438 \u0432 \u0446\u0435\u043B\u043E\u043C \u043F\u043E\u043D\u0438\u043C\u0430\u0435\u0442\u0435, \u0447\u0442\u043E \u043E\u043D\u0438 \u0447\u0443\u0432\u0441\u0442\u0432\u0443\u044E\u0442, \u0445\u043E\u0442\u044F \u0432 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u0435 \u043C\u043E\u0436\u0435\u0442\u0435 \u0443\u043F\u0440\u043E\u0449\u0430\u0442\u044C \u0438\u0445 \u043F\u0435\u0440\u0435\u0436\u0438\u0432\u0430\u043D\u0438\u044F.", tone: ["#ffd6a6", "#f3ad61"] },
+        { label: "\u042D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442", value: 63, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u043E\u0431\u044B\u0447\u043D\u043E \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0438 \u043C\u043E\u0436\u0435\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u0442\u044C, \u0447\u0442\u043E \u043F\u0440\u043E\u0438\u0441\u0445\u043E\u0434\u0438\u0442, \u0445\u043E\u0442\u044F \u0432 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u0435 \u0447\u0430\u0441\u0442\u044C \u043D\u044E\u0430\u043D\u0441\u043E\u0432 \u0435\u0449\u0435 \u0442\u0435\u0440\u044F\u0435\u0442\u0441\u044F.", tone: ["#ffd6a6", "#f3ad61"] },
         { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", value: 52, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: '\u0412 \u043F\u043E\u043D\u044F\u0442\u043D\u044B\u0445 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044F\u0445 \u0432\u044B \u0443\u043C\u0435\u0435\u0442\u0435 \u0433\u043E\u0432\u043E\u0440\u0438\u0442\u044C "\u043D\u0435\u0442" \u0438 \u043E\u0431\u043E\u0437\u043D\u0430\u0447\u0430\u0442\u044C \u0441\u0432\u043E\u0438 \u043F\u0440\u0435\u0434\u0435\u043B\u044B, \u043D\u043E \u0432 \u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0433\u0440\u0430\u043D\u0438\u0446\u044B \u0435\u0449\u0435 \u043C\u043E\u0433\u0443\u0442 \u0448\u0430\u0442\u0430\u0442\u044C\u0441\u044F.', tone: ["#c9b7ff", "#987de8"] },
-        { label: "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 70, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0445\u043E\u0440\u043E\u0448\u043E \u0447\u0443\u0432\u0441\u0442\u0432\u0443\u0435\u0442\u0435 \u0441\u0432\u043E\u0435 \u0442\u0435\u043B\u043E \u0438 \u044D\u043C\u043E\u0446\u0438\u0438, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043E\u0431\u044B\u0447\u043D\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437, \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u0435 \u0438 \u0441\u043C\u0435\u043D\u0443 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.", tone: ["#b7e6ff", "#67badc"] },
-        { label: "\u042F\u0441\u043D\u043E\u0441\u0442\u044C", value: 61, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0443\u0436\u0435 \u0443\u043C\u0435\u0435\u0442\u0435 \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0442\u044C\u0441\u044F \u0432 \u043F\u0440\u043E\u0438\u0441\u0445\u043E\u0434\u044F\u0449\u0435\u043C \u0438 \u043E\u0442\u0434\u0435\u043B\u044F\u0442\u044C \u0444\u0430\u043A\u0442\u044B \u043E\u0442 \u044D\u043C\u043E\u0446\u0438\u0439, \u0445\u043E\u0442\u044F \u0432 \u0437\u0430\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0432\u0430\u0441 \u0435\u0449\u0435 \u043C\u043E\u0436\u0435\u0442 \u0443\u043D\u043E\u0441\u0438\u0442\u044C \u0432 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C.", tone: ["#a9c8ff", "#6f9fed"] },
-        { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 56, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0432 \u0446\u0435\u043B\u043E\u043C \u043E\u043F\u0438\u0440\u0430\u0435\u0442\u0435\u0441\u044C \u043D\u0430 \u0444\u0430\u043A\u0442\u044B, \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0438 \u0437\u0434\u0440\u0430\u0432\u044B\u0439 \u0441\u043C\u044B\u0441\u043B, \u0445\u043E\u0442\u044F \u0432 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u043B\u043E\u0433\u0438\u043A\u0430 \u043D\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043F\u043E\u0437\u0438\u0446\u0438\u044E.", tone: ["#f5b8c8", "#df7f9a"] }
+        { label: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439", value: 70, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0445\u043E\u0440\u043E\u0448\u043E \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u0441\u0438\u0433\u043D\u0430\u043B\u044B \u0442\u0435\u043B\u0430 \u0438 \u044D\u043C\u043E\u0446\u0438\u0439, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043E\u0431\u044B\u0447\u043D\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u0432\u0438\u0434\u0438\u0442\u0435 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437, \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u0435 \u0438 \u0441\u043C\u0435\u043D\u0443 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.", tone: ["#b7e6ff", "#67badc"] },
+        { label: "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C", value: 61, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0443\u0436\u0435 \u0443\u043C\u0435\u0435\u0442\u0435 \u043E\u0442\u0434\u0435\u043B\u044F\u0442\u044C \u0444\u0430\u043A\u0442\u044B \u043E\u0442 \u044D\u043C\u043E\u0446\u0438\u0439 \u0438 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0441\u0432\u043E\u0438 \u0432\u044B\u0432\u043E\u0434\u044B, \u0445\u043E\u0442\u044F \u0432 \u0437\u0430\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0432\u0430\u0441 \u0435\u0449\u0435 \u043C\u043E\u0436\u0435\u0442 \u0443\u043D\u043E\u0441\u0438\u0442\u044C \u0432 \u043F\u0435\u0440\u0432\u0443\u044E \u0438\u043D\u0442\u0435\u0440\u043F\u0440\u0435\u0442\u0430\u0446\u0438\u044E.", tone: ["#a9c8ff", "#6f9fed"] },
+        { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 56, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0432 \u0446\u0435\u043B\u043E\u043C \u043E\u043F\u0438\u0440\u0430\u0435\u0442\u0435\u0441\u044C \u043D\u0430 \u0444\u0430\u043A\u0442\u044B, \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0438 \u0437\u0434\u0440\u0430\u0432\u044B\u0439 \u0441\u043C\u044B\u0441\u043B, \u0445\u043E\u0442\u044F \u0432 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u043B\u043E\u0433\u0438\u043A\u0430 \u043D\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043F\u043E\u0437\u0438\u0446\u0438\u044E.", tone: ["#f5b8c8", "#df7f9a"] },
+        { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", value: 64, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0423 \u0432\u0430\u0441 \u0443\u0436\u0435 \u0435\u0441\u0442\u044C \u0441\u043F\u043E\u0441\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437 \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044C\u0441\u044F \u043A \u043E\u043F\u043E\u0440\u0430\u043C, \u0445\u043E\u0442\u044F \u0432 \u0442\u044F\u0436\u0435\u043B\u044B\u0435 \u043C\u043E\u043C\u0435\u043D\u0442\u044B \u044D\u0442\u043E \u0432\u0441\u0435 \u0435\u0449\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0443\u0441\u0438\u043B\u0438\u044F.", tone: ["#ff9c8b", "#ff6f91"] }
       ],
       activity: [
         { label: "15.05", count: 1, value: 28 },
@@ -1923,7 +1974,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       insights: [
         { id: "demo-1", tone: "growth", theme: "agency", title: "\u041F\u043E\u0441\u043B\u0435 \u043F\u0430\u0443\u0437\u044B \u0442\u043E\u0447\u043D\u0435\u0435 \u0441\u043B\u043E\u0432\u0430", text: "\u0412\u044B \u0437\u0430\u043C\u0435\u0442\u0438\u043B\u0438, \u0447\u0442\u043E \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u043C\u0438\u043D\u0443\u0442 \u043C\u0435\u0436\u0434\u0443 \u044D\u043C\u043E\u0446\u0438\u0435\u0439 \u0438 \u043E\u0442\u0432\u0435\u0442\u043E\u043C \u043F\u043E\u043C\u043E\u0433\u0430\u044E\u0442 \u0433\u043E\u0432\u043E\u0440\u0438\u0442\u044C \u043C\u0435\u043D\u044C\u0448\u0435 \u0438\u0437 \u0437\u0430\u0449\u0438\u0442\u044B.", manual: false },
         { id: "demo-2", tone: "resource", theme: "boundaries", title: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B \u0441\u0442\u0430\u043B\u0438 \u0441\u043F\u043E\u043A\u043E\u0439\u043D\u0435\u0435", text: "\u0412\u044B \u0441\u0442\u0430\u043B\u0438 \u0447\u0430\u0449\u0435 \u0432\u0438\u0434\u0435\u0442\u044C, \u0447\u0442\u043E \u0447\u0435\u0441\u0442\u043D\u0430\u044F \u043F\u0440\u043E\u0441\u044C\u0431\u0430 \u043D\u0435 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441\u044F \u0432 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442.", manual: true },
-        { id: "demo-3", tone: "attention", theme: "sensitivity", title: "\u0421\u043E\u043D \u0441\u0432\u044F\u0437\u0430\u043D \u0441 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u043E\u043C", text: "\u0421\u0442\u0430\u043B\u043E \u0432\u0438\u0434\u043D\u043E, \u0447\u0442\u043E \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0434\u043D\u0435\u0439 \u0441\u043E\u043D \u043F\u0435\u0440\u0432\u044B\u043C \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u043D\u0435\u0445\u0432\u0430\u0442\u043A\u0443 \u0441\u0438\u043B.", manual: false }
+        { id: "demo-3", tone: "attention", theme: "self_contact", title: "\u0421\u043E\u043D \u0441\u0432\u044F\u0437\u0430\u043D \u0441 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437\u043E\u043C", text: "\u0421\u0442\u0430\u043B\u043E \u0432\u0438\u0434\u043D\u043E, \u0447\u0442\u043E \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0434\u043D\u0435\u0439 \u0441\u043E\u043D \u043F\u0435\u0440\u0432\u044B\u043C \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u043D\u0435\u0445\u0432\u0430\u0442\u043A\u0443 \u0441\u0438\u043B.", manual: false }
       ]
     };
   }

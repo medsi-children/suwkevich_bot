@@ -41,8 +41,8 @@ def test_metrics_fill_only_dimensions_with_evidence() -> None:
 
     assert isinstance(by_key["agency"]["value"], int)
     assert by_key["agency"]["detail"]
-    assert by_key["sensitivity"]["value"] is None
-    assert by_key["sensitivity"]["empty"] is True
+    assert by_key["self_contact"]["value"] is None
+    assert by_key["self_contact"]["empty"] is True
 
 
 def test_lifehacks_are_empty_when_context_is_too_small() -> None:
@@ -194,7 +194,23 @@ def test_manual_diary_items_are_merged_into_insights() -> None:
     insights = support_profile._build_insights(user=user, memories=[], latest_update=None)
 
     assert insights[0]["manual"] is True
-    assert insights[0]["theme"] == "sensitivity"
+    assert insights[0]["theme"] == "self_contact"
+
+
+def test_old_diary_theme_aliases_are_mapped_to_new_categories() -> None:
+    user = _user()
+    support_profile.upsert_manual_diary_item(
+        user,
+        item_id=None,
+        title="Проверка мысли",
+        text="Я стал замечать, что тревожная мысль не всегда факт.",
+        theme="clarity",
+    )
+
+    items = support_profile.get_manual_diary_items(user)
+
+    assert items[0]["theme"] == "criticality"
+    assert items[0]["color_theme"] == "blue"
 
 
 def test_manual_diary_item_can_be_deleted() -> None:
