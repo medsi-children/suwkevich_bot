@@ -522,6 +522,10 @@ async def handle_user_text(
         candidate_name = clean_person_name(clean)
         if is_plausible_human_first_name(candidate_name):
             user.first_name = candidate_name
+            user.support_preferences = {
+                **(user.support_preferences or {}),
+                "_confirmed_first_name": True,
+            }
             session.state = "active"
             return start_reply(candidate_name), risk_level
 
