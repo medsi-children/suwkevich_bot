@@ -16,6 +16,7 @@ from app.services.llm import LlmUnavailableError, openrouter_chat
 from app.services.memory import format_memory_context, get_memory_bundle
 
 DOCTOR_CONTACT = "Сушкевич Антон Геннадьевич, +7 985 992 7884"
+AWAITING_NAME_STATE = "awaiting_name"
 logger = logging.getLogger(__name__)
 EMERGENCY_SAFETY_TEXT = (
     "Если есть немедленная опасность для жизни, рекомендую связаться с врачом "
@@ -279,9 +280,176 @@ async def get_recent_dialogue(
     return list(reversed(result.scalars().all()))
 
 
+
+COMMON_RUSSIAN_FIRST_NAMES = {
+    "александр",
+    "александра",
+    "алексей",
+    "алиса",
+    "алёна",
+    "алена",
+    "анастасия",
+    "анатолий",
+    "андрей",
+    "анна",
+    "антон",
+    "арина",
+    "артем",
+    "артём",
+    "борис",
+    "вадим",
+    "валентин",
+    "валентина",
+    "валерий",
+    "валерия",
+    "василий",
+    "вера",
+    "вероника",
+    "виктор",
+    "виктория",
+    "виталий",
+    "владимир",
+    "владислав",
+    "галина",
+    "георгий",
+    "дарья",
+    "денис",
+    "дмитрий",
+    "евгений",
+    "евгения",
+    "егор",
+    "екатерина",
+    "елена",
+    "елизавета",
+    "иван",
+    "игорь",
+    "илья",
+    "инна",
+    "ирина",
+    "кирилл",
+    "ксения",
+    "лев",
+    "лидия",
+    "любовь",
+    "маргарита",
+    "мария",
+    "марина",
+    "михаил",
+    "надежда",
+    "наталья",
+    "никита",
+    "николай",
+    "оксана",
+    "олег",
+    "ольга",
+    "павел",
+    "полина",
+    "роман",
+    "светлана",
+    "семен",
+    "семён",
+    "сергей",
+    "софия",
+    "станислав",
+    "степан",
+    "татьяна",
+    "тимофей",
+    "юлия",
+    "юрий",
+    "яна",
+    "ярослав",
+}
+
+SUSPICIOUS_NAME_WORDS = {
+    "admin",
+    "administrator",
+    "bot",
+    "official",
+    "support",
+    "clinic",
+    "medsi",
+    "test",
+    "user",
+    "unknown",
+    "anon",
+    "anonymous",
+    "null",
+    "none",
+    "owner",
+    "manager",
+    "channel",
+    "group",
+    "store",
+    "shop",
+    "team",
+    "company",
+    "doctor",
+    "dr",
+    "врач",
+    "доктор",
+    "клиника",
+    "админ",
+    "администратор",
+    "бот",
+    "поддержка",
+    "официальный",
+    "канал",
+    "группа",
+    "магазин",
+    "команда",
+    "тест",
+    "пользователь",
+    "аноним",
+}
+
+
+def clean_person_name(first_name: str | None) -> str:
+    return " ".join((first_name or "").split()).strip()
+
+
+def is_plausible_human_first_name(first_name: str | None) -> bool:
+    clean = clean_person_name(first_name)
+    if not clean:
+        return False
+
+    lowered = clean.lower().replace("ё", "е")
+
+    if len(clean) < 2 or len(clean) > 18:
+        return False
+
+    if any(char.isdigit() for char in clean):
+        return False
+
+    if re.search(r"[^а-яА-ЯёЁ\- ]", clean):
+        return False
+
+    parts = [part for part in re.split(r"[\s\-]+", lowered) if part]
+    if not parts or len(parts) > 2:
+        return False
+
+    if any(part in SUSPICIOUS_NAME_WORDS for part in parts):
+        return False
+
+    common_names = {name.replace("ё", "е") for name in COMMON_RUSSIAN_FIRST_NAMES}
+    if lowered in common_names:
+        return True
+
+    return (
+        len(parts) == 1
+        and clean[0].isupper()
+        and clean[1:].islower()
+        and 2 <= len(clean) <= 14
+    )
+
+
+def name_request_reply() -> str:
+    return "Как вас зовут?"
+
+
 def start_reply(first_name: str | None = None) -> str:
-    clean_name = " ".join((first_name or "").split()).strip()
-    name = f", {clean_name}" if clean_name else ""
+    clean_name = clean_person_name(first_name)
+    name = f", {clean_name}" if is_plausible_human_first_name(clean_name) else ""
+
     return (
         f"Доброго дня{name}. Я ваш цифровой доктор-психиатр, Сушкевич Бот.\n\n"
         "В диалоге я помогаю с психиатрической навигацией: аккуратно описать "
@@ -296,6 +464,7 @@ def start_reply(first_name: str | None = None) -> str:
         "Можно начать с любых слов: «мне плохо», «я не понимаю, что со мной», "
         "«не могу уснуть», «хочу разобраться». Как вы себя чувствуете сегодня?"
     )
+
 
 
 def fallback_reply(text: str, risk_level: str) -> str:
@@ -342,7 +511,24 @@ async def handle_user_text(
 
     command = clean.lower().split(maxsplit=1)[0] if clean else ""
     if command in {"/start", "/help"}:
-        return start_reply(user.first_name), risk_level
+        if is_plausible_human_first_name(user.first_name):
+            session.state = "active"
+            return start_reply(user.first_name), risk_level
+
+        session.state = AWAITING_NAME_STATE
+        return name_request_reply(), risk_level
+
+    if session.state == AWAITING_NAME_STATE:
+        candidate_name = clean_person_name(clean)
+        if is_plausible_human_first_name(candidate_name):
+            user.first_name = candidate_name
+            session.state = "active"
+            return start_reply(candidate_name), risk_level
+
+        return (
+            "Лучше напишите просто имя кириллицей, без ника, эмодзи и названия аккаунта. "
+            "Как вас зовут?"
+        ), risk_level
 
     detailed_reply = should_use_detailed_reply(clean)
     memory_bundle = await get_memory_bundle(db, user, query_text=clean)
