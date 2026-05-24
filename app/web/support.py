@@ -436,13 +436,12 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .metric-dots {
       min-height: 58px;
-      display: grid;
-      grid-template-columns: repeat(10, minmax(0, 1fr));
+      display: flex;
       align-items: center;
-      justify-items: center;
-      column-gap: 2px;
+      justify-content: space-between;
+      gap: 8px;
       margin-top: auto;
-      padding: 8px 0 0;
+      padding: 8px 6px 0;
     }
 
     .metric-dot {
