@@ -281,165 +281,20 @@ async def get_recent_dialogue(
 
 
 
-COMMON_RUSSIAN_FIRST_NAMES = {
-    "александр",
-    "александра",
-    "алексей",
-    "алиса",
-    "алёна",
-    "алена",
-    "анастасия",
-    "анатолий",
-    "андрей",
-    "анна",
-    "антон",
-    "арина",
-    "артем",
-    "артём",
-    "борис",
-    "вадим",
-    "валентин",
-    "валентина",
-    "валерий",
-    "валерия",
-    "василий",
-    "вера",
-    "вероника",
-    "виктор",
-    "виктория",
-    "виталий",
-    "владимир",
-    "владислав",
-    "галина",
-    "георгий",
-    "дарья",
-    "денис",
-    "дмитрий",
-    "евгений",
-    "евгения",
-    "егор",
-    "екатерина",
-    "елена",
-    "елизавета",
-    "иван",
-    "игорь",
-    "илья",
-    "инна",
-    "ирина",
-    "кирилл",
-    "ксения",
-    "лев",
-    "лидия",
-    "любовь",
-    "маргарита",
-    "мария",
-    "марина",
-    "михаил",
-    "надежда",
-    "наталья",
-    "никита",
-    "николай",
-    "оксана",
-    "олег",
-    "ольга",
-    "павел",
-    "полина",
-    "роман",
-    "светлана",
-    "семен",
-    "семён",
-    "сергей",
-    "софия",
-    "станислав",
-    "степан",
-    "татьяна",
-    "тимофей",
-    "юлия",
-    "юрий",
-    "яна",
-    "ярослав",
-}
-
-SUSPICIOUS_NAME_WORDS = {
-    "admin",
-    "administrator",
-    "bot",
-    "official",
-    "support",
-    "clinic",
-    "medsi",
-    "test",
-    "user",
-    "unknown",
-    "anon",
-    "anonymous",
-    "null",
-    "none",
-    "owner",
-    "manager",
-    "channel",
-    "group",
-    "store",
-    "shop",
-    "team",
-    "company",
-    "doctor",
-    "dr",
-    "врач",
-    "доктор",
-    "клиника",
-    "админ",
-    "администратор",
-    "бот",
-    "поддержка",
-    "официальный",
-    "канал",
-    "группа",
-    "магазин",
-    "команда",
-    "тест",
-    "пользователь",
-    "аноним",
-}
+def clean_person_name(value: str | None) -> str:
+    clean = " ".join((value or "").split()).strip()
+    clean = re.sub(r"^(меня зовут|я|это)\s+", "", clean, flags=re.IGNORECASE).strip()
+    clean = clean.strip(".,:;!?—-()[]{}«»\"'")
+    return clean[:64]
 
 
-def clean_person_name(first_name: str | None) -> str:
-    return " ".join((first_name or "").split()).strip()
-
-
-def is_plausible_human_first_name(first_name: str | None) -> bool:
-    clean = clean_person_name(first_name)
-    if not clean:
+def is_acceptable_user_name(value: str | None) -> bool:
+    clean = clean_person_name(value)
+    if len(clean) < 2 or len(clean) > 64:
         return False
-
-    lowered = clean.lower().replace("ё", "е")
-
-    if len(clean) < 2 or len(clean) > 18:
+    if "\n" in clean or "\r" in clean:
         return False
-
-    if any(char.isdigit() for char in clean):
-        return False
-
-    if re.search(r"[^а-яА-ЯёЁ\- ]", clean):
-        return False
-
-    parts = [part for part in re.split(r"[\s\-]+", lowered) if part]
-    if not parts or len(parts) > 2:
-        return False
-
-    if any(part in SUSPICIOUS_NAME_WORDS for part in parts):
-        return False
-
-    common_names = {name.replace("ё", "е") for name in COMMON_RUSSIAN_FIRST_NAMES}
-    if lowered in common_names:
-        return True
-
-    return (
-        len(parts) == 1
-        and clean[0].isupper()
-        and clean[1:].islower()
-        and 2 <= len(clean) <= 14
-    )
+    return True
 
 
 def name_request_reply() -> str:
@@ -448,7 +303,7 @@ def name_request_reply() -> str:
 
 def start_reply(first_name: str | None = None) -> str:
     clean_name = clean_person_name(first_name)
-    name = f", {clean_name}" if is_plausible_human_first_name(clean_name) else ""
+    name = f", {clean_name}" if clean_name else ""
 
     return (
         f"Доброго дня{name}. Я ваш цифровой доктор-психиатр, Сушкевич Бот.\n\n"
@@ -464,8 +319,6 @@ def start_reply(first_name: str | None = None) -> str:
         "Можно начать с любых слов: «мне плохо», «я не понимаю, что со мной», "
         "«не могу уснуть», «хочу разобраться». Как вы себя чувствуете сегодня?"
     )
-
-
 
 def fallback_reply(text: str, risk_level: str) -> str:
     if not text.strip():
@@ -511,16 +364,12 @@ async def handle_user_text(
 
     command = clean.lower().split(maxsplit=1)[0] if clean else ""
     if command in {"/start", "/help"}:
-        if is_plausible_human_first_name(user.first_name):
-            session.state = "active"
-            return start_reply(user.first_name), risk_level
-
         session.state = AWAITING_NAME_STATE
         return name_request_reply(), risk_level
 
     if session.state == AWAITING_NAME_STATE:
         candidate_name = clean_person_name(clean)
-        if is_plausible_human_first_name(candidate_name):
+        if is_acceptable_user_name(candidate_name):
             user.first_name = candidate_name
             user.support_preferences = {
                 **(user.support_preferences or {}),
@@ -529,10 +378,7 @@ async def handle_user_text(
             session.state = "active"
             return start_reply(candidate_name), risk_level
 
-        return (
-            "Лучше напишите просто имя кириллицей, без ника, эмодзи и названия аккаунта. "
-            "Как вас зовут?"
-        ), risk_level
+        return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
 
     detailed_reply = should_use_detailed_reply(clean)
     memory_bundle = await get_memory_bundle(db, user, query_text=clean)
