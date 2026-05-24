@@ -70,6 +70,30 @@ def test_lifehacks_are_read_from_cache_only() -> None:
     assert cards[0]["id"]
 
 
+def test_lifehack_text_is_clipped_to_complete_sentence() -> None:
+    cleaned = support_profile._clean_lifehacks(
+        [
+            {
+                "title": "Лайфхак",
+                "text": (
+                    "Сначала отметьте, что именно вас задело. Потом выберите один "
+                    "спокойный следующий шаг, который не усилит конфликт и поможет "
+                    "вернуться к разговору без лишнего давления."
+                ),
+                "action": (
+                    "Сформулируйте одну короткую фразу и вернитесь к ней после паузы "
+                    "без длинных объяснений."
+                ),
+            }
+        ]
+    )
+
+    assert cleaned[0]["text"].endswith(".")
+    assert len(cleaned[0]["text"]) <= 145
+    assert cleaned[0]["next_step"].endswith(".")
+    assert len(cleaned[0]["next_step"]) <= 88
+
+
 def test_lifehacks_reject_technical_roleplay() -> None:
     user = _user()
     support_profile.cache_support_profile_items(

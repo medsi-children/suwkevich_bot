@@ -39,9 +39,8 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_webhook_secret_token: str = ""
 
-    preferred_authors: str = ""
-    avoided_approaches: str = ""
-    custom_clinical_guidance: str = ""
+    clinical_knowledge_path: str = "app/knowledge/clinical_orientation.md"
+    clinical_knowledge_max_chars: int = 5200
     memory_extraction_enabled: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -70,16 +69,6 @@ class Settings(BaseSettings):
             return self.public_webapp_url.strip()
         base = self.public_base_url.strip().rstrip("/")
         return f"{base}/app/support"
-
-    @computed_field
-    @property
-    def preferred_authors_list(self) -> list[str]:
-        return [item.strip() for item in self.preferred_authors.split(",") if item.strip()]
-
-    @computed_field
-    @property
-    def avoided_approaches_list(self) -> list[str]:
-        return [item.strip() for item in self.avoided_approaches.split(",") if item.strip()]
 
 
 settings = Settings()

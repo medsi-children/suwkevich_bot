@@ -942,6 +942,15 @@ SUPPORT_APP_HTML = """<!doctype html>
         visibility .34s ease;
     }
 
+    .lifehack-detail p {
+      overflow-wrap: anywhere;
+    }
+
+    .lifehack-detail p + p {
+      font-weight: 800;
+      line-height: 1.38;
+    }
+
     .lifehack-card.open .lifehack-detail {
       opacity: 1;
       visibility: visible;
@@ -1291,7 +1300,7 @@ SUPPORT_APP_HTML = """<!doctype html>
           </div>
         </div>
         <div class="composer">
-          <input class="composer-input" id="lifehackPrompt" placeholder="Какой лайфхак нужен?" />
+          <input class="composer-input" id="lifehackPrompt" maxlength="180" />
           <button class="composer-button" id="generateLifehackButton" type="button">Спросить</button>
         </div>
       </div>
@@ -1386,6 +1395,16 @@ SUPPORT_APP_HTML = """<!doctype html>
     tg.setBackgroundColor("#f9fbff");
   }
   const escapeHtml = (value) => String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  function compactSentence(value, limit) {
+    const clean = String(value || "").replace(/\s+/g, " ").trim();
+    if (clean.length <= limit) return clean;
+    const clipped = clean.slice(0, limit);
+    const sentenceEnds = [clipped.lastIndexOf("."), clipped.lastIndexOf("!"), clipped.lastIndexOf("?")];
+    const sentenceEnd = Math.max.apply(null, sentenceEnds);
+    if (sentenceEnd >= Math.max(36, Math.floor(limit / 3))) return clean.slice(0, sentenceEnd + 1).trim();
+    const trimmed = clipped.replace(/\s+\S*$/, "").replace(/[,\s;:-]+$/, "");
+    return trimmed ? `${trimmed}.` : "";
+  }
   const params = new URLSearchParams(window.location.search);
   const tgUser = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user || {} : {};
   const demoMode = params.get("demo") === "1";
@@ -1473,8 +1492,8 @@ SUPPORT_APP_HTML = """<!doctype html>
   }
   function lifehackTemplate(card, index) {
     const title = escapeHtml(card.title || "\u041B\u0430\u0439\u0444\u0445\u0430\u043A");
-    const text = escapeHtml(card.text || "");
-    const nextStep = escapeHtml(card.next_step || "");
+    const text = escapeHtml(compactSentence(card.text || "", 145));
+    const nextStep = escapeHtml(compactSentence(card.next_step || "", 88));
     const styleIndex = index % 4;
     return `
         <article class="data-card lifehack-card" data-style="${styleIndex}" data-lifehack-card="${index}" tabindex="0" role="button" aria-expanded="false" aria-label="\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043B\u0430\u0439\u0444\u0445\u0430\u043A: ${title}">

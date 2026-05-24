@@ -390,6 +390,23 @@ def _clip(text: str | None, *, limit: int = 220) -> str:
     return clean[: limit - 1].rstrip() + "…"
 
 
+def _clip_complete_sentence(text: str | None, *, limit: int = 160) -> str:
+    clean = " ".join((text or "").strip().split())
+    if len(clean) <= limit:
+        return clean
+    sentence_end = max(
+        clean.rfind(".", 0, limit),
+        clean.rfind("!", 0, limit),
+        clean.rfind("?", 0, limit),
+    )
+    if sentence_end >= max(36, limit // 3):
+        return clean[: sentence_end + 1].strip()
+    trimmed = clean[:limit].rsplit(" ", 1)[0].strip(" ,;:-")
+    if not trimmed:
+        return ""
+    return f"{trimmed}."
+
+
 def _bounded(value: int) -> int:
     """Restrict a metric value to the 12–92 range."""
     return max(12, min(92, value))
@@ -742,8 +759,8 @@ def _clean_lifehacks(items: Any) -> list[dict[str, str]]:
         if not isinstance(item, dict):
             continue
         title = _clip(item.get("title"), limit=64)
-        text = _clip(item.get("text") or item.get("description"), limit=190)
-        action = _clip(item.get("action") or item.get("next_step"), limit=130)
+        text = _clip_complete_sentence(item.get("text") or item.get("description"), limit=145)
+        action = _clip_complete_sentence(item.get("action") or item.get("next_step"), limit=88)
         combined = f"{title} {text} {action}".lower()
         if any(word in combined for word in LIFEHACK_FORBIDDEN_WORDS):
             continue
