@@ -329,6 +329,10 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 16px;
     }
 
+    #panel-lifehacks.active {
+      gap: 8px;
+    }
+
     .section-shell {
       padding: 18px 18px 16px;
       display: grid;
@@ -603,7 +607,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .composer-status {
       min-height: 0;
-      padding: 0 18px;
+      padding: 0;
       color: #667483;
       font-size: 13px;
       line-height: 1.45;
@@ -616,7 +620,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .composer-status.active {
       min-height: 44px;
-      padding-top: 4px;
+      padding: 4px 18px 0;
     }
 
     .status-blob {
