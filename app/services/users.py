@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate
 
 
-CONFIRMED_FIRST_NAME_KEY = "_confirmed_first_name"
+PREFERRED_FIRST_NAME_KEY = "_preferred_first_name"
 
 
 async def get_or_create_user(db: AsyncSession, payload: UserCreate) -> User:
@@ -35,8 +35,8 @@ async def get_or_create_user(db: AsyncSession, payload: UserCreate) -> User:
     user.username = payload.username or user.username
 
     preferences = user.support_preferences or {}
-    first_name_is_confirmed = bool(preferences.get(CONFIRMED_FIRST_NAME_KEY))
-    if payload.first_name and not first_name_is_confirmed:
+    has_preferred_first_name = bool(preferences.get(PREFERRED_FIRST_NAME_KEY))
+    if payload.first_name and not has_preferred_first_name:
         user.first_name = payload.first_name
 
     user.language_code = payload.language_code or user.language_code

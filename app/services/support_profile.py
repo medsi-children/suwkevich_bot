@@ -1227,6 +1227,14 @@ def _empty_support_cards() -> list[dict[str, str]]:
     ]
 
 
+
+def _display_first_name(user: User) -> str | None:
+    preferred = (user.support_preferences or {}).get("_preferred_first_name")
+    if isinstance(preferred, str) and preferred.strip():
+        return preferred.strip()
+    return user.first_name
+
+
 async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
     facts_result = await db.execute(
         select(ImportantFact)
@@ -1275,7 +1283,7 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
         "user": {
             "id": str(user.id),
             "telegram_id": user.telegram_id,
-            "first_name": user.first_name,
+            "first_name": _display_first_name(user),
             "username": user.username,
             "profile_summary": _clip(
                 user.profile_summary,
