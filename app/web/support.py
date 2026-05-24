@@ -435,59 +435,86 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .metric-dots {
-      min-height: 30px;
-      display: flex;
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
       align-items: center;
-      justify-content: space-between;
-      gap: 6px;
+      justify-items: center;
+      column-gap: 2px;
       margin-top: auto;
-      padding: 3px 1px 0;
+      padding: 8px 0 0;
     }
 
     .metric-dot {
       display: block;
-      width: 10px;
-      height: 10px;
+      width: 14px;
+      height: 14px;
       border-radius: 999px;
-      background: rgba(87, 112, 136, .14);
-      box-shadow: inset 0 1px 1px rgba(87, 112, 136, .08);
+      background: rgba(87, 112, 136, .2);
+      border: 1px solid rgba(87, 112, 136, .16);
+      box-shadow:
+        inset 0 1px 2px rgba(87, 112, 136, .1),
+        0 3px 8px rgba(96, 120, 146, .08);
       transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
     }
 
-    .metric-dot:nth-child(2),
-    .metric-dot:nth-child(9) {
-      width: 11px;
-      height: 11px;
-    }
-
-    .metric-dot:nth-child(3),
-    .metric-dot:nth-child(8) {
-      width: 12px;
-      height: 12px;
-    }
-
-    .metric-dot:nth-child(4),
-    .metric-dot:nth-child(7) {
-      width: 14px;
-      height: 14px;
-    }
-
-    .metric-dot:nth-child(5),
-    .metric-dot:nth-child(6) {
+    .metric-dot:nth-child(2) {
       width: 16px;
       height: 16px;
     }
 
+    .metric-dot:nth-child(3) {
+      width: 18px;
+      height: 18px;
+    }
+
+    .metric-dot:nth-child(4) {
+      width: 20px;
+      height: 20px;
+    }
+
+    .metric-dot:nth-child(5) {
+      width: 24px;
+      height: 24px;
+    }
+
+    .metric-dot:nth-child(6) {
+      width: 28px;
+      height: 28px;
+    }
+
+    .metric-dot:nth-child(7) {
+      width: 32px;
+      height: 32px;
+    }
+
+    .metric-dot:nth-child(8) {
+      width: 36px;
+      height: 36px;
+    }
+
+    .metric-dot:nth-child(9) {
+      width: 40px;
+      height: 40px;
+    }
+
+    .metric-dot:nth-child(10) {
+      width: 44px;
+      height: 44px;
+    }
+
     .metric-dot.filled {
       background: linear-gradient(135deg, var(--metric-soft), var(--metric-tone));
+      border-color: rgba(255, 255, 255, .7);
       box-shadow:
-        inset 0 1px 1px rgba(255, 255, 255, .32),
-        0 7px 15px rgba(96, 120, 146, .16);
+        inset 0 2px 3px rgba(255, 255, 255, .42),
+        0 10px 20px rgba(96, 120, 146, .2);
     }
 
     .metric-card.empty .metric-dot {
-      background: rgba(128, 143, 158, .14);
-      box-shadow: none;
+      background: rgba(128, 143, 158, .18);
+      border-color: rgba(128, 143, 158, .12);
+      box-shadow: inset 0 1px 2px rgba(87, 112, 136, .08);
     }
 
     .two-column {
