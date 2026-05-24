@@ -28,8 +28,8 @@ DIARY_THEMES = {
     "boundaries",
     "self_contact",
     "criticality",
-    "rationality",
     "self_regulation",
+    "rationality",
 }
 DIARY_THEME_ALIASES = {
     "empathy": "emotional_intelligence",
@@ -106,15 +106,6 @@ DIMENSIONS = (
         "tones": ("#a9c8ff", "#6f9fed"),
     },
     {
-        "key": "rationality",
-        "label": "Рациональность",
-        "hint": (
-            "Насколько для вас важны проверка, доказательства и факты, "
-            "а не вера на слово, магическое объяснение или чужая уверенность."
-        ),
-        "tones": ("#f5b8c8", "#df7f9a"),
-    },
-    {
         "key": "self_regulation",
         "label": "Саморегуляция",
         "hint": (
@@ -122,6 +113,16 @@ DIMENSIONS = (
             "безопасные способы вернуться к устойчивости."
         ),
         "tones": ("#ff9c8b", "#ff6f91"),
+    },
+    {
+        "key": "rationality",
+        "label": "Рациональность",
+        "hint": (
+            "Насколько вы рассуждаете последовательно, связываете причины "
+            "и выводы, проверяете реальность и не застреваете в поспешных "
+            "или магических объяснениях."
+        ),
+        "tones": ("#f5b8c8", "#df7f9a"),
     },
 )
 
@@ -267,18 +268,18 @@ METRIC_BANDS: dict[str, list[tuple[int, str]]] = {
     "rationality": [
         (
             20,
-            "Сейчас вы скорее опираетесь на впечатление, веру или интуитивное "
-            "объяснение, чем на проверку фактов, доказательств и реальности.",
+            "Сейчас выводы могут строиться больше на первом впечатлении или "
+            "интуитивном объяснении, чем на последовательной проверке реальности.",
         ),
         (
             40,
-            "Стремление к фактам у вас есть, но в уязвимых темах вы все еще "
-            "можете принимать объяснение без достаточной проверки.",
+            "Последовательность рассуждения уже заметна, но в уязвимых темах "
+            "вы все еще можете быстро принимать объяснение без достаточной проверки.",
         ),
         (
             60,
-            "Вы в целом опираетесь на факты, проверку и здравый смысл, "
-            "хотя в эмоциональных темах логика не всегда удерживает позицию.",
+            "Вы в целом рассуждаете связно, ищете причины и опираетесь на "
+            "здравый смысл, хотя в эмоциональных темах логика не всегда удерживает позицию.",
         ),
         (
             80,
@@ -375,7 +376,35 @@ CRITICALITY_WORDS = (
     "сомнева",
     "интерпретац",
 )
-RATIONALITY_WORDS = ("доказ", "факт", "провер", "реальн", "логич", "правда", "аргумент")
+RATIONALITY_WORDS = (
+    "доказ",
+    "факт",
+    "провер",
+    "реальн",
+    "логич",
+    "правда",
+    "аргумент",
+    "причин",
+    "следств",
+    "вывод",
+    "объясн",
+    "последовательн",
+    "сравн",
+)
+REASONING_STRUCTURE_MARKERS = (
+    "потому что",
+    "поэтому",
+    "если",
+    "значит",
+    "например",
+    "возможно",
+    "скорее",
+    "кажется",
+    "с одной стороны",
+    "с другой стороны",
+    "при этом",
+    "из-за",
+)
 SELF_REGULATION_WORDS = (
     "пауза",
     "останов",
@@ -669,6 +698,9 @@ def _build_metrics(
     )
     criticality_hits = sum(1 for word in CRITICALITY_WORDS if word in lower_text)
     rationality_hits = sum(1 for word in RATIONALITY_WORDS if word in lower_text)
+    reasoning_structure_hits = sum(
+        1 for marker in REASONING_STRUCTURE_MARKERS if marker in lower_text
+    )
     self_regulation_hits = sum(1 for word in SELF_REGULATION_WORDS if word in lower_text)
     magical_hits = sum(1 for word in MAGICAL_THINKING_WORDS if word in lower_text)
 
@@ -692,7 +724,7 @@ def _build_metrics(
         "criticality": bool(
             user.profile_summary or topics or insight_memories or criticality_hits
         ),
-        "rationality": bool(rationality_hits or magical_hits),
+        "rationality": bool(rationality_hits or reasoning_structure_hits or magical_hits),
         "self_regulation": bool(coping_facts or support_strategy_memories or self_regulation_hits),
     }
 
@@ -728,8 +760,10 @@ def _build_metrics(
             min(10, criticality_hits * 2),
         ),
         "rationality": _value_from_counts(
-            54,
+            48,
             min(18, rationality_hits * 4),
+            min(16, reasoning_structure_hits * 3),
+            6 if len(recent_text) >= 220 and ("." in recent_text or "," in recent_text) else 0,
             -min(24, magical_hits * 6),
         ),
         "self_regulation": _value_from_counts(

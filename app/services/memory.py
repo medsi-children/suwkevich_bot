@@ -348,7 +348,7 @@ async def _refresh_profile_from_request(
         '    {"title": "до 6 слов", "text": "осознание пользователя", '
         '"tone": "growth|attention|resource|calm", '
         '"theme": "agency|emotional_intelligence|boundaries|self_contact|criticality|'
-        'rationality|self_regulation"}\n'
+        'self_regulation|rationality"}\n'
         "  ]\n"
         "}\n\n"
         f"Обновлять нужно только эти части: {sorted(sections)}.\n"

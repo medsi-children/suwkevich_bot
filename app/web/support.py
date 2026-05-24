@@ -435,19 +435,19 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
 
     .metric-dots {
-      min-height: 24px;
+      min-height: 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 5px;
+      gap: 6px;
       margin-top: auto;
       padding: 3px 1px 0;
     }
 
     .metric-dot {
       display: block;
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 999px;
       background: rgba(87, 112, 136, .14);
       box-shadow: inset 0 1px 1px rgba(87, 112, 136, .08);
@@ -456,26 +456,26 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .metric-dot:nth-child(2),
     .metric-dot:nth-child(9) {
-      width: 9px;
-      height: 9px;
-    }
-
-    .metric-dot:nth-child(3),
-    .metric-dot:nth-child(8) {
-      width: 10px;
-      height: 10px;
-    }
-
-    .metric-dot:nth-child(4),
-    .metric-dot:nth-child(7) {
       width: 11px;
       height: 11px;
     }
 
+    .metric-dot:nth-child(3),
+    .metric-dot:nth-child(8) {
+      width: 12px;
+      height: 12px;
+    }
+
+    .metric-dot:nth-child(4),
+    .metric-dot:nth-child(7) {
+      width: 14px;
+      height: 14px;
+    }
+
     .metric-dot:nth-child(5),
     .metric-dot:nth-child(6) {
-      width: 13px;
-      height: 13px;
+      width: 16px;
+      height: 16px;
     }
 
     .metric-dot.filled {
@@ -1457,8 +1457,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     boundaries: { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", soft: "#c9b7ff", tone: "#987de8" },
     self_contact: { label: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439", soft: "#b7e6ff", tone: "#67badc" },
     criticality: { label: "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C", soft: "#a9c8ff", tone: "#6f9fed" },
-    rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" },
-    self_regulation: { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", soft: "#ff9c8b", tone: "#ff6f91" }
+    self_regulation: { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", soft: "#ff9c8b", tone: "#ff6f91" },
+    rationality: { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", soft: "#f5b8c8", tone: "#df7f9a" }
   };
   const diaryColors = {
     mint: { label: "\u041C\u044F\u0442\u043D\u044B\u0439", soft: "#8fd6c8", tone: "#5bb8a9" },
@@ -1477,8 +1477,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     boundaries: "violet",
     self_contact: "sky",
     criticality: "blue",
-    rationality: "rose",
-    self_regulation: "coral"
+    self_regulation: "coral",
+    rationality: "rose"
   };
   let currentProfileData = null;
   let currentDiaryDraft = { item_id: null, theme: "criticality", color_theme: "blue" };
@@ -1488,8 +1488,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     "\u0413\u0440\u0430\u043D\u0438\u0446\u044B",
     "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439",
     "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C",
-    "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C",
-    "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F"
+    "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F",
+    "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C"
   ];
   function emptyMetrics() {
     return metricLabels.map((label, order) => ({
@@ -1752,11 +1752,15 @@ SUPPORT_APP_HTML = """<!doctype html>
     const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === void 0));
     const metricValue = (metric) => Math.max(0, Math.min(100, Number(metric.value || 0)));
     ctx.lineWidth = 2;
-    ctx.font = "24px Inter, system-ui, sans-serif";
+    ctx.font = "20px Inter, system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const count = metrics.length || 1;
     const angleFor = (index) => -Math.PI / 2 + index * (Math.PI * 2 / count);
+    const labelLines = (label) => {
+      const words = String(label || "").split(" ");
+      return words.length > 2 ? [words.slice(0, -1).join(" "), words[words.length - 1]] : words;
+    };
     for (let ring = 1; ring <= 4; ring += 1) {
       ctx.beginPath();
       const ringRadius = radius * ring / 4;
@@ -1778,14 +1782,15 @@ SUPPORT_APP_HTML = """<!doctype html>
       ctx.lineTo(center + Math.cos(angle) * radius, center + Math.sin(angle) * radius);
       ctx.strokeStyle = "rgba(87, 112, 136, .12)";
       ctx.stroke();
-      const labelRadius = radius + 46;
-      const lx = Math.max(74, Math.min(size - 74, center + Math.cos(angle) * labelRadius));
+      const labelRadius = radius + 42;
+      const lines = labelLines(metric.label);
+      const maxLineWidth = Math.max(...lines.map((lineText) => ctx.measureText(lineText).width), 0);
+      const horizontalPadding = Math.max(76, maxLineWidth / 2 + 16);
+      const lx = Math.max(horizontalPadding, Math.min(size - horizontalPadding, center + Math.cos(angle) * labelRadius));
       const ly = Math.max(42, Math.min(size - 42, center + Math.sin(angle) * labelRadius));
       ctx.fillStyle = hasRealMetrics ? "#5f6d7a" : "#8b96a3";
-      const words = String(metric.label || "").split(" ");
-      const lines = words.length > 2 ? [words.slice(0, -1).join(" "), words[words.length - 1]] : words;
-      const startY = ly - (lines.length - 1) * 12;
-      lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 24));
+      const startY = ly - (lines.length - 1) * 11;
+      lines.forEach((lineText, line) => ctx.fillText(lineText, lx, startY + line * 22));
     });
     if (!hasRealMetrics) return;
     const neutralValue = 36;
@@ -1816,7 +1821,7 @@ SUPPORT_APP_HTML = """<!doctype html>
       const x = center + Math.cos(angle) * valueRadius;
       const y = center + Math.sin(angle) * valueRadius;
       ctx.beginPath();
-      ctx.arc(x, y, isEmpty ? 6 : 8, 0, Math.PI * 2);
+      ctx.arc(x, y, isEmpty ? 7 : 10, 0, Math.PI * 2);
       ctx.fillStyle = isEmpty ? "rgba(174, 184, 196, .72)" : metric.tone && metric.tone[1] ? metric.tone[1] : "#5bb8a9";
       ctx.fill();
       ctx.strokeStyle = "#fff";
@@ -1950,8 +1955,8 @@ SUPPORT_APP_HTML = """<!doctype html>
         { label: "\u0413\u0440\u0430\u043D\u0438\u0446\u044B", value: 52, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: '\u0412 \u043F\u043E\u043D\u044F\u0442\u043D\u044B\u0445 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044F\u0445 \u0432\u044B \u0443\u043C\u0435\u0435\u0442\u0435 \u0433\u043E\u0432\u043E\u0440\u0438\u0442\u044C "\u043D\u0435\u0442" \u0438 \u043E\u0431\u043E\u0437\u043D\u0430\u0447\u0430\u0442\u044C \u0441\u0432\u043E\u0438 \u043F\u0440\u0435\u0434\u0435\u043B\u044B, \u043D\u043E \u0432 \u0447\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0433\u0440\u0430\u043D\u0438\u0446\u044B \u0435\u0449\u0435 \u043C\u043E\u0433\u0443\u0442 \u0448\u0430\u0442\u0430\u0442\u044C\u0441\u044F.', tone: ["#c9b7ff", "#987de8"] },
         { label: "\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0441 \u0441\u043E\u0431\u043E\u0439", value: 70, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0445\u043E\u0440\u043E\u0448\u043E \u0437\u0430\u043C\u0435\u0447\u0430\u0435\u0442\u0435 \u0441\u0438\u0433\u043D\u0430\u043B\u044B \u0442\u0435\u043B\u0430 \u0438 \u044D\u043C\u043E\u0446\u0438\u0439, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043E\u0431\u044B\u0447\u043D\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u0432\u0438\u0434\u0438\u0442\u0435 \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437, \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u0435 \u0438 \u0441\u043C\u0435\u043D\u0443 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.", tone: ["#b7e6ff", "#67badc"] },
         { label: "\u041A\u0440\u0438\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C", value: 61, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0443\u0436\u0435 \u0443\u043C\u0435\u0435\u0442\u0435 \u043E\u0442\u0434\u0435\u043B\u044F\u0442\u044C \u0444\u0430\u043A\u0442\u044B \u043E\u0442 \u044D\u043C\u043E\u0446\u0438\u0439 \u0438 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0441\u0432\u043E\u0438 \u0432\u044B\u0432\u043E\u0434\u044B, \u0445\u043E\u0442\u044F \u0432 \u0437\u0430\u0440\u044F\u0436\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u0432\u0430\u0441 \u0435\u0449\u0435 \u043C\u043E\u0436\u0435\u0442 \u0443\u043D\u043E\u0441\u0438\u0442\u044C \u0432 \u043F\u0435\u0440\u0432\u0443\u044E \u0438\u043D\u0442\u0435\u0440\u043F\u0440\u0435\u0442\u0430\u0446\u0438\u044E.", tone: ["#a9c8ff", "#6f9fed"] },
-        { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 56, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0432 \u0446\u0435\u043B\u043E\u043C \u043E\u043F\u0438\u0440\u0430\u0435\u0442\u0435\u0441\u044C \u043D\u0430 \u0444\u0430\u043A\u0442\u044B, \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0438 \u0437\u0434\u0440\u0430\u0432\u044B\u0439 \u0441\u043C\u044B\u0441\u043B, \u0445\u043E\u0442\u044F \u0432 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u043B\u043E\u0433\u0438\u043A\u0430 \u043D\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043F\u043E\u0437\u0438\u0446\u0438\u044E.", tone: ["#f5b8c8", "#df7f9a"] },
-        { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", value: 64, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0423 \u0432\u0430\u0441 \u0443\u0436\u0435 \u0435\u0441\u0442\u044C \u0441\u043F\u043E\u0441\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437 \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044C\u0441\u044F \u043A \u043E\u043F\u043E\u0440\u0430\u043C, \u0445\u043E\u0442\u044F \u0432 \u0442\u044F\u0436\u0435\u043B\u044B\u0435 \u043C\u043E\u043C\u0435\u043D\u0442\u044B \u044D\u0442\u043E \u0432\u0441\u0435 \u0435\u0449\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0443\u0441\u0438\u043B\u0438\u044F.", tone: ["#ff9c8b", "#ff6f91"] }
+        { label: "\u0421\u0430\u043C\u043E\u0440\u0435\u0433\u0443\u043B\u044F\u0446\u0438\u044F", value: 64, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0423 \u0432\u0430\u0441 \u0443\u0436\u0435 \u0435\u0441\u0442\u044C \u0441\u043F\u043E\u0441\u043E\u0431\u044B \u0432\u044B\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u0435\u0440\u0435\u0433\u0440\u0443\u0437 \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044C\u0441\u044F \u043A \u043E\u043F\u043E\u0440\u0430\u043C, \u0445\u043E\u0442\u044F \u0432 \u0442\u044F\u0436\u0435\u043B\u044B\u0435 \u043C\u043E\u043C\u0435\u043D\u0442\u044B \u044D\u0442\u043E \u0432\u0441\u0435 \u0435\u0449\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0443\u0441\u0438\u043B\u0438\u044F.", tone: ["#ff9c8b", "#ff6f91"] },
+        { label: "\u0420\u0430\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C", value: 56, hint: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043F\u043E\u043A\u0430 \u043C\u0430\u043B\u043E", detail: "\u0412\u044B \u0432 \u0446\u0435\u043B\u043E\u043C \u0440\u0430\u0441\u0441\u0443\u0436\u0434\u0430\u0435\u0442\u0435 \u0441\u0432\u044F\u0437\u043D\u043E, \u0438\u0449\u0435\u0442\u0435 \u043F\u0440\u0438\u0447\u0438\u043D\u044B \u0438 \u043E\u043F\u0438\u0440\u0430\u0435\u0442\u0435\u0441\u044C \u043D\u0430 \u0437\u0434\u0440\u0430\u0432\u044B\u0439 \u0441\u043C\u044B\u0441\u043B, \u0445\u043E\u0442\u044F \u0432 \u044D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0445 \u0442\u0435\u043C\u0430\u0445 \u043B\u043E\u0433\u0438\u043A\u0430 \u043D\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043F\u043E\u0437\u0438\u0446\u0438\u044E.", tone: ["#f5b8c8", "#df7f9a"] }
       ],
       activity: [
         { label: "15.05", count: 1, value: 28 },

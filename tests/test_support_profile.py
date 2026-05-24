@@ -45,6 +45,38 @@ def test_metrics_fill_only_dimensions_with_evidence() -> None:
     assert by_key["self_contact"]["empty"] is True
 
 
+def test_rationality_uses_reasoning_structure_not_only_fact_words() -> None:
+    messages = [
+        Message(
+            role="user",
+            content=(
+                "Если я плохо сплю, то на следующий день быстрее раздражаюсь, "
+                "поэтому, кажется, сначала нужно проверить режим. Например, "
+                "посмотреть, что меня разгоняет вечером."
+            ),
+            message_metadata={},
+        )
+        for _ in range(5)
+    ]
+
+    metrics = support_profile._build_metrics(
+        user=_user(),
+        facts=[],
+        people=[],
+        topics=[],
+        memories=[],
+        messages=messages,
+    )
+    by_key = {metric["key"]: metric for metric in metrics}
+
+    assert by_key["rationality"]["value"] is not None
+    assert by_key["rationality"].get("empty") is not True
+    assert [metric["key"] for metric in metrics][-2:] == [
+        "self_regulation",
+        "rationality",
+    ]
+
+
 def test_lifehacks_are_empty_when_context_is_too_small() -> None:
     cards = support_profile._build_lifehacks(_user(), latest_update=None)
 
