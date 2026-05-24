@@ -78,23 +78,43 @@ HELP_REQUEST_RE = re.compile(
     re.IGNORECASE,
 )
 
-INTRO_INTENT_RE = re.compile(
+GREETING_INTENT_RE = re.compile(
     "|".join(
         (
             r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер|хай|hi|hello)\s*[!.?]*\s*$",
-            r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер)[,\s]+(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь)\s*[!.?]*\s*$",
-            r"^\s*(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь|что это за бот|зачем ты нужен)\s*[!.?]*\s*$",
+            r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер)[,\s]*(?:как дела|как вы|как ты)?\s*[!.?]*\s*$",
+        )
+    ),
+    re.IGNORECASE,
+)
+
+ABOUT_BOT_INTENT_RE = re.compile(
+    "|".join(
+        (
+            r"^\s*(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь|как ты устроен|что это за бот|зачем ты нужен)\s*[!.?]*\s*$",
+            r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер)[,\s]+(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь|как ты устроен|что это за бот|зачем ты нужен)\s*[!.?]*\s*$",
         )
     ),
     re.IGNORECASE,
 )
 
 
-def is_intro_intent(text: str) -> bool:
-    clean = " ".join((text or "").split()).strip()
-    if not clean or len(clean) > 220:
+def _clean_intent_text(text: str) -> str:
+    return " ".join((text or "").split()).strip()
+
+
+def is_greeting_intent(text: str) -> bool:
+    clean = _clean_intent_text(text)
+    if not clean or len(clean) > 120:
         return False
-    return bool(INTRO_INTENT_RE.search(clean))
+    return bool(GREETING_INTENT_RE.search(clean))
+
+
+def is_about_bot_intent(text: str) -> bool:
+    clean = _clean_intent_text(text)
+    if not clean or len(clean) > 240:
+        return False
+    return bool(ABOUT_BOT_INTENT_RE.search(clean))
 
 DETAILED_REPLY_HINTS = (
     "тест",
@@ -335,6 +355,66 @@ def name_request_reply() -> str:
     return "Как вас зовут?"
 
 
+async def generate_short_greeting_reply(first_name: str | None = None) -> str:
+    clean_name = clean_person_name(first_name)
+    name_hint = f"Имя пользователя: {clean_name}." if clean_name else "Имя пользователя неизвестно."
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Ты — Сушкевич Бот. Ответь на простое приветствие пользователя. "
+                "Нужно одно короткое живое сообщение на русском, 1-2 предложения. "
+                "Можно спросить, как человек себя чувствует сегодня. "
+                "Не рассказывай о себе, не описывай функции, не упоминай профиль, врача, диагностику, "
+                "нейросеть, интерфейс, Mini App, API, модель, систему или технические детали. "
+                "Не используй Markdown, списки и эмодзи. "
+                "Не обещай лечение и не ставь диагнозы. "
+                f"{name_hint}"
+            ),
+        },
+        {
+            "role": "user",
+            "content": "Привет",
+        },
+    ]
+
+    try:
+        reply = await openrouter_chat(
+            messages,
+            temperature=0.75,
+            max_tokens=80,
+            continue_on_length=False,
+        )
+    except Exception:
+        name = f", {clean_name}" if clean_name else ""
+        return f"Доброго дня{name}. Как вы себя чувствуете сегодня?"
+
+    clean_reply = " ".join((reply or "").split()).strip()
+    if not clean_reply:
+        name = f", {clean_name}" if clean_name else ""
+        return f"Доброго дня{name}. Как вы себя чувствуете сегодня?"
+
+    forbidden = (
+        "mini app",
+        "мини",
+        "api",
+        "модель",
+        "нейросеть",
+        "интерфейс",
+        "диагноз",
+        "диагности",
+        "лечение",
+        "врач",
+        "профиль",
+    )
+    if any(word in clean_reply.lower() for word in forbidden):
+        name = f", {clean_name}" if clean_name else ""
+        return f"Доброго дня{name}. Как вы себя чувствуете сегодня?"
+
+    return clean_reply[:220]
+
+
 def start_reply(first_name: str | None = None) -> str:
     clean_name = clean_person_name(first_name)
     name = f", {clean_name}" if clean_name else ""
@@ -403,7 +483,7 @@ async def handle_user_text(
 
     if session.state == AWAITING_NAME_STATE:
         candidate_name = clean_person_name(clean)
-        if is_intro_intent(candidate_name):
+        if is_greeting_intent(candidate_name) or is_about_bot_intent(candidate_name):
             return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
 
         if is_acceptable_user_name(candidate_name):
@@ -417,8 +497,11 @@ async def handle_user_text(
 
         return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
 
-    if risk_level == "none" and is_intro_intent(clean):
+    if risk_level == "none" and is_about_bot_intent(clean):
         return start_reply(display_first_name(user)), risk_level
+
+    if risk_level == "none" and is_greeting_intent(clean):
+        return await generate_short_greeting_reply(display_first_name(user)), risk_level
 
     detailed_reply = should_use_detailed_reply(clean)
     memory_bundle = await get_memory_bundle(db, user, query_text=clean)
