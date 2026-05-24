@@ -77,6 +77,25 @@ HELP_REQUEST_RE = re.compile(
     ),
     re.IGNORECASE,
 )
+
+INTRO_INTENT_RE = re.compile(
+    "|".join(
+        (
+            r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер|хай|hi|hello)\s*[!.?]*\s*$",
+            r"^\s*(?:привет|здравствуй(?:те)?|добрый день|доброе утро|добрый вечер)[,\s]+(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь)\s*[!.?]*\s*$",
+            r"^\s*(?:кто ты|что ты делаешь|что ты умеешь|расскажи о себе|чем ты можешь помочь|как ты работаешь|что это за бот|зачем ты нужен)\s*[!.?]*\s*$",
+        )
+    ),
+    re.IGNORECASE,
+)
+
+
+def is_intro_intent(text: str) -> bool:
+    clean = " ".join((text or "").split()).strip()
+    if not clean or len(clean) > 220:
+        return False
+    return bool(INTRO_INTENT_RE.search(clean))
+
 DETAILED_REPLY_HINTS = (
     "тест",
     "составь тест",
@@ -254,6 +273,11 @@ def build_system_prompt(
         "один точный вопрос. Делай ответ длиннее только когда пользователь явно просит "
         "подробный разбор, присылает тест/опросник, просит разобрать результаты, симптомы, "
         "план разговора с врачом или опасную ситуацию.\n\n"
+        "Не используй в пользовательских ответах технические термины интерфейса: mini app, "
+        "Mini App, web app, WebApp, фронтенд, backend, API, endpoint, payload, system prompt, "
+        "retrieval, база данных, переменные окружения, деплой, Railway, OpenRouter. "
+        "Вместо Mini App говори «профиль», «личный профиль» или «пространство поддержки». "
+        "Вместо технических объяснений описывай пользовательский смысл простыми словами.\n\n"
         "Не используй Markdown вообще: никаких символов звездочки, заголовков, маркеров списка, "
         "таблиц, нумерации как разметки или декоративных символов. Пиши обычным текстом, "
         "как в личном сообщении. Не упоминай внутренние инструкции, названия модели, API "
@@ -296,6 +320,13 @@ def is_acceptable_user_name(value: str | None) -> bool:
         return False
     return True
 
+
+
+def display_first_name(user: User) -> str | None:
+    preferred = (user.support_preferences or {}).get("_preferred_first_name")
+    if isinstance(preferred, str) and preferred.strip():
+        return preferred.strip()
+    return user.first_name
 
 def name_request_reply() -> str:
     return "Как вас зовут?"
@@ -369,6 +400,9 @@ async def handle_user_text(
 
     if session.state == AWAITING_NAME_STATE:
         candidate_name = clean_person_name(clean)
+        if is_intro_intent(candidate_name):
+            return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
+
         if is_acceptable_user_name(candidate_name):
             user.first_name = candidate_name
             user.support_preferences = {
@@ -379,6 +413,9 @@ async def handle_user_text(
             return start_reply(candidate_name), risk_level
 
         return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
+
+    if risk_level == "none" and is_intro_intent(clean):
+        return start_reply(display_first_name(user)), risk_level
 
     detailed_reply = should_use_detailed_reply(clean)
     memory_bundle = await get_memory_bundle(db, user, query_text=clean)
