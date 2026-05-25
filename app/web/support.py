@@ -185,18 +185,6 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 18px;
     }
 
-    .hero-title-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .hero-title-row > div {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-
     h1 {
       margin: 0;
       max-width: 760px;
@@ -623,13 +611,14 @@ SUPPORT_APP_HTML = """<!doctype html>
       border-radius: 999px;
       border: 1px solid rgba(91, 184, 169, .24);
       background: linear-gradient(135deg, rgba(143, 214, 200, .96), rgba(169, 200, 255, .96));
-      color: #1f3948;
+      color: #fff;
       font: inherit;
       font-weight: 820;
       white-space: nowrap;
       cursor: pointer;
       box-shadow: 0 12px 30px rgba(91, 184, 169, .18);
       transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+      align-self: flex-start;
     }
 
     .consultation-cta:hover {
@@ -1457,12 +1446,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       .hero-copy {
         min-height: 0;
       }
-      .hero-title-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
       .tabs {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .cards,
       .metrics-grid {
@@ -1489,15 +1474,11 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     <section class="hero" id="hero">
       <div class="hero-copy">
-        <div class="hero-title-row">
-          <div>
-            <h1 id="hello">Собираю ваш профиль</h1>
-          </div>
-          <button class="consultation-cta" id="heroConsultationButton" type="button">Записаться на прием</button>
-        </div>
         <div>
+          <h1 id="hello">Собираю ваш профиль</h1>
           <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
         </div>
+        <button class="consultation-cta" id="heroConsultationButton" type="button">Записаться на прием</button>
       </div>
       <aside class="radar-panel">
         <h2 class="panel-title">Диаграмма личности</h2>
@@ -1509,7 +1490,6 @@ SUPPORT_APP_HTML = """<!doctype html>
     </section>
 
     <nav class="tabs" aria-label="Разделы профиля">
-      <button class="tab" type="button" data-tab="consultation">Запись</button>
       <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
       <button class="tab active" type="button" data-tab="personality">Личность</button>
       <button class="tab" type="button" data-tab="diary">Дневник</button>
@@ -1521,7 +1501,7 @@ SUPPORT_APP_HTML = """<!doctype html>
           <div class="section-head">
             <div>
               <h2 class="section-title">Запись на прием</h2>
-              <p class="section-copy">Оставьте заявку, и мы передадим ее врачу. Телеграм-ник добавится автоматически, если он есть в вашем профиле Telegram.</p>
+              <p class="section-copy">Оставьте заявку, и мы передадим ее врачу.</p>
             </div>
           </div>
           <div class="form-grid">
@@ -1538,10 +1518,9 @@ SUPPORT_APP_HTML = """<!doctype html>
               <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
             </label>
           </div>
-          <p class="form-note" id="consultationNote">После отправки заявка сразу уйдет в рабочий Telegram врача.</p>
+          <p class="form-note" id="consultationNote"></p>
           <div class="form-actions">
             <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
-            <button class="secondary-button" id="backToProfileButton" type="button">Вернуться к профилю</button>
           </div>
         </div>
         <aside class="consultation-side">
@@ -2348,7 +2327,6 @@ SUPPORT_APP_HTML = """<!doctype html>
     openTab("consultation");
     if (consultationFullNameInput) consultationFullNameInput.focus();
   });
-  document.getElementById("backToProfileButton").addEventListener("click", () => openTab("personality"));
   document.getElementById("submitConsultationButton").addEventListener("click", async () => {
     await submitConsultationRequest();
   });
