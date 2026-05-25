@@ -1790,9 +1790,15 @@ SUPPORT_APP_HTML = """<!doctype html>
       consultationFullNameInput.value = firstName;
     }
   }
-  function shortProfileDescription(text) {
+  function shortProfileDescription(text, firstName) {
     const clean = String(text || "").replace(/\\s+/g, " ").trim();
-    if (!clean) return "\u0417\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u043A\u043E\u0440\u043E\u0442\u043A\u043E\u0435 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0432\u0430\u0441 \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0432\u0430\u0448\u0438\u0445 \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u0432 \u0441 \u0431\u043E\u0442\u043E\u043C.";
+    const fallback = "\u041F\u043E\u043A\u0430 \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u043E \u0432\u0430\u0441 \u043C\u0430\u043B\u043E. \u041F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u0434\u0438\u0430\u043B\u043E\u0433\u043E\u0432 \u0437\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u043A\u043E\u0440\u043E\u0442\u043A\u043E\u0435 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435.";
+    const normalizedName = String(firstName || "").replace(/\\s+/g, " ").trim().replace(/[.,:;!?"'«»()[\\]{}]+/g, "").toLowerCase();
+    const normalizedSummary = clean.replace(/[.,:;!?"'«»()[\\]{}]+/g, "").toLowerCase();
+    if (!clean) return fallback;
+    if (normalizedName && normalizedSummary === normalizedName) return fallback;
+    if (normalizedName && ["это " + normalizedName, "я " + normalizedName].includes(normalizedSummary)) return fallback;
+    if (normalizedName && normalizedSummary.length < 16 && normalizedSummary.includes(normalizedName)) return fallback;
     const firstSentence = clean.match(/.+?[.!?](\\s|$)/);
     const short = firstSentence ? firstSentence[0].trim() : clean;
     return short.length > 170 ? `${short.slice(0, 167).replace(/\\s+$/, "")}...` : short;
@@ -2099,7 +2105,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     const hasRealMetrics = metrics.some((metric) => !(metric.empty || metric.value === null || metric.value === void 0));
     document.getElementById("hero").classList.toggle("no-radar", !hasRealMetrics);
     setText("hello", firstName === "\u0432\u044B" ? "\u041F\u0440\u043E\u0444\u0438\u043B\u044C" : firstName);
-    setText("profileSummary", shortProfileDescription(data.user.profile_summary));
+    setText("profileSummary", shortProfileDescription(data.user.profile_summary, firstName));
     setText("disclaimer", data.disclaimer);
     renderMetrics(metrics);
     drawRadar(hasRealMetrics ? metrics : []);

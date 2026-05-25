@@ -1235,6 +1235,30 @@ def _display_first_name(user: User) -> str | None:
     return user.first_name
 
 
+def _safe_profile_summary(user: User) -> str:
+    fallback = (
+        "Пока профиль знает о вас немного. Он будет становиться точнее по мере "
+        "диалогов с ботом и сохраненных вами наблюдений."
+    )
+    summary = _clip(user.profile_summary, limit=540)
+    if not summary:
+        return fallback
+
+    clean_summary = " ".join(summary.split()).strip(".,:;!?\"'«»()[]{} ").casefold()
+    first_name = (_display_first_name(user) or "").strip()
+    clean_first_name = " ".join(first_name.split()).strip(".,:;!?\"'«»()[]{} ").casefold()
+
+    if not clean_summary:
+        return fallback
+    if clean_first_name and clean_summary == clean_first_name:
+        return fallback
+    if clean_first_name and clean_summary in {f"это {clean_first_name}", f"я {clean_first_name}"}:
+        return fallback
+    if len(clean_summary) < 16 and clean_first_name and clean_first_name in clean_summary:
+        return fallback
+    return summary
+
+
 async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
     facts_result = await db.execute(
         select(ImportantFact)
@@ -1285,14 +1309,7 @@ async def build_support_profile(db: AsyncSession, user: User) -> dict[str, Any]:
             "telegram_id": user.telegram_id,
             "first_name": _display_first_name(user),
             "username": user.username,
-            "profile_summary": _clip(
-                user.profile_summary,
-                limit=540,
-            )
-            or (
-                "Пока профиль знает о вас немного. Он будет становиться точнее по мере "
-                "диалогов с ботом и сохраненных вами наблюдений."
-            ),
+            "profile_summary": _safe_profile_summary(user),
             "support_preferences": {
                 key: value
                 for key, value in (user.support_preferences or {}).items()

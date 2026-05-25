@@ -280,3 +280,24 @@ def test_lifehack_feedback_is_saved() -> None:
 
     assert changed is True
     assert updated_cards[0]["feedback"] == "helped"
+
+
+def test_safe_profile_summary_falls_back_when_it_duplicates_name() -> None:
+    user = User(telegram_id=123, first_name="Антон", profile_summary="Антон", support_preferences={})
+
+    summary = support_profile._safe_profile_summary(user)
+
+    assert "Пока профиль знает о вас немного" in summary
+
+
+def test_safe_profile_summary_keeps_real_short_description() -> None:
+    user = User(
+        telegram_id=123,
+        first_name="Антон",
+        profile_summary="В разговорах заметны тревога, усталость и потребность в большей ясности.",
+        support_preferences={},
+    )
+
+    summary = support_profile._safe_profile_summary(user)
+
+    assert summary == "В разговорах заметны тревога, усталость и потребность в большей ясности."
