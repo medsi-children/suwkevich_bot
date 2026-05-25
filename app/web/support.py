@@ -639,6 +639,69 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 12px;
     }
 
+    .consultation-stage {
+      display: grid;
+      gap: 12px;
+      transition: opacity .32s ease, transform .32s ease, visibility .32s ease, max-height .32s ease;
+      transform-origin: top center;
+    }
+
+    .consultation-stage.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px) scale(.98);
+      max-height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .consultation-success {
+      display: grid;
+      gap: 14px;
+      padding: 22px 20px;
+      border-radius: 18px;
+      border: 1px solid rgba(91, 184, 169, .22);
+      background:
+        radial-gradient(circle at top right, rgba(143, 214, 200, .26), transparent 42%),
+        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(242, 249, 255, .95));
+      box-shadow: 0 16px 40px rgba(96, 120, 146, .12);
+    }
+
+    .consultation-success-badge {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #78d6c9 0%, #7abff5 100%);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(111, 159, 237, .2);
+    }
+
+    .consultation-success-badge svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .consultation-success h3 {
+      margin: 0;
+      color: #203040;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .consultation-success p {
+      margin: 0;
+      color: #607081;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
     .consultation-side {
       min-height: 100%;
       padding: 20px;
@@ -1504,23 +1567,36 @@ SUPPORT_APP_HTML = """<!doctype html>
               <p class="section-copy">Оставьте заявку, и мы передадим ее врачу.</p>
             </div>
           </div>
-          <div class="form-grid">
-            <label class="form-field" for="consultationFullName">
-              <span class="form-label">Фамилия, имя и отчество</span>
-              <input class="form-input" id="consultationFullName" maxlength="120" autocomplete="name" />
-            </label>
-            <label class="form-field" for="consultationPhone">
-              <span class="form-label">Телефон для связи</span>
-              <input class="form-input" id="consultationPhone" maxlength="32" autocomplete="tel" inputmode="tel" />
-            </label>
-            <label class="form-field" for="consultationMessage">
-              <span class="form-label">Что случилось</span>
-              <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
-            </label>
+          <div class="consultation-stage" id="consultationFormStage">
+            <div class="form-grid">
+              <label class="form-field" for="consultationFullName">
+                <span class="form-label">Фамилия, имя и отчество</span>
+                <input class="form-input" id="consultationFullName" maxlength="120" autocomplete="name" />
+              </label>
+              <label class="form-field" for="consultationPhone">
+                <span class="form-label">Телефон для связи</span>
+                <input class="form-input" id="consultationPhone" maxlength="32" autocomplete="tel" inputmode="tel" />
+              </label>
+              <label class="form-field" for="consultationMessage">
+                <span class="form-label">Что случилось</span>
+                <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
+              </label>
+            </div>
+            <p class="form-note" id="consultationNote"></p>
+            <div class="form-actions">
+              <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
+            </div>
           </div>
-          <p class="form-note" id="consultationNote"></p>
-          <div class="form-actions">
-            <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
+          <div class="consultation-stage hidden" id="consultationSuccessStage" aria-live="polite">
+            <div class="consultation-success">
+              <div class="consultation-success-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5"/></svg>
+              </div>
+              <div>
+                <h3>Заявка отправлена успешно</h3>
+                <p>Ожидайте, пока врач свяжется с вами.</p>
+              </div>
+            </div>
           </div>
         </div>
         <aside class="consultation-side">
@@ -1634,6 +1710,8 @@ SUPPORT_APP_HTML = """<!doctype html>
   const consultationPhoneInput = document.getElementById("consultationPhone");
   const consultationMessageInput = document.getElementById("consultationMessage");
   const consultationNote = document.getElementById("consultationNote");
+  const consultationFormStage = document.getElementById("consultationFormStage");
+  const consultationSuccessStage = document.getElementById("consultationSuccessStage");
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) {
     tg.ready();
@@ -1762,6 +1840,10 @@ SUPPORT_APP_HTML = """<!doctype html>
   }
   function setConsultationNote(text) {
     if (consultationNote) consultationNote.textContent = text;
+  }
+  function showConsultationSuccess() {
+    if (consultationFormStage) consultationFormStage.classList.add("hidden");
+    if (consultationSuccessStage) consultationSuccessStage.classList.remove("hidden");
   }
   function prefillConsultationForm(data) {
     const firstName = data && data.user && data.user.first_name ? String(data.user.first_name).trim() : "";
@@ -2229,9 +2311,9 @@ SUPPORT_APP_HTML = """<!doctype html>
       consultationFullNameInput.value = fullName;
       consultationPhoneInput.value = phone;
       consultationMessageInput.value = "";
-      setConsultationNote(result.message || "Спасибо, мы передали врачу вашу заявку.");
+      setConsultationNote("");
       statusEl.textContent = result.message || "";
-      openTab("personality");
+      showConsultationSuccess();
     } catch (error) {
       setConsultationNote(String(error.message || error));
     } finally {
