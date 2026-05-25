@@ -1,12 +1,23 @@
+import pytest
+
+from app.models.session import ConversationSession
+from app.models.user import User
 from app.services.dialogue import (
+    APPOINTMENT_NAME_STATE,
+    APPOINTMENT_PHONE_STATE,
+    APPOINTMENT_SUMMARY_STATE,
     DOCTOR_CONTACT,
     build_system_prompt,
     detect_risk_level,
     ensure_risk_contact,
+    handle_user_text,
+    normalize_phone,
     reply_token_budget,
     should_use_detailed_reply,
     start_reply,
+    wants_consultation_booking,
 )
+from app.services.telegram import build_consultation_request_text
 
 
 def test_detects_crisis_language() -> None:
@@ -21,6 +32,7 @@ def test_adds_general_safety_line_for_crisis_without_contact() -> None:
     )
     assert DOCTOR_CONTACT not in reply
     assert "112" in reply
+    assert "хочу записаться на консультацию" in reply.lower()
 
 
 def test_adds_doctor_contact_when_user_asks_for_contact() -> None:
@@ -87,7 +99,121 @@ def test_start_reply_trims_user_name_spacing() -> None:
 def test_start_reply_separates_navigation_and_diary_support() -> None:
     reply = start_reply()
 
+    assert "записаться на прием к Сушкевичу Антону Геннадьевичу" in reply
     assert "психиатрической навигацией" in reply
     assert "дополнительная психологическая" in reply
     assert "карта вашей личности" in reply
     assert len(reply) < 1200
+
+
+def test_detects_consultation_booking_intent() -> None:
+    assert wants_consultation_booking("Хочу записаться на консультацию") is True
+    assert wants_consultation_booking("Можно записаться к психиатру?") is True
+    assert wants_consultation_booking("Как записаться?") is True
+    assert wants_consultation_booking("Мне тревожно") is False
+
+
+def test_normalize_phone_formats_russian_number() -> None:
+    assert normalize_phone("8 (999) 123-45-67") == "+7 999 123-45-67"
+
+
+def test_build_consultation_request_text_uses_expected_format() -> None:
+    text = build_consultation_request_text(
+        full_name="Иванов Иван Иванович",
+        phone="+7 999 123-45-67",
+        telegram_username="demo_user",
+        message="Сильная тревога и бессонница",
+    )
+    assert "Имя: Иванов Иван Иванович" in text
+    assert "Телефон: +7 999 123-45-67" in text
+    assert "Телеграм: @demo_user" in text
+    assert "Сообщение: Сильная тревога и бессонница" in text
+
+
+@pytest.mark.asyncio
+async def test_handle_user_text_starts_consultation_flow() -> None:
+    user = User(first_name="Анна", support_preferences={})
+    session = ConversationSession(state="active", source="telegram")
+
+    reply, risk_level = await handle_user_text(
+        None,
+        user=user,
+        session=session,
+        text="Хочу записаться на консультацию",
+    )
+
+    assert risk_level == "none"
+    assert session.state == APPOINTMENT_NAME_STATE
+    assert "полное имя" in reply.lower()
+
+
+@pytest.mark.asyncio
+async def test_consultation_command_starts_consultation_flow() -> None:
+    user = User(first_name="Анна", support_preferences={})
+    session = ConversationSession(state="active", source="telegram")
+
+    reply, risk_level = await handle_user_text(
+        None,
+        user=user,
+        session=session,
+        text="/consultation",
+    )
+
+    assert risk_level == "none"
+    assert session.state == APPOINTMENT_NAME_STATE
+    assert "оформим заявку" in reply.lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_user_text_completes_consultation_flow(monkeypatch) -> None:
+    deliveries: list[dict[str, str | None]] = []
+
+    async def fake_send_consultation_request(
+        *,
+        full_name: str,
+        phone: str,
+        telegram_username: str | None,
+        message: str,
+    ) -> list[dict[str, object]]:
+        deliveries.append(
+            {
+                "full_name": full_name,
+                "phone": phone,
+                "telegram_username": telegram_username,
+                "message": message,
+            }
+        )
+        return []
+
+    monkeypatch.setattr(
+        "app.services.dialogue.send_consultation_request",
+        fake_send_consultation_request,
+    )
+
+    user = User(username="help_me", support_preferences={})
+    session = ConversationSession(state=APPOINTMENT_NAME_STATE, source="telegram")
+
+    reply, _ = await handle_user_text(None, user=user, session=session, text="Иванов Иван Иванович")
+    assert session.state == APPOINTMENT_PHONE_STATE
+    assert "номер телефона" in reply.lower()
+
+    reply, _ = await handle_user_text(None, user=user, session=session, text="8 (999) 123-45-67")
+    assert session.state == APPOINTMENT_SUMMARY_STATE
+    assert "что у вас случилось" in reply.lower()
+
+    reply, _ = await handle_user_text(
+        None,
+        user=user,
+        session=session,
+        text="У меня усилилась тревога, почти не сплю и нужна консультация.",
+    )
+    assert session.state == "active"
+    assert "передали врачу вашу заявку" in reply.lower()
+    assert deliveries == [
+        {
+            "full_name": "Иванов Иван Иванович",
+            "phone": "+7 999 123-45-67",
+            "telegram_username": "help_me",
+            "message": "У меня усилилась тревога, почти не сплю и нужна консультация.",
+        }
+    ]

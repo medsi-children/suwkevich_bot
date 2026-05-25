@@ -185,6 +185,18 @@ SUPPORT_APP_HTML = """<!doctype html>
       gap: 18px;
     }
 
+    .hero-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .hero-title-row > div {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
     h1 {
       margin: 0;
       max-width: 760px;
@@ -292,7 +304,7 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 8px;
       padding: 4px;
       border: 1px solid var(--line);
@@ -603,6 +615,142 @@ SUPPORT_APP_HTML = """<!doctype html>
       cursor: pointer;
       box-shadow: 0 10px 28px rgba(111, 159, 237, .18);
       animation: composerGlow 7.5s ease-in-out infinite;
+    }
+
+    .consultation-cta {
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(91, 184, 169, .24);
+      background: linear-gradient(135deg, rgba(143, 214, 200, .96), rgba(169, 200, 255, .96));
+      color: #1f3948;
+      font: inherit;
+      font-weight: 820;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(91, 184, 169, .18);
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+    .consultation-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 34px rgba(91, 184, 169, .22);
+      filter: saturate(1.04);
+    }
+
+    .consultation-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .consultation-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .consultation-side {
+      min-height: 100%;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      border: 1px solid var(--line);
+      border-radius: var(--surface-radius);
+      background:
+        radial-gradient(circle at top right, rgba(143, 214, 200, .24), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(247, 250, 255, .94));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .consultation-side strong {
+      font-size: 18px;
+      line-height: 1.25;
+      color: #223142;
+    }
+
+    .consultation-side p,
+    .consultation-side li {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .consultation-points {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 760;
+      color: #536272;
+    }
+
+    .form-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(248, 251, 255, .96);
+      color: var(--text);
+      padding: 14px 15px;
+      font: inherit;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+      border-color: rgba(111, 159, 237, .42);
+      box-shadow: 0 0 0 4px rgba(111, 159, 237, .11);
+      background: #fff;
+    }
+
+    .form-textarea {
+      min-height: 154px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .secondary-button {
+      min-height: 48px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(87, 112, 136, .16);
+      background: rgba(255, 255, 255, .86);
+      color: var(--text);
+      font: inherit;
+      font-weight: 720;
+      cursor: pointer;
     }
 
     .composer-status {
@@ -1292,7 +1440,8 @@ SUPPORT_APP_HTML = """<!doctype html>
     @media (max-width: 900px) {
       .hero,
       .two-column,
-      .support-layout {
+      .support-layout,
+      .consultation-layout {
         grid-template-columns: 1fr;
       }
       .metrics-grid {
@@ -1308,8 +1457,12 @@ SUPPORT_APP_HTML = """<!doctype html>
       .hero-copy {
         min-height: 0;
       }
+      .hero-title-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
       .tabs {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .cards,
       .metrics-grid {
@@ -1336,8 +1489,13 @@ SUPPORT_APP_HTML = """<!doctype html>
 
     <section class="hero" id="hero">
       <div class="hero-copy">
+        <div class="hero-title-row">
+          <div>
+            <h1 id="hello">Собираю ваш профиль</h1>
+          </div>
+          <button class="consultation-cta" id="heroConsultationButton" type="button">Записаться на прием</button>
+        </div>
         <div>
-          <h1 id="hello">Собираю ваш профиль</h1>
           <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
         </div>
       </div>
@@ -1351,10 +1509,51 @@ SUPPORT_APP_HTML = """<!doctype html>
     </section>
 
     <nav class="tabs" aria-label="Разделы профиля">
+      <button class="tab" type="button" data-tab="consultation">Запись</button>
       <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
       <button class="tab active" type="button" data-tab="personality">Личность</button>
       <button class="tab" type="button" data-tab="diary">Дневник</button>
     </nav>
+
+    <section class="panel" id="panel-consultation">
+      <div class="consultation-layout">
+        <div class="section-shell consultation-form">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Запись на прием</h2>
+              <p class="section-copy">Оставьте заявку, и мы передадим ее врачу. Телеграм-ник добавится автоматически, если он есть в вашем профиле Telegram.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label class="form-field" for="consultationFullName">
+              <span class="form-label">Фамилия, имя и отчество</span>
+              <input class="form-input" id="consultationFullName" maxlength="120" autocomplete="name" />
+            </label>
+            <label class="form-field" for="consultationPhone">
+              <span class="form-label">Телефон для связи</span>
+              <input class="form-input" id="consultationPhone" maxlength="32" autocomplete="tel" inputmode="tel" />
+            </label>
+            <label class="form-field" for="consultationMessage">
+              <span class="form-label">Что случилось</span>
+              <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
+            </label>
+          </div>
+          <p class="form-note" id="consultationNote">После отправки заявка сразу уйдет в рабочий Telegram врача.</p>
+          <div class="form-actions">
+            <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
+            <button class="secondary-button" id="backToProfileButton" type="button">Вернуться к профилю</button>
+          </div>
+        </div>
+        <aside class="consultation-side">
+          <strong>Что будет дальше</strong>
+          <ul class="consultation-points">
+            <li>Мы отправим врачу ваше имя, телефон, Telegram и описание ситуации.</li>
+            <li>Чем конкретнее вы опишете состояние, тем легче будет сориентироваться перед звонком.</li>
+            <li>Если есть немедленная опасность для жизни, не ждите ответа в чате и звоните 112 или 103.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
 
     <section class="panel" id="panel-lifehacks">
       <div class="section-shell">
@@ -1452,6 +1651,10 @@ SUPPORT_APP_HTML = """<!doctype html>
   const diaryThemeSelect = document.getElementById("diaryTheme");
   const lifehackStatus = document.getElementById("lifehackStatus");
   const lifehackPromptInput = document.getElementById("lifehackPrompt");
+  const consultationFullNameInput = document.getElementById("consultationFullName");
+  const consultationPhoneInput = document.getElementById("consultationPhone");
+  const consultationMessageInput = document.getElementById("consultationMessage");
+  const consultationNote = document.getElementById("consultationNote");
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) {
     tg.ready();
@@ -1512,6 +1715,7 @@ SUPPORT_APP_HTML = """<!doctype html>
   };
   let currentProfileData = null;
   let currentDiaryDraft = { item_id: null, theme: "criticality", color_theme: "blue" };
+  let consultationSending = false;
   const metricLabels = [
     "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u043D\u043E\u0441\u0442\u044C",
     "\u042D\u043C\u043E\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442",
@@ -1556,6 +1760,35 @@ SUPPORT_APP_HTML = """<!doctype html>
   function setText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
+  }
+  function openTab(tabName) {
+    document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item.dataset.tab === tabName));
+    document.querySelectorAll(".panel").forEach((item) => item.classList.toggle("active", item.id === `panel-${tabName}`));
+  }
+  function normalizeFullName(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+  function normalizePhone(value) {
+    const digits = String(value || "").replace(/\D+/g, "");
+    if (digits.length === 11 && digits.startsWith("8")) {
+      return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
+    }
+    if (digits.length === 11 && digits.startsWith("7")) {
+      return `+7 ${digits.slice(1, 4)} ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
+    }
+    if (digits.length >= 10 && digits.length <= 15) {
+      return `+${digits}`;
+    }
+    return "";
+  }
+  function setConsultationNote(text) {
+    if (consultationNote) consultationNote.textContent = text;
+  }
+  function prefillConsultationForm(data) {
+    const firstName = data && data.user && data.user.first_name ? String(data.user.first_name).trim() : "";
+    if (consultationFullNameInput && !consultationFullNameInput.value.trim() && firstName) {
+      consultationFullNameInput.value = firstName;
+    }
   }
   function shortProfileDescription(text) {
     const clean = String(text || "").replace(/\\s+/g, " ").trim();
@@ -1872,6 +2105,7 @@ SUPPORT_APP_HTML = """<!doctype html>
     drawRadar(hasRealMetrics ? metrics : []);
     renderLifehacks(data.lifehack_cards);
     renderInsights(data.insights);
+    prefillConsultationForm(data);
     root.classList.remove("loading");
     statusEl.textContent = "";
   }
@@ -1966,6 +2200,59 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
     renderProfile(await response.json());
   }
+  async function submitConsultationRequest() {
+    if (consultationSending) return;
+    if (demoMode || !telegramId) {
+      setConsultationNote("Форма отправляется только из Telegram или в локальном режиме с telegram_id.");
+      return;
+    }
+    const fullName = normalizeFullName(consultationFullNameInput.value);
+    const phone = normalizePhone(consultationPhoneInput.value);
+    const message = consultationMessageInput.value.trim();
+    if (fullName.length < 5) {
+      setConsultationNote("Напишите, пожалуйста, полное имя.");
+      consultationFullNameInput.focus();
+      return;
+    }
+    if (!phone) {
+      setConsultationNote("Проверьте номер телефона. Нужен формат вроде +7 999 123-45-67.");
+      consultationPhoneInput.focus();
+      return;
+    }
+    if (message.length < 10) {
+      setConsultationNote("Коротко опишите, пожалуйста, что случилось и с чем нужна консультация.");
+      consultationMessageInput.focus();
+      return;
+    }
+    consultationSending = true;
+    setConsultationNote("Отправляем заявку врачу…");
+    try {
+      const response = await fetch("/api/v1/support/consultation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(__spreadProps(__spreadValues({}, buildSupportPayload()), {
+          full_name: fullName,
+          phone,
+          message
+        }))
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${response.status}`);
+      }
+      const result = await response.json();
+      consultationFullNameInput.value = fullName;
+      consultationPhoneInput.value = phone;
+      consultationMessageInput.value = "";
+      setConsultationNote(result.message || "Спасибо, мы передали врачу вашу заявку.");
+      statusEl.textContent = result.message || "";
+      openTab("personality");
+    } catch (error) {
+      setConsultationNote(String(error.message || error));
+    } finally {
+      consultationSending = false;
+    }
+  }
   function demoProfile() {
     return {
       user: {
@@ -2049,12 +2336,15 @@ SUPPORT_APP_HTML = """<!doctype html>
     }
   }
   document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
-      tab.classList.add("active");
-      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
-    });
+    tab.addEventListener("click", () => openTab(tab.dataset.tab));
+  });
+  document.getElementById("heroConsultationButton").addEventListener("click", () => {
+    openTab("consultation");
+    if (consultationFullNameInput) consultationFullNameInput.focus();
+  });
+  document.getElementById("backToProfileButton").addEventListener("click", () => openTab("personality"));
+  document.getElementById("submitConsultationButton").addEventListener("click", async () => {
+    await submitConsultationRequest();
   });
   document.getElementById("addDiaryButton").addEventListener("click", () => openDiaryEditor(null));
   document.getElementById("closeDiaryDialog").addEventListener("click", closeDiaryEditor);
@@ -2077,6 +2367,11 @@ SUPPORT_APP_HTML = """<!doctype html>
     } catch (error) {
       flashLifehackStatus(String(error.message || error));
     }
+  });
+  consultationMessageInput.addEventListener("keydown", async (event) => {
+    if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
+    event.preventDefault();
+    await submitConsultationRequest();
   });
   document.getElementById("saveDiaryButton").addEventListener("click", async () => {
     try {

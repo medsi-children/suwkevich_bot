@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     openrouter_model: str = "openai/gpt-oss-120b:free"
     telegram_bot_token: str = ""
     telegram_webhook_secret_token: str = ""
+    consultation_requests_chat_id: int = 7659888703
 
     clinical_knowledge_path: str = "app/knowledge/clinical_orientation.md"
     clinical_knowledge_max_chars: int = 5200

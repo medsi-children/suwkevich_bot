@@ -15,6 +15,7 @@ from app.services.support_profile import (
     set_lifehack_feedback,
     upsert_manual_diary_item,
 )
+from app.services.telegram import send_consultation_request
 from app.services.telegram_auth import TelegramWebAppAuthError, verify_telegram_webapp_user
 from app.services.users import get_or_create_user
 
@@ -49,6 +50,12 @@ class SupportLifehackGenerateRequest(SupportProfileRequest):
 class SupportLifehackFeedbackRequest(SupportProfileRequest):
     item_id: str = Field(min_length=1, max_length=80)
     feedback: str = Field(pattern="^(helped|not_helped)$")
+
+
+class SupportConsultationRequest(SupportProfileRequest):
+    full_name: str = Field(min_length=5, max_length=120)
+    phone: str = Field(min_length=10, max_length=32)
+    message: str = Field(min_length=10, max_length=2000)
 
 
 @router.post("/me")
@@ -187,3 +194,35 @@ async def save_lifehack_feedback(
     profile = await build_support_profile(db, user)
     await db.commit()
     return profile
+
+
+@router.post("/consultation")
+async def create_support_consultation_request(
+    payload: SupportConsultationRequest,
+    db: DbSession,
+) -> dict[str, Any]:
+    try:
+        verify_telegram_webapp_user(payload.init_data, payload.telegram_id)
+    except TelegramWebAppAuthError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    user = await get_or_create_user(
+        db,
+        UserCreate(
+            telegram_id=payload.telegram_id,
+            username=payload.username,
+            first_name=payload.first_name,
+            language_code=payload.language_code,
+        ),
+    )
+    await send_consultation_request(
+        full_name=payload.full_name,
+        phone=payload.phone,
+        telegram_username=user.username,
+        message=payload.message,
+    )
+    await db.commit()
+    return {
+        "ok": True,
+        "message": "Спасибо, мы передали врачу вашу заявку. С вами свяжутся по указанному телефону.",
+    }

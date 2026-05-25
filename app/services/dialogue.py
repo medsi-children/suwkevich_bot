@@ -14,9 +14,14 @@ from app.services.clinical_knowledge import get_clinical_knowledge_context
 from app.services.diagnostic_domains import analyze_clinical_domains, format_domain_context
 from app.services.llm import LlmUnavailableError, openrouter_chat
 from app.services.memory import format_memory_context, get_memory_bundle
+from app.services.telegram import send_consultation_request
 
 DOCTOR_CONTACT = "Сушкевич Антон Геннадьевич, +7 985 992 7884"
 AWAITING_NAME_STATE = "awaiting_name"
+APPOINTMENT_NAME_STATE = "appointment_name"
+APPOINTMENT_PHONE_STATE = "appointment_phone"
+APPOINTMENT_SUMMARY_STATE = "appointment_summary"
+APPOINTMENT_DRAFT_KEY = "_consultation_request"
 logger = logging.getLogger(__name__)
 EMERGENCY_SAFETY_TEXT = (
     "Если есть немедленная опасность для жизни, рекомендую связаться с врачом "
@@ -25,6 +30,10 @@ EMERGENCY_SAFETY_TEXT = (
 DOCTOR_CONTACT_TEXT = (
     f"Контакт врача: {DOCTOR_CONTACT}. Если есть немедленная опасность для жизни, "
     "звоните 112 или 103 прямо сейчас."
+)
+CONSULTATION_INVITE_TEXT = (
+    "Если хотите, я могу помочь записаться на консультацию к психиатру. "
+    "Напишите: хочу записаться на консультацию."
 )
 
 CRISIS_PATTERNS = (
@@ -77,6 +86,22 @@ HELP_REQUEST_RE = re.compile(
     ),
     re.IGNORECASE,
 )
+CONSULTATION_REQUEST_RE = re.compile(
+    "|".join(
+        (
+            r"\bхочу\s+запис(?:ать|аться)\b",
+            r"\bхочу\s+на\s+консультаци",
+            r"\bзапишите\s+меня\b",
+            r"\bзаписаться\s+к\s+(?:врачу|психиатру|доктору)\b",
+            r"\bкак\s+записаться\b",
+            r"\bзапись\s+на\s+консультаци",
+            r"\bнужна\s+консультаци(?:я|ю)\b",
+            r"\bхочу\s+к\s+психиатру\b",
+            r"\bможно\s+записаться\b",
+        )
+    ),
+    re.IGNORECASE,
+)
 
 GREETING_INTENT_RE = re.compile(
     "|".join(
@@ -119,6 +144,7 @@ def is_about_bot_intent(text: str) -> bool:
         return False
     return bool(ABOUT_BOT_INTENT_RE.search(clean))
 
+
 DETAILED_REPLY_HINTS = (
     "тест",
     "составь тест",
@@ -153,6 +179,10 @@ def wants_help_with_crisis(text: str, risk_level: str) -> bool:
     return risk_level == "crisis" and bool(HELP_REQUEST_RE.search(text or ""))
 
 
+def wants_consultation_booking(text: str) -> bool:
+    return bool(CONSULTATION_REQUEST_RE.search(text or ""))
+
+
 def ensure_risk_contact(reply: str, risk_level: str, user_text: str = "") -> str:
     if wants_doctor_contact(user_text):
         if DOCTOR_CONTACT in reply:
@@ -168,8 +198,13 @@ def ensure_risk_contact(reply: str, risk_level: str, user_text: str = "") -> str
         return f"{reply.rstrip()}\n\n{DOCTOR_CONTACT_TEXT}"
 
     if "112" in reply or "103" in reply or "экстренной помощью" in reply.lower():
-        return reply
-    return f"{reply.rstrip()}\n\n{EMERGENCY_SAFETY_TEXT}"
+        base_reply = reply
+    else:
+        base_reply = f"{reply.rstrip()}\n\n{EMERGENCY_SAFETY_TEXT}"
+
+    if CONSULTATION_INVITE_TEXT.lower() in base_reply.lower():
+        return base_reply
+    return f"{base_reply.rstrip()}\n\n{CONSULTATION_INVITE_TEXT}"
 
 
 async def get_active_session(
@@ -327,7 +362,6 @@ async def get_recent_dialogue(
     return list(reversed(result.scalars().all()))
 
 
-
 def clean_person_name(value: str | None) -> str:
     clean = " ".join((value or "").split()).strip()
     clean = re.sub(r"^(меня зовут|я|это)\s+", "", clean, flags=re.IGNORECASE).strip()
@@ -347,15 +381,85 @@ def is_acceptable_user_name(value: str | None) -> bool:
     return 1 <= len(parts) <= 3
 
 
-
 def display_first_name(user: User) -> str | None:
     preferred = (user.support_preferences or {}).get("_preferred_first_name")
     if isinstance(preferred, str) and preferred.strip():
         return preferred.strip()
     return user.first_name
 
+
 def name_request_reply() -> str:
     return "Как вас зовут?"
+
+
+def start_consultation_booking(session: ConversationSession) -> str:
+    session.state = APPOINTMENT_NAME_STATE
+    return (
+        "Хорошо, давайте оформим заявку на консультацию. "
+        "Назовите, пожалуйста, ваше полное имя, фамилию и отчество."
+    )
+
+
+def appointment_phone_request_reply() -> str:
+    return "Спасибо. Теперь напишите, пожалуйста, ваш номер телефона для связи."
+
+
+def appointment_summary_request_reply() -> str:
+    return (
+        "Спасибо. Коротко расскажите, пожалуйста, что у вас случилось "
+        "и с чем нужна консультация."
+    )
+
+
+def appointment_success_reply() -> str:
+    return (
+        "Спасибо, мы передали врачу вашу заявку. "
+        "С вами свяжутся по указанному телефону."
+    )
+
+
+def appointment_delivery_error_reply() -> str:
+    return (
+        "Спасибо, я сохранил вашу заявку, но сейчас не смог автоматически передать ее врачу. "
+        "Попробуйте повторить чуть позже или напишите еще раз, и мы оформим заявку заново."
+    )
+
+
+def get_consultation_draft(user: User) -> dict[str, str]:
+    support_preferences = user.support_preferences or {}
+    draft = support_preferences.get(APPOINTMENT_DRAFT_KEY)
+    if isinstance(draft, dict):
+        return {str(key): str(value) for key, value in draft.items() if isinstance(value, str)}
+    return {}
+
+
+def save_consultation_draft(user: User, **updates: str) -> None:
+    draft = {**get_consultation_draft(user), **updates}
+    user.support_preferences = {
+        **(user.support_preferences or {}),
+        APPOINTMENT_DRAFT_KEY: draft,
+    }
+
+
+def clear_consultation_draft(user: User) -> None:
+    support_preferences = dict(user.support_preferences or {})
+    support_preferences.pop(APPOINTMENT_DRAFT_KEY, None)
+    user.support_preferences = support_preferences
+
+
+def normalize_phone(value: str | None) -> str:
+    digits = re.sub(r"\D+", "", value or "")
+    if digits.startswith("8") and len(digits) == 11:
+        digits = f"7{digits[1:]}"
+    if len(digits) == 11 and digits.startswith("7"):
+        return f"+7 {digits[1:4]} {digits[4:7]}-{digits[7:9]}-{digits[9:11]}"
+    if 10 <= len(digits) <= 15:
+        return f"+{digits}"
+    return ""
+
+
+def is_acceptable_phone(value: str | None) -> bool:
+    return bool(normalize_phone(value))
 
 
 async def generate_short_greeting_reply(first_name: str | None = None) -> str:
@@ -424,6 +528,8 @@ def start_reply(first_name: str | None = None) -> str:
 
     return (
         f"Доброго дня{name}. Я ваш цифровой доктор-психиатр, Сушкевич Бот.\n\n"
+        "Здесь вы можете записаться на прием к Сушкевичу Антону Геннадьевичу. "
+        "Для этого напишите в чат «хочу записаться на прием» или заполните форму в приложении.\n\n"
         "В диалоге я помогаю с психиатрической навигацией: аккуратно описать "
         "симптомы, заметить динамику, отделить гипотезы от фактов, увидеть "
         "красные флаги и понять, насколько ситуация срочная. Я не ставлю диагнозы "
@@ -484,6 +590,10 @@ async def handle_user_text(
         session.state = AWAITING_NAME_STATE
         return name_request_reply(), risk_level
 
+    if command == "/consultation":
+        clear_consultation_draft(user)
+        return start_consultation_booking(session), risk_level
+
     if session.state == AWAITING_NAME_STATE:
         candidate_name = clean_person_name(clean)
         if is_greeting_intent(candidate_name) or is_about_bot_intent(candidate_name):
@@ -499,6 +609,57 @@ async def handle_user_text(
             return start_reply(candidate_name), risk_level
 
         return "Напишите, пожалуйста, как вас зовут — одним коротким сообщением.", risk_level
+
+    if session.state == APPOINTMENT_NAME_STATE:
+        candidate_name = clean_person_name(clean)
+        if not is_acceptable_user_name(candidate_name) or len(candidate_name.split()) < 2:
+            return (
+                "Пожалуйста, напишите полное имя: фамилию, имя и по возможности отчество "
+                "одним сообщением."
+            ), risk_level
+        save_consultation_draft(user, full_name=candidate_name)
+        session.state = APPOINTMENT_PHONE_STATE
+        return appointment_phone_request_reply(), risk_level
+
+    if session.state == APPOINTMENT_PHONE_STATE:
+        phone = normalize_phone(clean)
+        if not is_acceptable_phone(clean):
+            return (
+                "Не смог распознать номер телефона. Напишите, пожалуйста, номер для связи "
+                "в формате +7XXXXXXXXXX или близком к нему."
+            ), risk_level
+        save_consultation_draft(user, phone=phone)
+        session.state = APPOINTMENT_SUMMARY_STATE
+        return appointment_summary_request_reply(), risk_level
+
+    if session.state == APPOINTMENT_SUMMARY_STATE:
+        summary = " ".join(clean.split()).strip()
+        if len(summary) < 10:
+            return (
+                "Пожалуйста, расскажите чуть подробнее, что у вас случилось "
+                "и с чем нужна консультация."
+            ), risk_level
+        draft = get_consultation_draft(user)
+        try:
+            await send_consultation_request(
+                full_name=draft.get("full_name", ""),
+                phone=draft.get("phone", ""),
+                telegram_username=user.username,
+                message=summary,
+            )
+        except Exception:
+            logger.exception("Failed to deliver consultation request for user %s", user.id)
+            clear_consultation_draft(user)
+            session.state = "active"
+            return appointment_delivery_error_reply(), risk_level
+
+        clear_consultation_draft(user)
+        session.state = "active"
+        return appointment_success_reply(), risk_level
+
+    if wants_consultation_booking(clean):
+        clear_consultation_draft(user)
+        return start_consultation_booking(session), risk_level
 
     if risk_level == "none" and is_about_bot_intent(clean):
         return start_reply(display_first_name(user)), risk_level

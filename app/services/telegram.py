@@ -10,6 +10,16 @@ from app.services.llm import clean_generated_text
 
 logger = logging.getLogger(__name__)
 MAX_TELEGRAM_TEXT = 3900
+DEFAULT_TELEGRAM_COMMANDS = (
+    {
+        "command": "start",
+        "description": "Запустить бота и начать диалог",
+    },
+    {
+        "command": "consultation",
+        "description": "Оставить заявку на консультацию",
+    },
+)
 
 
 class TelegramApiError(RuntimeError):
@@ -86,6 +96,44 @@ async def send_message(
     return responses
 
 
+def build_consultation_request_text(
+    *,
+    full_name: str,
+    phone: str,
+    telegram_username: str | None,
+    message: str,
+) -> str:
+    username = (
+        f"@{telegram_username.strip()}"
+        if telegram_username and telegram_username.strip()
+        else "не указан"
+    )
+    return (
+        f"Имя: {full_name.strip()}\n"
+        f"Телефон: {phone.strip()}\n"
+        f"Телеграм: {username}\n"
+        f"Сообщение: {message.strip()}"
+    )
+
+
+async def send_consultation_request(
+    *,
+    full_name: str,
+    phone: str,
+    telegram_username: str | None,
+    message: str,
+) -> list[dict[str, Any]]:
+    return await send_message(
+        settings.consultation_requests_chat_id,
+        build_consultation_request_text(
+            full_name=full_name,
+            phone=phone,
+            telegram_username=telegram_username,
+            message=message,
+        ),
+    )
+
+
 async def delete_message(chat_id: int, message_id: int) -> None:
     try:
         await telegram_api("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
@@ -108,3 +156,8 @@ async def sync_direct_telegram_webhook() -> str:
 
     data = await telegram_api("setWebhook", payload)
     return str(data.get("description") or "Webhook установлен.")
+
+
+async def sync_telegram_commands() -> str:
+    data = await telegram_api("setMyCommands", {"commands": list(DEFAULT_TELEGRAM_COMMANDS)})
+    return str(data.get("description") or "Команды бота обновлены.")
