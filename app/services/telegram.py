@@ -76,7 +76,7 @@ def split_telegram_text(text: str) -> list[str]:
 
 
 async def send_message(
-    chat_id: int,
+    chat_id: int | str,
     text: str,
     *,
     parse_mode: str | None = None,
@@ -94,6 +94,30 @@ async def send_message(
             payload["parse_mode"] = parse_mode
         responses.append(await telegram_api("sendMessage", payload))
     return responses
+
+
+def consultation_request_targets() -> list[int | str]:
+    targets: list[int | str] = []
+    username = settings.consultation_requests_chat_username.strip()
+    chat_id = str(settings.consultation_requests_chat_id).strip()
+
+    if username:
+        targets.append(username if username.startswith("@") else f"@{username}")
+    if chat_id:
+        if chat_id.lstrip("-").isdigit():
+            targets.append(int(chat_id))
+        else:
+            targets.append(chat_id)
+
+    unique_targets: list[int | str] = []
+    seen: set[str] = set()
+    for target in targets:
+        key = str(target)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_targets.append(target)
+    return unique_targets
 
 
 def build_consultation_request_text(
@@ -123,15 +147,22 @@ async def send_consultation_request(
     telegram_username: str | None,
     message: str,
 ) -> list[dict[str, Any]]:
-    return await send_message(
-        settings.consultation_requests_chat_id,
-        build_consultation_request_text(
-            full_name=full_name,
-            phone=phone,
-            telegram_username=telegram_username,
-            message=message,
-        ),
+    text = build_consultation_request_text(
+        full_name=full_name,
+        phone=phone,
+        telegram_username=telegram_username,
+        message=message,
     )
+    last_error: Exception | None = None
+    for target in consultation_request_targets():
+        try:
+            return await send_message(target, text)
+        except Exception as exc:
+            last_error = exc
+            logger.exception("Failed to deliver consultation request to Telegram target %s", target)
+    if last_error is not None:
+        raise last_error
+    raise TelegramApiError("Consultation destination is not configured")
 
 
 async def delete_message(chat_id: int, message_id: int) -> None:

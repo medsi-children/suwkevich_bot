@@ -1,4 +1,5 @@
-from app.services.telegram import DEFAULT_TELEGRAM_COMMANDS
+from app.services import telegram
+from app.services.telegram import DEFAULT_TELEGRAM_COMMANDS, consultation_request_targets
 
 
 def test_default_telegram_commands_include_start_and_consultation() -> None:
@@ -12,3 +13,17 @@ def test_default_telegram_commands_include_start_and_consultation() -> None:
             "description": "Оставить заявку на консультацию",
         },
     ]
+
+
+def test_consultation_request_targets_prefer_username_and_keep_id(monkeypatch) -> None:
+    monkeypatch.setattr(telegram.settings, "consultation_requests_chat_username", "@medsi_children")
+    monkeypatch.setattr(telegram.settings, "consultation_requests_chat_id", "7659888703")
+
+    assert consultation_request_targets() == ["@medsi_children", 7659888703]
+
+
+def test_consultation_request_targets_deduplicate_same_string_target(monkeypatch) -> None:
+    monkeypatch.setattr(telegram.settings, "consultation_requests_chat_username", "medsi_children")
+    monkeypatch.setattr(telegram.settings, "consultation_requests_chat_id", "@medsi_children")
+
+    assert consultation_request_targets() == ["@medsi_children"]

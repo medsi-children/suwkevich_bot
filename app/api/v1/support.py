@@ -15,7 +15,7 @@ from app.services.support_profile import (
     set_lifehack_feedback,
     upsert_manual_diary_item,
 )
-from app.services.telegram import send_consultation_request
+from app.services.telegram import TelegramApiError, send_consultation_request
 from app.services.telegram_auth import TelegramWebAppAuthError, verify_telegram_webapp_user
 from app.services.users import get_or_create_user
 
@@ -215,12 +215,18 @@ async def create_support_consultation_request(
             language_code=payload.language_code,
         ),
     )
-    await send_consultation_request(
-        full_name=payload.full_name,
-        phone=payload.phone,
-        telegram_username=user.username,
-        message=payload.message,
-    )
+    try:
+        await send_consultation_request(
+            full_name=payload.full_name,
+            phone=payload.phone,
+            telegram_username=user.username,
+            message=payload.message,
+        )
+    except TelegramApiError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Не удалось передать заявку врачу в Telegram. Проверьте адрес получателя и права бота.",
+        ) from exc
     await db.commit()
     return {
         "ok": True,
