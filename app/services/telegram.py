@@ -100,6 +100,11 @@ def consultation_request_targets() -> list[int | str]:
     targets: list[int | str] = []
     username = settings.consultation_requests_chat_username.strip()
     chat_id = str(settings.consultation_requests_chat_id).strip()
+    extra_chat_ids = [
+        item.strip()
+        for item in str(settings.consultation_requests_extra_chat_ids).split(",")
+        if item.strip()
+    ]
 
     if username:
         targets.append(username if username.startswith("@") else f"@{username}")
@@ -108,6 +113,11 @@ def consultation_request_targets() -> list[int | str]:
             targets.append(int(chat_id))
         else:
             targets.append(chat_id)
+    for extra_chat_id in extra_chat_ids:
+        if extra_chat_id.lstrip("-").isdigit():
+            targets.append(int(extra_chat_id))
+        else:
+            targets.append(extra_chat_id)
 
     unique_targets: list[int | str] = []
     seen: set[str] = set()
@@ -153,15 +163,18 @@ async def send_consultation_request(
         telegram_username=telegram_username,
         message=message,
     )
-    last_error: Exception | None = None
+    responses: list[dict[str, Any]] = []
+    errors: list[Exception] = []
     for target in consultation_request_targets():
         try:
-            return await send_message(target, text)
+            responses.extend(await send_message(target, text))
         except Exception as exc:
-            last_error = exc
+            errors.append(exc)
             logger.exception("Failed to deliver consultation request to Telegram target %s", target)
-    if last_error is not None:
-        raise last_error
+    if responses:
+        return responses
+    if errors:
+        raise errors[-1]
     raise TelegramApiError("Consultation destination is not configured")
 
 

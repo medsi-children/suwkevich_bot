@@ -15,15 +15,17 @@ def test_default_telegram_commands_include_start_and_consultation() -> None:
     ]
 
 
-def test_consultation_request_targets_prefer_username_and_keep_id(monkeypatch) -> None:
+def test_consultation_request_targets_include_primary_and_extra_targets(monkeypatch) -> None:
     monkeypatch.setattr(telegram.settings, "consultation_requests_chat_username", "@medsi_children")
     monkeypatch.setattr(telegram.settings, "consultation_requests_chat_id", "7659888703")
+    monkeypatch.setattr(telegram.settings, "consultation_requests_extra_chat_ids", "1148863826")
 
-    assert consultation_request_targets() == ["@medsi_children", 7659888703]
+    assert consultation_request_targets() == ["@medsi_children", 7659888703, 1148863826]
 
 
 def test_consultation_request_targets_deduplicate_same_string_target(monkeypatch) -> None:
     monkeypatch.setattr(telegram.settings, "consultation_requests_chat_username", "medsi_children")
     monkeypatch.setattr(telegram.settings, "consultation_requests_chat_id", "@medsi_children")
+    monkeypatch.setattr(telegram.settings, "consultation_requests_extra_chat_ids", "")
 
     assert consultation_request_targets() == ["@medsi_children"]

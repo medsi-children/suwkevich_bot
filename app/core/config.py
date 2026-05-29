@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     telegram_webhook_secret_token: str = ""
     consultation_requests_chat_id: str = "7659888703"
     consultation_requests_chat_username: str = "@medsi_children"
+    consultation_requests_extra_chat_ids: str = "1148863826"
 
     clinical_knowledge_path: str = "app/knowledge/clinical_orientation.md"
     clinical_knowledge_max_chars: int = 5200
