@@ -73,6 +73,88 @@ SUPPORT_APP_HTML = """<!doctype html>
       margin: 0 auto;
       padding: max(22px, calc(env(safe-area-inset-top, 0px) + 18px)) 16px 28px;
       position: relative;
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      transition: opacity .28s ease, transform .28s ease;
+    }
+
+    .app.loading .app-shell {
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: max(22px, calc(env(safe-area-inset-top, 0px) + 18px)) 16px 28px;
+      display: grid;
+      align-content: start;
+      gap: 22px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .24s ease;
+    }
+
+    .app.loading .loading-overlay {
+      opacity: 1;
+    }
+
+    .loading-card {
+      border: 1px solid rgba(143, 214, 200, .42);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, .8);
+      box-shadow: 0 22px 52px rgba(143, 214, 200, .1);
+      backdrop-filter: blur(18px);
+      padding: 28px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .loading-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 0 34%, rgba(255, 255, 255, .72) 48%, transparent 62% 100%);
+      transform: translateX(-100%);
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .loading-card.featured {
+      min-height: 224px;
+    }
+
+    .loading-card.medium {
+      min-height: 194px;
+    }
+
+    .loading-card.tall {
+      min-height: 214px;
+    }
+
+    .loading-lines {
+      display: grid;
+      gap: 14px;
+    }
+
+    .loading-line {
+      height: 24px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(210, 243, 247, .96), rgba(233, 249, 252, .94));
+    }
+
+    .loading-line.short {
+      width: min(280px, 46%);
+    }
+
+    .loading-line.medium {
+      width: min(620px, 88%);
+    }
+
+    .loading-line.long {
+      width: min(760px, 100%);
     }
 
     .topbar {
@@ -1586,121 +1668,154 @@ SUPPORT_APP_HTML = """<!doctype html>
 </head>
 <body>
   <main class="app loading">
-    <div class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-note">Личный профиль поддержки</span></div>
-      <!-- refresh button removed -->
+    <div class="loading-overlay" aria-hidden="true">
+      <section class="loading-card featured">
+        <div class="loading-lines">
+          <span class="loading-line short"></span>
+          <span class="loading-line long"></span>
+          <span class="loading-line medium"></span>
+        </div>
+      </section>
+      <section class="loading-card medium">
+        <div class="loading-lines">
+          <span class="loading-line short"></span>
+          <span class="loading-line long"></span>
+          <span class="loading-line medium"></span>
+        </div>
+      </section>
+      <section class="loading-card tall">
+        <div class="loading-lines">
+          <span class="loading-line short"></span>
+          <span class="loading-line long"></span>
+          <span class="loading-line medium"></span>
+        </div>
+      </section>
+      <section class="loading-card medium">
+        <div class="loading-lines">
+          <span class="loading-line short"></span>
+          <span class="loading-line long"></span>
+          <span class="loading-line medium"></span>
+        </div>
+      </section>
     </div>
 
-    <section class="hero" id="hero">
-      <div class="hero-copy">
-        <div>
-          <h1 id="hello">Собираю ваш профиль</h1>
-          <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
-        </div>
-        <button class="consultation-cta" id="heroConsultationButton" type="button">Записаться на прием</button>
+    <div class="app-shell">
+      <div class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-note">Личный профиль поддержки</span></div>
+        <!-- refresh button removed -->
       </div>
-      <aside class="radar-panel">
-        <h2 class="panel-title">Диаграмма личности</h2>
-        <div class="radar-wrap">
-          <canvas id="radar" width="620" height="620"></canvas>
+
+      <section class="hero" id="hero">
+        <div class="hero-copy">
+          <div>
+            <h1 id="hello">Собираю ваш профиль</h1>
+            <p class="summary-text" id="profileSummary">Проверяю сохраненные темы, инсайты и способы поддержки.</p>
+          </div>
+          <button class="consultation-cta" id="heroConsultationButton" type="button">Записаться на прием</button>
         </div>
-        <p class="disclaimer" id="disclaimer">Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.</p>
-      </aside>
-    </section>
+        <aside class="radar-panel">
+          <h2 class="panel-title">Диаграмма личности</h2>
+          <div class="radar-wrap">
+            <canvas id="radar" width="620" height="620"></canvas>
+          </div>
+          <p class="disclaimer" id="disclaimer">Перед вами карта вашей личности, на основе анализа Сушкевич Бота. Она будет становится точнее и точнее с каждым разговором с вами.</p>
+        </aside>
+      </section>
 
-    <nav class="tabs" aria-label="Разделы профиля">
-      <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
-      <button class="tab active" type="button" data-tab="personality">Личность</button>
-      <button class="tab" type="button" data-tab="diary">Дневник</button>
-    </nav>
+      <nav class="tabs" aria-label="Разделы профиля">
+        <button class="tab" type="button" data-tab="lifehacks">Лайфхаки</button>
+        <button class="tab active" type="button" data-tab="personality">Личность</button>
+        <button class="tab" type="button" data-tab="diary">Дневник</button>
+      </nav>
 
-    <section class="panel" id="panel-consultation">
-      <div class="consultation-layout">
-        <div class="section-shell consultation-form">
+      <section class="panel" id="panel-consultation">
+        <div class="consultation-layout">
+          <div class="section-shell consultation-form">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Запись на прием</h2>
+                <p class="section-copy">Оставьте заявку, и мы передадим ее врачу.</p>
+              </div>
+            </div>
+            <div class="consultation-stage" id="consultationFormStage">
+              <div class="form-grid">
+                <label class="form-field" for="consultationFullName">
+                  <span class="form-label">Фамилия, имя и отчество</span>
+                  <input class="form-input" id="consultationFullName" maxlength="120" autocomplete="name" />
+                </label>
+                <label class="form-field" for="consultationPhone">
+                  <span class="form-label">Телефон для связи</span>
+                  <input class="form-input" id="consultationPhone" maxlength="32" autocomplete="tel" inputmode="tel" />
+                </label>
+                <label class="form-field" for="consultationMessage">
+                  <span class="form-label">Что случилось</span>
+                  <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
+                </label>
+              </div>
+              <p class="form-note" id="consultationNote"></p>
+              <div class="form-actions">
+                <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
+              </div>
+            </div>
+            <div class="consultation-stage hidden" id="consultationSuccessStage" aria-live="polite">
+              <div class="consultation-success">
+                <div class="consultation-success-badge" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5"/></svg>
+                </div>
+                <div>
+                  <h3>Заявка отправлена успешно</h3>
+                  <p>Ожидайте, пока врач свяжется с вами.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="consultation-side">
+            <strong>Что будет дальше</strong>
+            <ul class="consultation-points">
+              <li>Мы отправим врачу ваше имя, телефон, Telegram и описание ситуации.</li>
+              <li>Чем конкретнее вы опишете состояние, тем легче будет сориентироваться перед звонком.</li>
+              <li>Если есть немедленная опасность для жизни, не ждите ответа в чате и звоните 112 или 103.</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-lifehacks">
+        <div class="section-shell">
           <div class="section-head">
             <div>
-              <h2 class="section-title">Запись на прием</h2>
-              <p class="section-copy">Оставьте заявку, и мы передадим ее врачу.</p>
+              <h2 class="section-title">Лайфхаки</h2>
+              <p class="section-copy">Короткий лайфхак под ваш запрос.</p>
             </div>
           </div>
-          <div class="consultation-stage" id="consultationFormStage">
-            <div class="form-grid">
-              <label class="form-field" for="consultationFullName">
-                <span class="form-label">Фамилия, имя и отчество</span>
-                <input class="form-input" id="consultationFullName" maxlength="120" autocomplete="name" />
-              </label>
-              <label class="form-field" for="consultationPhone">
-                <span class="form-label">Телефон для связи</span>
-                <input class="form-input" id="consultationPhone" maxlength="32" autocomplete="tel" inputmode="tel" />
-              </label>
-              <label class="form-field" for="consultationMessage">
-                <span class="form-label">Что случилось</span>
-                <textarea class="form-textarea" id="consultationMessage" maxlength="2000"></textarea>
-              </label>
+          <div class="composer">
+            <input class="composer-input" id="lifehackPrompt" maxlength="180" />
+            <button class="composer-button" id="generateLifehackButton" type="button">Спросить</button>
+          </div>
+        </div>
+        <div class="composer-status" id="lifehackStatus"></div>
+        <div class="cards" id="lifehackCards"></div>
+      </section>
+
+      <section class="panel active" id="panel-personality">
+        <div class="metrics-grid" id="metricsGrid"></div>
+      </section>
+
+      <section class="panel" id="panel-diary">
+        <div class="section-shell">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Дневник</h2>
+              <p class="section-copy">Ваши осознания и важные заметки о себе.</p>
             </div>
-            <p class="form-note" id="consultationNote"></p>
-            <div class="form-actions">
-              <button class="composer-button" id="submitConsultationButton" type="button">Отправить</button>
-            </div>
-          </div>
-          <div class="consultation-stage hidden" id="consultationSuccessStage" aria-live="polite">
-            <div class="consultation-success">
-              <div class="consultation-success-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5"/></svg>
-              </div>
-              <div>
-                <h3>Заявка отправлена успешно</h3>
-                <p>Ожидайте, пока врач свяжется с вами.</p>
-              </div>
-            </div>
+            <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
           </div>
         </div>
-        <aside class="consultation-side">
-          <strong>Что будет дальше</strong>
-          <ul class="consultation-points">
-            <li>Мы отправим врачу ваше имя, телефон, Telegram и описание ситуации.</li>
-            <li>Чем конкретнее вы опишете состояние, тем легче будет сориентироваться перед звонком.</li>
-            <li>Если есть немедленная опасность для жизни, не ждите ответа в чате и звоните 112 или 103.</li>
-          </ul>
-        </aside>
-      </div>
-    </section>
+        <div class="cards" id="insightCards"></div>
+      </section>
 
-    <section class="panel" id="panel-lifehacks">
-      <div class="section-shell">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">Лайфхаки</h2>
-            <p class="section-copy">Короткий лайфхак под ваш запрос.</p>
-          </div>
-        </div>
-        <div class="composer">
-          <input class="composer-input" id="lifehackPrompt" maxlength="180" />
-          <button class="composer-button" id="generateLifehackButton" type="button">Спросить</button>
-        </div>
-      </div>
-      <div class="composer-status" id="lifehackStatus"></div>
-      <div class="cards" id="lifehackCards"></div>
-    </section>
-
-    <section class="panel active" id="panel-personality">
-      <div class="metrics-grid" id="metricsGrid"></div>
-    </section>
-
-    <section class="panel" id="panel-diary">
-      <div class="section-shell">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">Дневник</h2>
-            <p class="section-copy">Ваши осознания и важные заметки о себе.</p>
-          </div>
-          <button class="mini-action" id="addDiaryButton" type="button" aria-label="Добавить осознание">+</button>
-        </div>
-      </div>
-      <div class="cards" id="insightCards"></div>
-    </section>
-
-    <div class="status" id="status"></div>
+      <div class="status" id="status"></div>
+    </div>
   </main>
 
   <div class="dialog-backdrop" id="diaryDialog">
@@ -2268,8 +2383,10 @@ SUPPORT_APP_HTML = """<!doctype html>
     renderLifehacks(data.lifehack_cards);
     renderInsights(data.insights);
     prefillConsultationForm(data);
-    root.classList.remove("loading");
-    statusEl.textContent = "";
+    requestAnimationFrame(() => {
+      root.classList.remove("loading");
+      statusEl.textContent = "";
+    });
   }
   function renderDiarySwatches(selectedColor) {
     diarySwatches.innerHTML = Object.keys(diaryColors).map((key) => {
