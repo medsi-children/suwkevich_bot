@@ -1500,6 +1500,23 @@ SUPPORT_APP_HTML = """<!doctype html>
       overflow: hidden;
     }
 
+    .loading #hello,
+    .loading #profileSummary,
+    .loading .panel-title,
+    .loading #disclaimer {
+      color: transparent;
+      user-select: none;
+    }
+
+    .loading .consultation-cta {
+      color: transparent;
+      border-color: rgba(209, 219, 231, .7);
+      background: linear-gradient(135deg, rgba(244, 248, 252, .98), rgba(232, 239, 246, .94));
+      box-shadow: none;
+      pointer-events: none;
+      user-select: none;
+    }
+
     .loading .hero-copy::after,
     .loading .radar-panel::after,
     .loading .metric-card::after,
@@ -1873,9 +1890,9 @@ SUPPORT_APP_HTML = """<!doctype html>
   }
   function renderLoadingState() {
     document.getElementById("hero").classList.remove("no-radar");
-    setText("hello", "\u0421\u043E\u0431\u0438\u0440\u0430\u044E \u0432\u0430\u0448 \u043F\u0440\u043E\u0444\u0438\u043B\u044C");
-    setText("profileSummary", "\u041F\u0440\u043E\u0432\u0435\u0440\u044F\u044E \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043D\u044B\u0435 \u0442\u0435\u043C\u044B, \u0438\u043D\u0441\u0430\u0439\u0442\u044B \u0438 \u0441\u043F\u043E\u0441\u043E\u0431\u044B \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0438.");
-    setText("disclaimer", "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438.");
+    setText("hello", "");
+    setText("profileSummary", "");
+    setText("disclaimer", "");
     document.getElementById("metricsGrid").innerHTML = Array.from({ length: 6 }, () => metricSkeletonTemplate()).join("");
     document.getElementById("lifehackCards").innerHTML = Array.from({ length: 3 }, () => dataCardSkeletonTemplate()).join("");
     document.getElementById("insightCards").innerHTML = Array.from({ length: 3 }, () => dataCardSkeletonTemplate()).join("");
