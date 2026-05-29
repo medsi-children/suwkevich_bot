@@ -382,6 +382,41 @@ SUPPORT_APP_HTML = """<!doctype html>
       align-content: start;
     }
 
+    .skeleton-card {
+      pointer-events: none;
+    }
+
+    .skeleton-line {
+      display: block;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(232, 239, 246, .92), rgba(244, 248, 252, .96));
+    }
+
+    .skeleton-line.title {
+      width: 58%;
+      height: 18px;
+    }
+
+    .skeleton-line.short {
+      width: 42%;
+      height: 12px;
+    }
+
+    .skeleton-line.medium {
+      width: 74%;
+      height: 12px;
+    }
+
+    .skeleton-line.long {
+      width: 92%;
+      height: 12px;
+    }
+
+    .skeleton-stack {
+      display: grid;
+      gap: 10px;
+    }
+
     .metric-card.empty {
       color: #818d9a;
       background: rgba(255, 255, 255, .68);
@@ -848,6 +883,10 @@ SUPPORT_APP_HTML = """<!doctype html>
       flex-direction: column;
       gap: 14px;
       justify-content: space-between;
+    }
+
+    .data-card.skeleton-card {
+      min-height: 164px;
     }
 
     .insight-actions {
@@ -1805,6 +1844,45 @@ SUPPORT_APP_HTML = """<!doctype html>
       disclaimer: "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438."
     };
   }
+  function metricSkeletonTemplate() {
+    return `
+      <article class="metric-card skeleton-card">
+        <div class="metric-top">
+          <span class="skeleton-line title"></span>
+          <div class="metric-value">--</div>
+        </div>
+        <div class="skeleton-stack">
+          <span class="skeleton-line long"></span>
+          <span class="skeleton-line medium"></span>
+          <span class="skeleton-line short"></span>
+        </div>
+      </article>
+    `;
+  }
+  function dataCardSkeletonTemplate() {
+    return `
+      <article class="data-card skeleton-card">
+        <div class="skeleton-stack">
+          <span class="skeleton-line short"></span>
+          <span class="skeleton-line title"></span>
+          <span class="skeleton-line long"></span>
+          <span class="skeleton-line medium"></span>
+        </div>
+      </article>
+    `;
+  }
+  function renderLoadingState() {
+    document.getElementById("hero").classList.remove("no-radar");
+    setText("hello", "\u0421\u043E\u0431\u0438\u0440\u0430\u044E \u0432\u0430\u0448 \u043F\u0440\u043E\u0444\u0438\u043B\u044C");
+    setText("profileSummary", "\u041F\u0440\u043E\u0432\u0435\u0440\u044F\u044E \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043D\u044B\u0435 \u0442\u0435\u043C\u044B, \u0438\u043D\u0441\u0430\u0439\u0442\u044B \u0438 \u0441\u043F\u043E\u0441\u043E\u0431\u044B \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0438.");
+    setText("disclaimer", "\u041F\u0435\u0440\u0435\u0434 \u0432\u0430\u043C\u0438 \u043A\u0430\u0440\u0442\u0430 \u0432\u0430\u0448\u0435\u0439 \u043B\u0438\u0447\u043D\u043E\u0441\u0442\u0438, \u043D\u0430 \u043E\u0441\u043D\u043E\u0432\u0435 \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0421\u0443\u0448\u043A\u0435\u0432\u0438\u0447 \u0411\u043E\u0442\u0430. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F \u0442\u043E\u0447\u043D\u0435\u0435 \u0438 \u0442\u043E\u0447\u043D\u0435\u0435 \u0441 \u043A\u0430\u0436\u0434\u044B\u043C \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u043E\u043C \u0441 \u0432\u0430\u043C\u0438.");
+    document.getElementById("metricsGrid").innerHTML = Array.from({ length: 6 }, () => metricSkeletonTemplate()).join("");
+    document.getElementById("lifehackCards").innerHTML = Array.from({ length: 3 }, () => dataCardSkeletonTemplate()).join("");
+    document.getElementById("insightCards").innerHTML = Array.from({ length: 3 }, () => dataCardSkeletonTemplate()).join("");
+    const canvas = document.getElementById("radar");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
   function buildSupportPayload() {
     return {
       telegram_id: telegramId,
@@ -2382,8 +2460,8 @@ SUPPORT_APP_HTML = """<!doctype html>
       return;
     }
     const payload = buildSupportPayload();
-    renderProfile(placeholderProfile(payload.first_name));
-    statusEl.textContent = "\u041E\u0431\u043D\u043E\u0432\u043B\u044F\u044E \u043F\u0440\u043E\u0444\u0438\u043B\u044C\u2026";
+    renderLoadingState();
+    statusEl.textContent = "";
     try {
       const response = await fetch("/api/v1/support/me", {
         method: "POST",
