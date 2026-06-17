@@ -31,7 +31,8 @@ async def telegram_api(method: str, payload: dict[str, Any]) -> dict[str, Any]:
         raise TelegramApiError("TELEGRAM_BOT_TOKEN is empty")
 
     url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/{method}"
-    async with httpx.AsyncClient(timeout=45) as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0", retries=2)
+    async with httpx.AsyncClient(timeout=45, transport=transport) as client:
         try:
             response = await client.post(url, json=payload)
             response.raise_for_status()
