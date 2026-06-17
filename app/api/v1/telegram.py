@@ -20,7 +20,6 @@ from app.services.telegram import (
     extract_message,
     extract_sender,
     send_message,
-    split_telegram_text,
 )
 from app.services.users import get_or_create_user
 
@@ -32,16 +31,6 @@ LOADING_MESSAGE_VARIANTS = (
     "<code>Одну минутку...</code>",
     "<code>Генерируем ответ...</code>",
 )
-
-
-def _telegram_webhook_message(chat_id: int, text: str) -> dict[str, Any]:
-    chunks = split_telegram_text(text)
-    return {
-        "method": "sendMessage",
-        "chat_id": chat_id,
-        "text": chunks[0] if chunks else "Готово.",
-        "disable_web_page_preview": True,
-    }
 
 
 def _extract_text_from_update(update: dict[str, Any]) -> str:
@@ -208,26 +197,9 @@ async def telegram_webhook(
 async def telegram_direct_webhook(
     update: dict[str, Any],
     request: Request,
-) -> dict[str, Any]:
+) -> dict[str, bool]:
     secret = settings.telegram_webhook_secret_token.strip()
     if secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
         raise HTTPException(status_code=403, detail="Invalid Telegram webhook secret")
-    chat_id = extract_chat_id(update)
-    if chat_id is None:
-        asyncio.create_task(process_direct_telegram_update(update))
-        return {"ok": True}
-    if _extract_text_from_update(update).casefold() == "/ping":
-        return _telegram_webhook_message(chat_id, "pong")
-
-    async with AsyncSessionLocal() as db:
-        try:
-            response = await build_telegram_response(update, db)
-        except Exception:
-            await db.rollback()
-            logger.exception("Failed to process Telegram update")
-            return _telegram_webhook_message(
-                chat_id,
-                "Кажется, что-то пошло не так. Попробуйте написать мне чуть позже 🙏",
-            )
-
-    return _telegram_webhook_message(chat_id, response.reply)
+    asyncio.create_task(process_direct_telegram_update(update))
+    return {"ok": True}
