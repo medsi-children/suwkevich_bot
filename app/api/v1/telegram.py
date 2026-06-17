@@ -197,9 +197,20 @@ async def telegram_webhook(
 async def telegram_direct_webhook(
     update: dict[str, Any],
     request: Request,
-) -> dict[str, bool]:
+) -> dict[str, Any]:
     secret = settings.telegram_webhook_secret_token.strip()
     if secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
         raise HTTPException(status_code=403, detail="Invalid Telegram webhook secret")
+
+    chat_id = extract_chat_id(update)
+    text = _extract_text_from_update(update)
+
+    if chat_id is not None and text.casefold() == "/ping":
+        return {
+            "method": "sendMessage",
+            "chat_id": chat_id,
+            "text": "pong",
+        }
+
     asyncio.create_task(process_direct_telegram_update(update))
     return {"ok": True}
