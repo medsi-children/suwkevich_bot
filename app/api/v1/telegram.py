@@ -5,7 +5,7 @@ import json
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -190,11 +190,10 @@ async def telegram_webhook(
 @router.post("/direct-webhook")
 async def telegram_direct_webhook(
     update: dict[str, Any],
-    background_tasks: BackgroundTasks,
     request: Request,
 ) -> dict[str, bool]:
     secret = settings.telegram_webhook_secret_token.strip()
     if secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
         raise HTTPException(status_code=403, detail="Invalid Telegram webhook secret")
-    background_tasks.add_task(process_direct_telegram_update, update)
+    asyncio.create_task(process_direct_telegram_update(update))
     return {"ok": True}
