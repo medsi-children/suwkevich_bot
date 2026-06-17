@@ -32,10 +32,23 @@ async def telegram_api(method: str, payload: dict[str, Any]) -> dict[str, Any]:
 
     url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/{method}"
     async with httpx.AsyncClient(timeout=45) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
+        try:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.exception(
+                "Telegram API %s failed with HTTP %s: %s",
+                method,
+                exc.response.status_code,
+                exc.response.text,
+            )
+            raise
+        except httpx.HTTPError:
+            logger.exception("Telegram API %s request failed", method)
+            raise
         data = response.json()
         if not data.get("ok"):
+            logger.error("Telegram API %s returned error: %s", method, data)
             raise TelegramApiError(str(data))
         return data
 

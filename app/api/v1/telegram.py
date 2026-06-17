@@ -149,6 +149,12 @@ async def build_telegram_response(update: dict[str, Any], db: AsyncSession) -> M
 async def process_direct_telegram_update(update: dict[str, Any]) -> None:
     chat_id = extract_chat_id(update)
     loading_message_id: int | None = None
+    if chat_id is not None and _extract_text_from_update(update).casefold() == "/ping":
+        try:
+            await send_message(chat_id, "pong")
+        except Exception:
+            logger.exception("Failed to send Telegram ping response")
+        return
     async with AsyncSessionLocal() as db:
         try:
             if chat_id is not None and should_show_loading_message(update):
