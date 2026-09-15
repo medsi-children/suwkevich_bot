@@ -24,7 +24,7 @@ def test_detects_crisis_language() -> None:
     assert detect_risk_level("Я не хочу жить и думаю о самоубийстве") == "crisis"
 
 
-def test_adds_general_safety_line_for_crisis_without_contact() -> None:
+def test_adds_general_safety_line_for_crisis_without_booking_invite() -> None:
     reply = ensure_risk_contact(
         "Я рядом. Давайте сначала снизим риск.",
         "crisis",
@@ -32,7 +32,7 @@ def test_adds_general_safety_line_for_crisis_without_contact() -> None:
     )
     assert DOCTOR_CONTACT not in reply
     assert "112" in reply
-    assert "хочу записаться на консультацию" in reply.lower()
+    assert "хочу записаться на консультацию" not in reply.lower()
 
 
 def test_adds_doctor_contact_when_user_asks_for_contact() -> None:
@@ -165,6 +165,22 @@ async def test_consultation_command_starts_consultation_flow() -> None:
 
 
 @pytest.mark.asyncio
+async def test_crisis_interrupts_phone_collection_without_losing_draft() -> None:
+    user = User(support_preferences={"_consultation_request": {"full_name": "Иванов Иван"}})
+    session = ConversationSession(state=APPOINTMENT_PHONE_STATE, source="telegram")
+
+    reply, risk_level = await handle_user_text(
+        None, user=user, session=session, text="Я хочу убить себя прямо сейчас"
+    )
+
+    assert risk_level == "crisis"
+    assert "112" in reply
+    assert "телефона" not in reply
+    assert session.state == APPOINTMENT_PHONE_STATE
+    assert user.support_preferences["_consultation_request"]["full_name"] == "Иванов Иван"
+
+
+@pytest.mark.asyncio
 async def test_handle_user_text_completes_consultation_flow(monkeypatch) -> None:
     deliveries: list[dict[str, str | None]] = []
 
@@ -217,3 +233,31 @@ async def test_handle_user_text_completes_consultation_flow(monkeypatch) -> None
             "message": "У меня усилилась тревога, почти не сплю и нужна консультация.",
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_failed_booking_retries_without_reentering_details(monkeypatch) -> None:
+    attempts = []
+
+    async def fake_delivery(**kwargs):
+        attempts.append(kwargs)
+        if len(attempts) == 1:
+            raise RuntimeError("temporary Telegram failure")
+
+    monkeypatch.setattr("app.services.dialogue.send_consultation_request", fake_delivery)
+    user = User(username="help_me", support_preferences={
+        "_consultation_request": {"full_name": "Иванов Иван", "phone": "+7 999 123-45-67"}
+    })
+    session = ConversationSession(state=APPOINTMENT_SUMMARY_STATE, source="telegram")
+
+    first, _ = await handle_user_text(
+        None, user=user, session=session, text="Тревога и почти не сплю несколько дней"
+    )
+    assert "не дошла врачу" in first
+    assert session.state == APPOINTMENT_SUMMARY_STATE
+    assert user.support_preferences["_consultation_request"]["summary"]
+
+    second, _ = await handle_user_text(None, user=user, session=session, text="повторить")
+    assert "передали врачу" in second
+    assert session.state == "active"
+    assert attempts[0]["message"] == attempts[1]["message"]

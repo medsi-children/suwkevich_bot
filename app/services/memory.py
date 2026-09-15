@@ -14,6 +14,7 @@ from app.models.memory import ImportantFact, KnownPerson, OpenTopic, UserMemory
 from app.models.message import Message
 from app.models.session import ConversationSession
 from app.models.user import User
+from app.services.clinical_safety import CLINICAL_SAFETY_PROMPT
 from app.services.llm import extract_json_object, openrouter_chat
 from app.services.support_profile import (
     append_manual_lifehack,
@@ -374,7 +375,10 @@ async def _refresh_profile_from_request(
 
     try:
         raw = await openrouter_chat(
-            [{"role": "user", "content": prompt}],
+            [
+                {"role": "system", "content": CLINICAL_SAFETY_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             temperature=0.35,
             max_tokens=1200,
         )
@@ -435,7 +439,10 @@ async def generate_lifehack_for_profile(
     )
     try:
         raw = await openrouter_chat(
-            [{"role": "user", "content": prompt}],
+            [
+                {"role": "system", "content": CLINICAL_SAFETY_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             temperature=0.45,
             max_tokens=500,
         )
@@ -790,11 +797,18 @@ async def store_memory_updates(
         return
     if user_text.strip().startswith("/"):
         return
+    if assistant_reply.startswith("Кажется, что-то пошло не так."):
+        return
 
     prompt = (
         "Ты извлекаешь долговременную память для терапевтически ориентированного бота.\n"
         "Не ставь диагнозы и не делай медицинских выводов. Сохраняй только то, что поможет "
         "будущему диалогу быть живым, бережным и конкретным.\n\n"
+        "Используй только слова пользователя в последнем сообщении как источник новых "
+        "сведений. Старые описания ниже могут быть неточными; не подтверждай их без новых "
+        "слов пользователя. Не сохраняй предположения, советы или формулировки бота как "
+        "факты пользователя. Если пользователь говорит о другом человеке, не переноси "
+        "его свойства на пользователя. При сомнении верни пустой массив.\n\n"
         "Особенно важно сохранять: имя пользователя, важные факты биографии, работу, "
         "отношения, имена значимых людей, повторяющиеся триггеры, способы самопомощи, "
         "цели, открытые темы, выводы пользователя и явные просьбы о стиле общения.\n\n"
@@ -894,13 +908,15 @@ async def store_memory_updates(
         f"Текущее описание пользователя: {user.profile_summary or 'пока пусто'}\n"
         f"Текущий стиль общения: {user.support_preferences or {}}\n"
         f"Текущий вывод по сессии: {session.summary or 'пока пусто'}\n\n"
-        f"Сообщение пользователя:\n{user_text}\n\n"
-        f"Ответ бота:\n{assistant_reply}"
+        f"Сообщение пользователя:\n{user_text}"
     )
 
     try:
         raw = await openrouter_chat(
-            [{"role": "user", "content": prompt}],
+            [
+                {"role": "system", "content": CLINICAL_SAFETY_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             temperature=0.1,
             max_tokens=1200,
         )

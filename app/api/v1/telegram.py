@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.db.session import AsyncSessionLocal, get_db
 from app.schemas.message import MessageResponse
 from app.schemas.user import UserCreate
+from app.services.admin_auth import require_admin_token
 from app.services.dialogue import add_message, get_active_session, handle_user_text
 from app.services.memory import apply_memory_control, store_memory_updates_deferred
 from app.services.telegram import (
@@ -185,7 +186,7 @@ async def process_direct_telegram_update(update: dict[str, Any]) -> None:
                 )
 
 
-@router.post("/webhook", response_model=MessageResponse)
+@router.post("/webhook", response_model=MessageResponse, dependencies=[Depends(require_admin_token)])
 async def telegram_webhook(
     update: dict[str, Any],
     db: DbSession,

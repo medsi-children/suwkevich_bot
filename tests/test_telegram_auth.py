@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import time
 from urllib.parse import urlencode
 
 import pytest
@@ -9,9 +10,9 @@ from app.services import telegram_auth
 from app.services.telegram_auth import TelegramWebAppAuthError, verify_telegram_webapp_user
 
 
-def signed_init_data(*, telegram_id: int, token: str) -> str:
+def signed_init_data(*, telegram_id: int, token: str, auth_date: int | None = None) -> str:
     values = {
-        "auth_date": "1710000000",
+        "auth_date": str(auth_date if auth_date is not None else int(time.time())),
         "query_id": "test-query",
         "user": json.dumps({"id": telegram_id, "first_name": "Tester"}, separators=(",", ":")),
     }
@@ -55,3 +56,13 @@ def test_verify_telegram_webapp_user_rejects_public_url_without_init_data(monkey
 
     with pytest.raises(TelegramWebAppAuthError):
         verify_telegram_webapp_user(None, 123)
+
+
+def test_verify_telegram_webapp_user_rejects_old_signed_data(monkeypatch) -> None:
+    monkeypatch.setattr(telegram_auth.settings, "app_env", "production")
+    monkeypatch.setattr(telegram_auth.settings, "telegram_bot_token", "secret-token")
+    stale = signed_init_data(
+        telegram_id=123, token="secret-token", auth_date=int(time.time()) - 2 * 86400
+    )
+    with pytest.raises(TelegramWebAppAuthError, match="expired"):
+        verify_telegram_webapp_user(stale, 123)

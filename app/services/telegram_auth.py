@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import time
 from urllib.parse import parse_qsl
 
 from app.core.config import settings
@@ -10,6 +11,9 @@ from app.core.config import settings
 
 class TelegramWebAppAuthError(ValueError):
     pass
+
+
+MAX_INIT_DATA_AGE_SECONDS = 24 * 60 * 60
 
 
 def _allow_local_telegram_id_fallback() -> bool:
@@ -45,6 +49,14 @@ def verify_telegram_webapp_user(init_data: str | None, telegram_id: int) -> None
     ).hexdigest()
     if not hmac.compare_digest(calculated_hash, received_hash):
         raise TelegramWebAppAuthError("Telegram initData hash is invalid")
+
+    try:
+        auth_date = int(values["auth_date"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise TelegramWebAppAuthError("Telegram auth_date is invalid") from exc
+    age = time.time() - auth_date
+    if age < -60 or age > MAX_INIT_DATA_AGE_SECONDS:
+        raise TelegramWebAppAuthError("Telegram initData has expired")
 
     try:
         user_payload = json.loads(values.get("user") or "{}")

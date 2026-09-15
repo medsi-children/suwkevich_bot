@@ -14,8 +14,9 @@ from app.schemas.user import (
     OpenTopicRead,
     UserRead,
 )
+from app.services.admin_auth import require_admin_token
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin_token)])
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 

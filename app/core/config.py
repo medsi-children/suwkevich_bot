@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     openrouter_model: str = "openai/gpt-oss-120b:free"
     telegram_bot_token: str = ""
     telegram_webhook_secret_token: str = ""
+    admin_api_token: str = ""
     consultation_requests_chat_id: str = "7659888703"
     consultation_requests_chat_username: str = "@medsi_children"
     consultation_requests_extra_chat_ids: str = "1148863826"

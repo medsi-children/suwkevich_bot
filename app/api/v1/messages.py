@@ -7,11 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.message import MessageCreate, MessageResponse
 from app.schemas.user import UserCreate
+from app.services.admin_auth import require_admin_token
 from app.services.dialogue import add_message, get_active_session, handle_user_text
 from app.services.memory import apply_memory_control, store_memory_updates_deferred
 from app.services.users import get_or_create_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin_token)])
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
